@@ -420,7 +420,11 @@ async function fetchJSON(url: string, init?: RequestInit) {
 async function getOrCreateFetchSettingsRecord(pb: PocketBase) {
   const existing = await pb
     .collection(COLLECTION_NAMES.fetchSettings)
-    .getFirstListItem(pb.filter('config_key = {:key}', { key: 'global' }))
+    .getFullList({
+      filter: pb.filter('config_key = {:key}', { key: 'global' }),
+      sort: '-updated'
+    })
+    .then(records => records[0] ?? null)
     .catch(() => null)
 
   if (existing) return existing
@@ -874,6 +878,11 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
   const settings = await getFetchSettingsInternal(pb)
   const rssSources = parseRSSSources(settings.rssSources)
   const seenFingerprints = new Set<string>()
+  const failedFeeds: Array<{
+    source: string
+    url: string
+    reason: string
+  }> = []
   let insertedCount = 0
   let updatedCount = 0
   let skippedCount = 0
@@ -931,8 +940,18 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
           if (result === 'updated') updatedCount += 1
           if (result === 'skipped') skippedCount += 1
         }
-      } catch {
+      } catch (error) {
         failedCount += 1
+        const reason = getErrorMessage(error)
+
+        failedFeeds.push({
+          source: sourceConfig.source,
+          url,
+          reason
+        })
+        console.error(
+          `[paper-library] fetch feed failed for ${sourceConfig.source} ${url}: ${reason}`
+        )
       }
     }
   }
@@ -944,7 +963,8 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
     skippedCount,
     failedCount,
     details: {
-      rssSources: settings.rssSources
+      rssSources: settings.rssSources,
+      failedFeeds
     }
   }
 }
