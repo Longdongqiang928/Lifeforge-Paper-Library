@@ -6,10 +6,11 @@ import type { PaperListItem } from '@/utils/types'
 
 interface PaperCardProps {
   paper: PaperListItem
-  detailTo: string
+  detailTo?: string
   onToggleFavorite: () => void | Promise<void>
   favoriteLoading?: boolean
   secondaryAction?: React.ReactNode
+  onOpenDetail?: () => void
 }
 
 function PaperCard({
@@ -17,7 +18,8 @@ function PaperCard({
   detailTo,
   onToggleFavorite,
   favoriteLoading = false,
-  secondaryAction
+  secondaryAction,
+  onOpenDetail
 }: PaperCardProps) {
   const statusLabel =
     paper.enhanceStatus !== 'idle'
@@ -26,8 +28,27 @@ function PaperCard({
         ? `Recommend ${paper.recommendStatus}`
         : null
 
+  const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onOpenDetail) return
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onOpenDetail()
+    }
+  }
+
   return (
-    <Card className="from-component-bg to-component-bg-lighter flex h-full flex-col gap-4 bg-gradient-to-br">
+    <Card
+      className={`from-component-bg to-component-bg-lighter flex h-full flex-col gap-4 bg-gradient-to-br ${
+        onOpenDetail
+          ? 'cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl'
+          : ''
+      }`}
+      role={onOpenDetail ? 'button' : undefined}
+      tabIndex={onOpenDetail ? 0 : undefined}
+      onClick={onOpenDetail}
+      onKeyDown={handleCardKeyDown}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <TagChip
@@ -69,7 +90,10 @@ function PaperCard({
           icon={paper.isFavorite ? 'tabler:star-filled' : 'tabler:star'}
           loading={favoriteLoading}
           variant="plain"
-          onClick={onToggleFavorite}
+          onClick={event => {
+            event.stopPropagation()
+            void onToggleFavorite()
+          }}
         />
       </div>
 
@@ -107,10 +131,30 @@ function PaperCard({
       )}
 
       <div className="border-bg-500/10 flex flex-wrap items-center gap-2 border-t pt-3">
-        <Button as={Link} icon="tabler:arrow-right" to={detailTo}>
-          Open
-        </Button>
-        {secondaryAction}
+        {onOpenDetail ? (
+          <Button
+            icon="tabler:arrow-right"
+            onClick={event => {
+              event.stopPropagation()
+              onOpenDetail()
+            }}
+          >
+            Open
+          </Button>
+        ) : detailTo ? (
+          <Button as={Link} icon="tabler:arrow-right" to={detailTo}>
+            Open
+          </Button>
+        ) : null}
+        {secondaryAction ? (
+          <div
+            onClick={event => {
+              event.stopPropagation()
+            }}
+          >
+            {secondaryAction}
+          </div>
+        ) : null}
       </div>
     </Card>
   )

@@ -12,11 +12,12 @@ import {
   TagChip,
   WithQuery
 } from 'lifeforge-ui'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
-import { Link } from 'shared'
+import { Link, useSearchParams } from 'shared'
 
 import PaperCard from '@/components/PaperCard'
+import PaperDetailModal from '@/components/PaperDetailModal'
 import forgeAPI from '@/utils/forgeAPI'
 import {
   MODULE_BASE_PATH,
@@ -28,100 +29,24 @@ import type { PaperListResponse } from '@/utils/types'
 
 const DEFAULT_FETCH_DATE = dayjs().format('YYYY-MM-DD')
 const DEFAULT_SORT = 'score_desc' as const
-const PAPER_LIST_STATE_KEY = `${MODULE_ROUTE_KEY}:paper-list-state`
-
-interface PaperListPageState {
-  query: string
-  page: number
-  dateFrom: string
-  dateTo: string
-  selectedSources: string[]
-  selectedJournals: string[]
-  selectedCollections: string[]
-  favoritesOnly: boolean
-  hasAbstractOnly: boolean
-}
-
-function getDefaultPaperListState(): PaperListPageState {
-  return {
-    query: '',
-    page: 1,
-    dateFrom: DEFAULT_FETCH_DATE,
-    dateTo: DEFAULT_FETCH_DATE,
-    selectedSources: [],
-    selectedJournals: [],
-    selectedCollections: [],
-    favoritesOnly: false,
-    hasAbstractOnly: true
-  }
-}
-
-function readSavedPaperListState(): PaperListPageState {
-  const defaultState = getDefaultPaperListState()
-
-  if (typeof window === 'undefined') {
-    return defaultState
-  }
-
-  try {
-    const raw = window.sessionStorage.getItem(PAPER_LIST_STATE_KEY)
-
-    if (!raw) {
-      return defaultState
-    }
-
-    const parsed = JSON.parse(raw) as Partial<PaperListPageState>
-
-    return {
-      query: typeof parsed.query === 'string' ? parsed.query : defaultState.query,
-      page: typeof parsed.page === 'number' && parsed.page > 0 ? parsed.page : defaultState.page,
-      dateFrom:
-        typeof parsed.dateFrom === 'string' ? parsed.dateFrom : defaultState.dateFrom,
-      dateTo: typeof parsed.dateTo === 'string' ? parsed.dateTo : defaultState.dateTo,
-      selectedSources: Array.isArray(parsed.selectedSources) ? parsed.selectedSources : [],
-      selectedJournals: Array.isArray(parsed.selectedJournals) ? parsed.selectedJournals : [],
-      selectedCollections: Array.isArray(parsed.selectedCollections)
-        ? parsed.selectedCollections
-        : [],
-      favoritesOnly:
-        typeof parsed.favoritesOnly === 'boolean'
-          ? parsed.favoritesOnly
-          : defaultState.favoritesOnly,
-      hasAbstractOnly:
-        typeof parsed.hasAbstractOnly === 'boolean'
-          ? parsed.hasAbstractOnly
-          : defaultState.hasAbstractOnly
-    }
-  } catch {
-    return defaultState
-  }
-}
 
 function PaperListPage() {
-  const initialState = readSavedPaperListState()
-  const [query, setQuery] = useState(initialState.query)
-  const [page, setPage] = useState(initialState.page)
-  const [dateFrom, setDateFrom] = useState(initialState.dateFrom)
-  const [dateTo, setDateTo] = useState(initialState.dateTo)
-  const [selectedSources, setSelectedSources] = useState<string[]>(initialState.selectedSources)
-  const [selectedJournals, setSelectedJournals] = useState<string[]>(
-    initialState.selectedJournals
-  )
-  const [selectedCollections, setSelectedCollections] = useState<string[]>(
-    initialState.selectedCollections
-  )
-  const [favoritesOnly, setFavoritesOnly] = useState(initialState.favoritesOnly)
-  const [hasAbstractOnly, setHasAbstractOnly] = useState(initialState.hasAbstractOnly)
+  const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const [dateFrom, setDateFrom] = useState(DEFAULT_FETCH_DATE)
+  const [dateTo, setDateTo] = useState(DEFAULT_FETCH_DATE)
+  const [selectedSources, setSelectedSources] = useState<string[]>([])
+  const [selectedJournals, setSelectedJournals] = useState<string[]>([])
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([])
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [hasAbstractOnly, setHasAbstractOnly] = useState(true)
 
   const queryClient = useQueryClient()
-  const hasMountedRef = useRef(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activePaperId = searchParams.get('paper') ?? ''
+  const pendingPageTransitionRef = useRef<'next' | 'previous' | null>(null)
 
   useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true
-      return
-    }
-
     setPage(1)
   }, [
     query,
@@ -130,37 +55,6 @@ function PaperListPage() {
     selectedSources.join(','),
     selectedJournals.join(','),
     selectedCollections.join(','),
-    favoritesOnly,
-    hasAbstractOnly
-  ])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return
-    }
-
-    window.sessionStorage.setItem(
-      PAPER_LIST_STATE_KEY,
-      JSON.stringify({
-        query,
-        page,
-        dateFrom,
-        dateTo,
-        selectedSources,
-        selectedJournals,
-        selectedCollections,
-        favoritesOnly,
-        hasAbstractOnly
-      } satisfies PaperListPageState)
-    )
-  }, [
-    query,
-    page,
-    dateFrom,
-    dateTo,
-    selectedSources,
-    selectedJournals,
-    selectedCollections,
     favoritesOnly,
     hasAbstractOnly
   ])
@@ -206,6 +100,16 @@ function PaperListPage() {
   )
 
   const totalItems = (papersQuery.data as PaperListResponse | undefined)?.totalItems
+  const totalPages = (papersQuery.data as PaperListResponse | undefined)?.totalPages ?? 1
+  const visiblePaperIds = useMemo(
+    () => ((papersQuery.data as PaperListResponse | undefined)?.items ?? []).map(item => item.id),
+    [papersQuery.data]
+  )
+  const activePaperIndex = visiblePaperIds.indexOf(activePaperId)
+  const currentPosition =
+    activePaperIndex >= 0
+      ? (page - 1) * listQueryInput.perPage + activePaperIndex + 1
+      : undefined
   const activeFilterCount = [
     query.trim(),
     dateFrom,
@@ -228,48 +132,104 @@ function PaperListPage() {
     setHasAbstractOnly(true)
   }
 
+  const openPaperDetail = (paperId: string) => {
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('paper', paperId)
+    setSearchParams(nextParams)
+  }
+
+  const closePaperDetail = () => {
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('paper')
+    setSearchParams(nextParams)
+  }
+
+  const openNextPaper = () => {
+    if (activePaperIndex >= 0 && activePaperIndex < visiblePaperIds.length - 1) {
+      openPaperDetail(visiblePaperIds[activePaperIndex + 1]!)
+      return
+    }
+
+    if (page < totalPages) {
+      pendingPageTransitionRef.current = 'next'
+      setPage(currentPage => currentPage + 1)
+    }
+  }
+
+  const openPreviousPaper = () => {
+    if (activePaperIndex > 0) {
+      openPaperDetail(visiblePaperIds[activePaperIndex - 1]!)
+      return
+    }
+
+    if (page > 1) {
+      pendingPageTransitionRef.current = 'previous'
+      setPage(currentPage => Math.max(1, currentPage - 1))
+    }
+  }
+
+  useEffect(() => {
+    if (!activePaperId) {
+      pendingPageTransitionRef.current = null
+      return
+    }
+
+    if (!pendingPageTransitionRef.current || visiblePaperIds.length === 0) {
+      return
+    }
+
+    const direction = pendingPageTransitionRef.current
+    pendingPageTransitionRef.current = null
+    openPaperDetail(direction === 'next' ? visiblePaperIds[0]! : visiblePaperIds[visiblePaperIds.length - 1]!)
+  }, [activePaperId, page, visiblePaperIds])
+
   return (
     <>
-      <ModuleHeader
-        actionButton={
-          <div className="flex items-center gap-2">
-            <Button as={Link} icon="tabler:star" to={`${MODULE_BASE_PATH}/favorites`}>
-              Favorites
-            </Button>
-            <Button
-              as={Link}
-              icon="tabler:file-import"
-              to={`${MODULE_BASE_PATH}/import`}
-              variant="secondary"
-            >
-              Import
-            </Button>
-            <Button
-              as={Link}
-              icon="tabler:player-play"
-              to={`${MODULE_BASE_PATH}/run`}
-              variant="secondary"
-            >
-              Run
-            </Button>
-            <Button
-              as={Link}
-              icon="tabler:settings"
-              to={`${MODULE_BASE_PATH}/settings`}
-              variant="secondary"
-            >
-              Settings
-            </Button>
-          </div>
-        }
-        icon="tabler:books"
-        namespace={MODULE_NAMESPACE}
-        title="papersPage"
-        totalItems={totalItems}
-      />
+      <div
+        className={`transition-all duration-300 ${
+          activePaperId ? 'pointer-events-none select-none blur-[4px] saturate-75' : ''
+        }`}
+      >
+        <ModuleHeader
+          actionButton={
+            <div className="flex items-center gap-2">
+              <Button as={Link} icon="tabler:star" to={`${MODULE_BASE_PATH}/favorites`}>
+                Favorites
+              </Button>
+              <Button
+                as={Link}
+                icon="tabler:file-import"
+                to={`${MODULE_BASE_PATH}/import`}
+                variant="secondary"
+              >
+                Import
+              </Button>
+              <Button
+                as={Link}
+                icon="tabler:player-play"
+                to={`${MODULE_BASE_PATH}/run`}
+                variant="secondary"
+              >
+                Run
+              </Button>
+              <Button
+                as={Link}
+                icon="tabler:settings"
+                to={`${MODULE_BASE_PATH}/settings`}
+                variant="secondary"
+              >
+                Settings
+              </Button>
+            </div>
+          }
+          icon="tabler:books"
+          namespace={MODULE_NAMESPACE}
+          title="papersPage"
+          totalItems={totalItems}
+        />
 
-      <div className="mb-6 space-y-4">
-        <Card className="from-component-bg-lighter to-component-bg space-y-5 bg-gradient-to-br">
+        <div className="mb-6 space-y-4">
+          <Card className="from-component-bg-lighter to-component-bg space-y-5 bg-gradient-to-br">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
             <div className="space-y-4">
               <div className="space-y-2">
@@ -339,10 +299,10 @@ function PaperListPage() {
               </Card>
             </div>
           </div>
-        </Card>
+          </Card>
 
-        <Card className="space-y-5">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+          <Card className="space-y-5">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
             <Card className="component-bg-lighter space-y-4">
               <div className="space-y-1">
                 <h2 className="text-lg font-semibold">Quick filters</h2>
@@ -472,74 +432,90 @@ function PaperListPage() {
                 </div>
               </div>
             </Card>
-          </div>
-        </Card>
-      </div>
+            </div>
+          </Card>
+        </div>
 
-      <WithQuery query={papersQuery}>
-        {data =>
-          data.items.length === 0 ? (
-            <EmptyStateScreen
-              icon="tabler:book-off"
-              message={{
-                id: 'papers',
-                namespace: MODULE_NAMESPACE
-              }}
-            />
-          ) : (
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">
-                    Showing {data.items.length} of {data.totalItems} matching papers
-                  </p>
-                  <p className="text-bg-500 text-sm">
-                    Results are ordered by score, while cards still surface your favorites,
-                    matched collections, and AI overlays.
-                  </p>
+        <WithQuery query={papersQuery}>
+          {data =>
+            data.items.length === 0 ? (
+              <EmptyStateScreen
+                icon="tabler:book-off"
+                message={{
+                  id: 'papers',
+                  namespace: MODULE_NAMESPACE
+                }}
+              />
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">
+                      Showing {data.items.length} of {data.totalItems} matching papers
+                    </p>
+                    <p className="text-bg-500 text-sm">
+                      Results are ordered by score, while cards still surface your favorites,
+                      matched collections, and AI overlays.
+                    </p>
+                  </div>
+                  {data.totalPages > 1 && (
+                    <TagChip
+                      icon="tabler:bookmark"
+                      label={`Page ${data.page} of ${data.totalPages}`}
+                      variant="outlined"
+                    />
+                  )}
                 </div>
+
+                <div className="grid gap-4 xl:grid-cols-2">
+                  {data.items.map(paper => (
+                    <PaperCard
+                      key={paper.id}
+                      favoriteLoading={
+                        toggleFavoriteMutation.isPending &&
+                        toggleFavoriteMutation.variables?.paperId === paper.id
+                      }
+                      paper={paper}
+                      onOpenDetail={() => {
+                        openPaperDetail(paper.id)
+                      }}
+                      onToggleFavorite={() => {
+                        toggleFavoriteMutation.mutate({
+                          paperId: paper.id,
+                          folderId: paper.favoriteFolderId
+                        })
+                      }}
+                    />
+                  ))}
+                </div>
+
                 {data.totalPages > 1 && (
-                  <TagChip
-                    icon="tabler:bookmark"
-                    label={`Page ${data.page} of ${data.totalPages}`}
-                    variant="outlined"
+                  <Pagination
+                    page={data.page}
+                    totalPages={data.totalPages}
+                    onPageChange={value => {
+                      setPage(typeof value === 'function' ? value(page) : value)
+                    }}
                   />
                 )}
               </div>
+            )
+          }
+        </WithQuery>
+      </div>
 
-              <div className="grid gap-4 xl:grid-cols-2">
-                {data.items.map(paper => (
-                  <PaperCard
-                    key={paper.id}
-                    detailTo={`${MODULE_BASE_PATH}/${paper.id}`}
-                    favoriteLoading={
-                      toggleFavoriteMutation.isPending &&
-                      toggleFavoriteMutation.variables?.paperId === paper.id
-                    }
-                    paper={paper}
-                    onToggleFavorite={() => {
-                      toggleFavoriteMutation.mutate({
-                        paperId: paper.id,
-                        folderId: paper.favoriteFolderId
-                      })
-                    }}
-                  />
-                ))}
-              </div>
-
-              {data.totalPages > 1 && (
-                <Pagination
-                  page={data.page}
-                  totalPages={data.totalPages}
-                  onPageChange={value => {
-                    setPage(typeof value === 'function' ? value(page) : value)
-                  }}
-                />
-              )}
-            </div>
-          )
-        }
-      </WithQuery>
+      {activePaperId && (
+        <PaperDetailModal
+          activePaperId={activePaperId}
+          currentPosition={currentPosition}
+          totalItems={totalItems}
+          hasPrev={page > 1 || activePaperIndex > 0}
+          hasNext={page < totalPages || activePaperIndex < visiblePaperIds.length - 1}
+          onNext={openNextPaper}
+          onPrevious={openPreviousPaper}
+          onClose={closePaperDetail}
+        />
+      )}
     </>
   )
 }
