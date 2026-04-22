@@ -9,7 +9,6 @@ import {
   Pagination,
   SearchInput,
   Switch,
-  Tabs,
   TagChip,
   WithQuery
 } from 'lifeforge-ui'
@@ -27,36 +26,19 @@ import {
 import { toggleStringInList } from '@/utils/papers'
 import type { PaperListResponse } from '@/utils/types'
 
-const SORT_OPTIONS = [
-  {
-    id: 'fetched_desc',
-    name: 'Recently fetched',
-    icon: 'tabler:database-import'
-  },
-  {
-    id: 'score_desc',
-    name: 'Top score',
-    icon: 'tabler:chart-bar'
-  },
-  {
-    id: 'published_desc',
-    name: 'Latest',
-    icon: 'tabler:clock'
-  }
-] as const
+const DEFAULT_FETCH_DATE = dayjs().format('YYYY-MM-DD')
+const DEFAULT_SORT = 'score_desc' as const
 
 function PaperListPage() {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [dateFrom, setDateFrom] = useState(DEFAULT_FETCH_DATE)
+  const [dateTo, setDateTo] = useState(DEFAULT_FETCH_DATE)
   const [selectedSources, setSelectedSources] = useState<string[]>([])
   const [selectedJournals, setSelectedJournals] = useState<string[]>([])
   const [selectedCollections, setSelectedCollections] = useState<string[]>([])
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [hasAbstractOnly, setHasAbstractOnly] = useState(true)
-  const [sort, setSort] =
-    useState<(typeof SORT_OPTIONS)[number]['id']>('fetched_desc')
 
   const queryClient = useQueryClient()
 
@@ -70,8 +52,7 @@ function PaperListPage() {
     selectedJournals.join(','),
     selectedCollections.join(','),
     favoritesOnly,
-    hasAbstractOnly,
-    sort
+    hasAbstractOnly
   ])
 
   const listQueryInput = {
@@ -85,7 +66,7 @@ function PaperListPage() {
     collections: selectedCollections.join(',') || undefined,
     favoritesOnly: String(favoritesOnly) as 'true' | 'false',
     hasAbstractOnly: String(hasAbstractOnly) as 'true' | 'false',
-    sort
+    sort: DEFAULT_SORT
   }
 
   const papersQuery = useQuery(
@@ -123,20 +104,18 @@ function PaperListPage() {
     selectedJournals.length,
     selectedCollections.length,
     favoritesOnly ? 1 : 0,
-    hasAbstractOnly ? 1 : 0,
-    sort !== 'fetched_desc' ? 1 : 0
+    hasAbstractOnly ? 1 : 0
   ].filter(Boolean).length
 
   const resetFilters = () => {
     setQuery('')
-    setDateFrom('')
-    setDateTo('')
+    setDateFrom(DEFAULT_FETCH_DATE)
+    setDateTo(DEFAULT_FETCH_DATE)
     setSelectedSources([])
     setSelectedJournals([])
     setSelectedCollections([])
     setFavoritesOnly(false)
     setHasAbstractOnly(true)
-    setSort('fetched_desc')
   }
 
   return (
@@ -197,14 +176,15 @@ function PaperListPage() {
                   />
                   <TagChip
                     icon="tabler:chart-bar"
-                    label={SORT_OPTIONS.find(option => option.id === sort)?.name ?? 'Recently fetched'}
+                    label="Top score"
                     variant="outlined"
                   />
                 </div>
                 <h2 className="text-2xl font-semibold">Explore the current paper pool</h2>
                 <p className="text-bg-500 max-w-3xl text-sm leading-6">
-                  Search the shared library, narrow it by fetched-time windows, and jump
-                  straight into favorites, imports, or scheduled pipeline runs.
+                  By default, the homepage shows papers fetched today and ranks them by your
+                  current score. The filters below still let you widen the fetch window or
+                  narrow it by source, journal, and collections.
                 </p>
               </div>
 
@@ -219,15 +199,17 @@ function PaperListPage() {
 
             <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
               <Card className="component-bg-lighter space-y-1 p-4">
-                <p className="text-sm font-medium">Fetched-time first</p>
+                <p className="text-sm font-medium">Today by default</p>
                 <p className="text-bg-500 text-sm">
-                  Filters and run ranges both use fetch time, so the library stays consistent.
+                  The first view focuses on papers fetched today, and the date filter keeps using
+                  fetch time rather than publication time.
                 </p>
               </Card>
               <Card className="component-bg-lighter space-y-1 p-4">
-                <p className="text-sm font-medium">User overlays</p>
+                <p className="text-sm font-medium">Score-ranked view</p>
                 <p className="text-bg-500 text-sm">
-                  Scores, matched collections, and AI fields reflect your own recommend and enhance runs.
+                  The paper feed is ordered by your current recommend score so the most relevant
+                  items rise to the top first.
                 </p>
               </Card>
               <Card className="component-bg-lighter flex items-center justify-between gap-3 p-4">
@@ -250,15 +232,6 @@ function PaperListPage() {
         </Card>
 
         <Card className="space-y-5">
-          <Tabs
-            currentTab={sort}
-            enabled={SORT_OPTIONS.map(item => item.id)}
-            items={SORT_OPTIONS}
-            onTabChange={value => {
-              setSort(value as (typeof SORT_OPTIONS)[number]['id'])
-            }}
-          />
-
           <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
             <Card className="component-bg-lighter space-y-4">
               <div className="space-y-1">
@@ -411,7 +384,8 @@ function PaperListPage() {
                     Showing {data.items.length} of {data.totalItems} matching papers
                   </p>
                   <p className="text-bg-500 text-sm">
-                    Cards surface your current overlay state, including favorites, score, and TL;DR.
+                    Results are ordered by score, while cards still surface your favorites,
+                    matched collections, and AI overlays.
                   </p>
                 </div>
                 {data.totalPages > 1 && (
