@@ -43,7 +43,6 @@ server/
 locales/
   en.json
   zh-CN.json
-  zh-TW.json
   ms.json
 ```
 
