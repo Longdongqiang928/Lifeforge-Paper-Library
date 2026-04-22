@@ -12,7 +12,7 @@ import {
   TagChip,
   WithQuery
 } from 'lifeforge-ui'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 import { Link } from 'shared'
 
@@ -28,21 +28,100 @@ import type { PaperListResponse } from '@/utils/types'
 
 const DEFAULT_FETCH_DATE = dayjs().format('YYYY-MM-DD')
 const DEFAULT_SORT = 'score_desc' as const
+const PAPER_LIST_STATE_KEY = `${MODULE_ROUTE_KEY}:paper-list-state`
+
+interface PaperListPageState {
+  query: string
+  page: number
+  dateFrom: string
+  dateTo: string
+  selectedSources: string[]
+  selectedJournals: string[]
+  selectedCollections: string[]
+  favoritesOnly: boolean
+  hasAbstractOnly: boolean
+}
+
+function getDefaultPaperListState(): PaperListPageState {
+  return {
+    query: '',
+    page: 1,
+    dateFrom: DEFAULT_FETCH_DATE,
+    dateTo: DEFAULT_FETCH_DATE,
+    selectedSources: [],
+    selectedJournals: [],
+    selectedCollections: [],
+    favoritesOnly: false,
+    hasAbstractOnly: true
+  }
+}
+
+function readSavedPaperListState(): PaperListPageState {
+  const defaultState = getDefaultPaperListState()
+
+  if (typeof window === 'undefined') {
+    return defaultState
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(PAPER_LIST_STATE_KEY)
+
+    if (!raw) {
+      return defaultState
+    }
+
+    const parsed = JSON.parse(raw) as Partial<PaperListPageState>
+
+    return {
+      query: typeof parsed.query === 'string' ? parsed.query : defaultState.query,
+      page: typeof parsed.page === 'number' && parsed.page > 0 ? parsed.page : defaultState.page,
+      dateFrom:
+        typeof parsed.dateFrom === 'string' ? parsed.dateFrom : defaultState.dateFrom,
+      dateTo: typeof parsed.dateTo === 'string' ? parsed.dateTo : defaultState.dateTo,
+      selectedSources: Array.isArray(parsed.selectedSources) ? parsed.selectedSources : [],
+      selectedJournals: Array.isArray(parsed.selectedJournals) ? parsed.selectedJournals : [],
+      selectedCollections: Array.isArray(parsed.selectedCollections)
+        ? parsed.selectedCollections
+        : [],
+      favoritesOnly:
+        typeof parsed.favoritesOnly === 'boolean'
+          ? parsed.favoritesOnly
+          : defaultState.favoritesOnly,
+      hasAbstractOnly:
+        typeof parsed.hasAbstractOnly === 'boolean'
+          ? parsed.hasAbstractOnly
+          : defaultState.hasAbstractOnly
+    }
+  } catch {
+    return defaultState
+  }
+}
 
 function PaperListPage() {
-  const [query, setQuery] = useState('')
-  const [page, setPage] = useState(1)
-  const [dateFrom, setDateFrom] = useState(DEFAULT_FETCH_DATE)
-  const [dateTo, setDateTo] = useState(DEFAULT_FETCH_DATE)
-  const [selectedSources, setSelectedSources] = useState<string[]>([])
-  const [selectedJournals, setSelectedJournals] = useState<string[]>([])
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([])
-  const [favoritesOnly, setFavoritesOnly] = useState(false)
-  const [hasAbstractOnly, setHasAbstractOnly] = useState(true)
+  const initialState = readSavedPaperListState()
+  const [query, setQuery] = useState(initialState.query)
+  const [page, setPage] = useState(initialState.page)
+  const [dateFrom, setDateFrom] = useState(initialState.dateFrom)
+  const [dateTo, setDateTo] = useState(initialState.dateTo)
+  const [selectedSources, setSelectedSources] = useState<string[]>(initialState.selectedSources)
+  const [selectedJournals, setSelectedJournals] = useState<string[]>(
+    initialState.selectedJournals
+  )
+  const [selectedCollections, setSelectedCollections] = useState<string[]>(
+    initialState.selectedCollections
+  )
+  const [favoritesOnly, setFavoritesOnly] = useState(initialState.favoritesOnly)
+  const [hasAbstractOnly, setHasAbstractOnly] = useState(initialState.hasAbstractOnly)
 
   const queryClient = useQueryClient()
+  const hasMountedRef = useRef(false)
 
   useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      return
+    }
+
     setPage(1)
   }, [
     query,
@@ -51,6 +130,37 @@ function PaperListPage() {
     selectedSources.join(','),
     selectedJournals.join(','),
     selectedCollections.join(','),
+    favoritesOnly,
+    hasAbstractOnly
+  ])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.sessionStorage.setItem(
+      PAPER_LIST_STATE_KEY,
+      JSON.stringify({
+        query,
+        page,
+        dateFrom,
+        dateTo,
+        selectedSources,
+        selectedJournals,
+        selectedCollections,
+        favoritesOnly,
+        hasAbstractOnly
+      } satisfies PaperListPageState)
+    )
+  }, [
+    query,
+    page,
+    dateFrom,
+    dateTo,
+    selectedSources,
+    selectedJournals,
+    selectedCollections,
     favoritesOnly,
     hasAbstractOnly
   ])

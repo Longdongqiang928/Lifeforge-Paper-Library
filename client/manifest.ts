@@ -22,16 +22,6 @@ export default {
       path: 'favorites'
     },
     {
-      label: 'Import',
-      icon: 'tabler:file-import',
-      path: 'import'
-    },
-    {
-      label: 'Run',
-      icon: 'tabler:player-play',
-      path: 'run'
-    },
-    {
       label: 'Settings',
       icon: 'tabler:settings',
       path: 'settings'
