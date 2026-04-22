@@ -1,0 +1,49 @@
+{
+  "title": "文献库",
+  "description": "在 LifeForge 中浏览导入的论文、AI 摘要和个人收藏。",
+  "subsections": {
+    "papers": "论文",
+    "favorites": "收藏",
+    "import": "导入",
+    "run": "运行",
+    "settings": "设置"
+  },
+  "papersPage": {
+    "title": "文献库",
+    "description": "搜索、筛选并阅读已经导入的论文。"
+  },
+  "favoritesPage": {
+    "title": "收藏",
+    "description": "按文件夹整理你保存的论文。"
+  },
+  "importPage": {
+    "title": "导入",
+    "description": "把 JSON 或 JSONL 论文数据导入 LifeForge。"
+  },
+  "runPage": {
+    "title": "运行",
+    "description": "为当前论文池启动抓取、推荐和增强任务。"
+  },
+  "settingsPage": {
+    "title": "设置",
+    "description": "配置共享抓取源，以及你自己的 Zotero 与 AI 流水线参数。"
+  },
+  "paperDetailPage": {
+    "title": "论文详情",
+    "description": "查看单篇论文的翻译标题、TL;DR 和摘要。"
+  },
+  "empty": {
+    "papers": {
+      "title": "没有找到论文",
+      "description": "请先导入论文，或放宽当前筛选条件。"
+    },
+    "favorites": {
+      "title": "还没有收藏",
+      "description": "在论文列表页点亮星标后，会显示在这里。"
+    },
+    "batches": {
+      "title": "还没有导入记录",
+      "description": "最近的导入历史会显示在这里。"
+    }
+  }
+}

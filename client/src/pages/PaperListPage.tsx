@@ -1,0 +1,463 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import dayjs from 'dayjs'
+import {
+  Button,
+  Card,
+  DateInput,
+  EmptyStateScreen,
+  ModuleHeader,
+  Pagination,
+  SearchInput,
+  Switch,
+  Tabs,
+  TagChip,
+  WithQuery
+} from 'lifeforge-ui'
+import { useEffect, useState } from 'react'
+import { toast } from 'react-toastify'
+import { Link } from 'shared'
+
+import PaperCard from '@/components/PaperCard'
+import forgeAPI from '@/utils/forgeAPI'
+import {
+  MODULE_BASE_PATH,
+  MODULE_NAMESPACE,
+  MODULE_ROUTE_KEY
+} from '@/utils/module'
+import { toggleStringInList } from '@/utils/papers'
+import type { PaperListResponse } from '@/utils/types'
+
+const SORT_OPTIONS = [
+  {
+    id: 'fetched_desc',
+    name: 'Recently fetched',
+    icon: 'tabler:database-import'
+  },
+  {
+    id: 'score_desc',
+    name: 'Top score',
+    icon: 'tabler:chart-bar'
+  },
+  {
+    id: 'published_desc',
+    name: 'Latest',
+    icon: 'tabler:clock'
+  }
+] as const
+
+function PaperListPage() {
+  const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [selectedSources, setSelectedSources] = useState<string[]>([])
+  const [selectedJournals, setSelectedJournals] = useState<string[]>([])
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([])
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [hasAbstractOnly, setHasAbstractOnly] = useState(true)
+  const [sort, setSort] =
+    useState<(typeof SORT_OPTIONS)[number]['id']>('fetched_desc')
+
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    setPage(1)
+  }, [
+    query,
+    dateFrom,
+    dateTo,
+    selectedSources.join(','),
+    selectedJournals.join(','),
+    selectedCollections.join(','),
+    favoritesOnly,
+    hasAbstractOnly,
+    sort
+  ])
+
+  const listQueryInput = {
+    page,
+    perPage: 24,
+    query: query || undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    sources: selectedSources.join(',') || undefined,
+    journals: selectedJournals.join(',') || undefined,
+    collections: selectedCollections.join(',') || undefined,
+    favoritesOnly: String(favoritesOnly) as 'true' | 'false',
+    hasAbstractOnly: String(hasAbstractOnly) as 'true' | 'false',
+    sort
+  }
+
+  const papersQuery = useQuery(
+    forgeAPI.papers.list.input(listQueryInput).queryOptions({
+      queryKey: [MODULE_ROUTE_KEY, 'papers', 'list', listQueryInput]
+    })
+  )
+
+  const filtersMetaQuery = useQuery(
+    forgeAPI.papers.filters.meta.queryOptions({
+      queryKey: [MODULE_ROUTE_KEY, 'papers', 'filters']
+    })
+  )
+
+  const toggleFavoriteMutation = useMutation(
+    forgeAPI.papers.favorites.toggle.mutationOptions({
+      onSuccess: data => {
+        toast.success(data.isFavorite ? 'Added to favorites' : 'Removed from favorites')
+        queryClient.invalidateQueries({
+          queryKey: [MODULE_ROUTE_KEY]
+        })
+      },
+      onError: error => {
+        toast.error(error instanceof Error ? error.message : 'Failed to update favorite')
+      }
+    })
+  )
+
+  const totalItems = (papersQuery.data as PaperListResponse | undefined)?.totalItems
+  const activeFilterCount = [
+    query.trim(),
+    dateFrom,
+    dateTo,
+    selectedSources.length,
+    selectedJournals.length,
+    selectedCollections.length,
+    favoritesOnly ? 1 : 0,
+    hasAbstractOnly ? 1 : 0,
+    sort !== 'fetched_desc' ? 1 : 0
+  ].filter(Boolean).length
+
+  const resetFilters = () => {
+    setQuery('')
+    setDateFrom('')
+    setDateTo('')
+    setSelectedSources([])
+    setSelectedJournals([])
+    setSelectedCollections([])
+    setFavoritesOnly(false)
+    setHasAbstractOnly(true)
+    setSort('fetched_desc')
+  }
+
+  return (
+    <>
+      <ModuleHeader
+        actionButton={
+          <div className="flex items-center gap-2">
+            <Button as={Link} icon="tabler:star" to={`${MODULE_BASE_PATH}/favorites`}>
+              Favorites
+            </Button>
+            <Button
+              as={Link}
+              icon="tabler:file-import"
+              to={`${MODULE_BASE_PATH}/import`}
+              variant="secondary"
+            >
+              Import
+            </Button>
+            <Button
+              as={Link}
+              icon="tabler:player-play"
+              to={`${MODULE_BASE_PATH}/run`}
+              variant="secondary"
+            >
+              Run
+            </Button>
+            <Button
+              as={Link}
+              icon="tabler:settings"
+              to={`${MODULE_BASE_PATH}/settings`}
+              variant="secondary"
+            >
+              Settings
+            </Button>
+          </div>
+        }
+        icon="tabler:books"
+        namespace={MODULE_NAMESPACE}
+        title="papersPage"
+        totalItems={totalItems}
+      />
+
+      <div className="mb-6 space-y-4">
+        <Card className="from-component-bg-lighter to-component-bg space-y-5 bg-gradient-to-br">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <TagChip
+                    icon="tabler:database"
+                    label={`${totalItems ?? 0} matching papers`}
+                    variant="filled"
+                  />
+                  <TagChip
+                    icon="tabler:filter"
+                    label={`${activeFilterCount} active filters`}
+                    variant="outlined"
+                  />
+                  <TagChip
+                    icon="tabler:chart-bar"
+                    label={SORT_OPTIONS.find(option => option.id === sort)?.name ?? 'Recently fetched'}
+                    variant="outlined"
+                  />
+                </div>
+                <h2 className="text-2xl font-semibold">Explore the current paper pool</h2>
+                <p className="text-bg-500 max-w-3xl text-sm leading-6">
+                  Search the shared library, narrow it by fetched-time windows, and jump
+                  straight into favorites, imports, or scheduled pipeline runs.
+                </p>
+              </div>
+
+              <SearchInput
+                debounceMs={250}
+                namespace={MODULE_NAMESPACE}
+                searchTarget="paper"
+                value={query}
+                onChange={setQuery}
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+              <Card className="component-bg-lighter space-y-1 p-4">
+                <p className="text-sm font-medium">Fetched-time first</p>
+                <p className="text-bg-500 text-sm">
+                  Filters and run ranges both use fetch time, so the library stays consistent.
+                </p>
+              </Card>
+              <Card className="component-bg-lighter space-y-1 p-4">
+                <p className="text-sm font-medium">User overlays</p>
+                <p className="text-bg-500 text-sm">
+                  Scores, matched collections, and AI fields reflect your own recommend and enhance runs.
+                </p>
+              </Card>
+              <Card className="component-bg-lighter flex items-center justify-between gap-3 p-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Need a clean slate?</p>
+                  <p className="text-bg-500 text-sm">
+                    Reset the current search and filter stack in one step.
+                  </p>
+                </div>
+                <Button
+                  icon="tabler:filter-x"
+                  variant="secondary"
+                  onClick={resetFilters}
+                >
+                  Reset
+                </Button>
+              </Card>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="space-y-5">
+          <Tabs
+            currentTab={sort}
+            enabled={SORT_OPTIONS.map(item => item.id)}
+            items={SORT_OPTIONS}
+            onTabChange={value => {
+              setSort(value as (typeof SORT_OPTIONS)[number]['id'])
+            }}
+          />
+
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+            <Card className="component-bg-lighter space-y-4">
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold">Quick filters</h2>
+                <p className="text-bg-500 text-sm">
+                  Narrow the list by fetched time, saved state, and summary availability.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-bg-500 block text-sm font-medium">
+                    From
+                  </label>
+                  <DateInput
+                    value={dateFrom ? dayjs(dateFrom).toDate() : null}
+                    variant="plain"
+                    onChange={value => {
+                      setDateFrom(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-bg-500 block text-sm font-medium">
+                    To
+                  </label>
+                  <DateInput
+                    value={dateTo ? dayjs(dateTo).toDate() : null}
+                    variant="plain"
+                    onChange={value => {
+                      setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium">Only favorites</p>
+                  <p className="text-bg-500 text-sm">Show only items already pinned into your folders.</p>
+                </div>
+                <Switch value={favoritesOnly} onChange={setFavoritesOnly} />
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium">Only with summaries</p>
+                  <p className="text-bg-500 text-sm">
+                    Keep the list focused on papers that already have an abstract or TL;DR.
+                  </p>
+                </div>
+                <Switch value={hasAbstractOnly} onChange={setHasAbstractOnly} />
+              </div>
+            </Card>
+
+            <Card className="component-bg-lighter space-y-4">
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold">Metadata filters</h2>
+                <p className="text-bg-500 text-sm">
+                  Filter by source, journal, or matched Zotero collections.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Sources</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(filtersMetaQuery.data?.sources ?? []).map(source => (
+                      <TagChip
+                        key={source}
+                        icon="tabler:rss"
+                        label={source}
+                        variant={
+                          selectedSources.includes(source) ? 'filled' : 'outlined'
+                        }
+                        onClick={() => {
+                          setSelectedSources(current =>
+                            toggleStringInList(current, source)
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Journals</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(filtersMetaQuery.data?.journals ?? []).map(journal => (
+                      <TagChip
+                        key={journal}
+                        icon="tabler:book"
+                        label={journal}
+                        variant={
+                          selectedJournals.includes(journal) ? 'filled' : 'outlined'
+                        }
+                        onClick={() => {
+                          setSelectedJournals(current =>
+                            toggleStringInList(current, journal)
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Collections</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(filtersMetaQuery.data?.collections ?? []).map(collection => (
+                      <TagChip
+                        key={collection}
+                        icon="tabler:folders"
+                        label={collection}
+                        variant={
+                          selectedCollections.includes(collection)
+                            ? 'filled'
+                            : 'outlined'
+                        }
+                        onClick={() => {
+                          setSelectedCollections(current =>
+                            toggleStringInList(current, collection)
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </Card>
+      </div>
+
+      <WithQuery query={papersQuery}>
+        {data =>
+          data.items.length === 0 ? (
+            <EmptyStateScreen
+              icon="tabler:book-off"
+              message={{
+                id: 'papers',
+                namespace: MODULE_NAMESPACE
+              }}
+            />
+          ) : (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">
+                    Showing {data.items.length} of {data.totalItems} matching papers
+                  </p>
+                  <p className="text-bg-500 text-sm">
+                    Cards surface your current overlay state, including favorites, score, and TL;DR.
+                  </p>
+                </div>
+                {data.totalPages > 1 && (
+                  <TagChip
+                    icon="tabler:bookmark"
+                    label={`Page ${data.page} of ${data.totalPages}`}
+                    variant="outlined"
+                  />
+                )}
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                {data.items.map(paper => (
+                  <PaperCard
+                    key={paper.id}
+                    detailTo={`${MODULE_BASE_PATH}/${paper.id}`}
+                    favoriteLoading={
+                      toggleFavoriteMutation.isPending &&
+                      toggleFavoriteMutation.variables?.paperId === paper.id
+                    }
+                    paper={paper}
+                    onToggleFavorite={() => {
+                      toggleFavoriteMutation.mutate({
+                        paperId: paper.id,
+                        folderId: paper.favoriteFolderId
+                      })
+                    }}
+                  />
+                ))}
+              </div>
+
+              {data.totalPages > 1 && (
+                <Pagination
+                  page={data.page}
+                  totalPages={data.totalPages}
+                  onPageChange={value => {
+                    setPage(typeof value === 'function' ? value(page) : value)
+                  }}
+                />
+              )}
+            </div>
+          )
+        }
+      </WithQuery>
+    </>
+  )
+}
+
+export default PaperListPage

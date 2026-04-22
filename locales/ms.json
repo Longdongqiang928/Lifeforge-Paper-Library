@@ -1,0 +1,49 @@
+{
+  "title": "Paper Library",
+  "description": "Browse imported literature with AI-enhanced summaries and saved favorites.",
+  "subsections": {
+    "papers": "Papers",
+    "favorites": "Favorites",
+    "import": "Import",
+    "run": "Run",
+    "settings": "Settings"
+  },
+  "papersPage": {
+    "title": "Paper Library",
+    "description": "Search, filter, and read imported papers."
+  },
+  "favoritesPage": {
+    "title": "Favorites",
+    "description": "Your saved papers, organized into folders."
+  },
+  "importPage": {
+    "title": "Import",
+    "description": "Bring JSON or JSONL paper data into LifeForge."
+  },
+  "runPage": {
+    "title": "Run",
+    "description": "Launch fetch, recommend, and enhance jobs for the current paper pool."
+  },
+  "settingsPage": {
+    "title": "Settings",
+    "description": "Configure shared fetch sources and your personal Zotero and AI pipeline."
+  },
+  "paperDetailPage": {
+    "title": "Paper detail",
+    "description": "Read the translated title, TL;DR, and abstract of one paper."
+  },
+  "empty": {
+    "papers": {
+      "title": "No papers found",
+      "description": "Import papers or loosen the current filters."
+    },
+    "favorites": {
+      "title": "No favorites yet",
+      "description": "Star papers from the list page to keep them here."
+    },
+    "batches": {
+      "title": "No imports yet",
+      "description": "Your recent import history will appear here."
+    }
+  }
+}

@@ -1,0 +1,11 @@
+node_modules/
+
+client/dist/
+client/dist-docker/
+client/tsconfig.tsbuildinfo
+
+server/dist/
+
+*.log
+.DS_Store
+Thumbs.db

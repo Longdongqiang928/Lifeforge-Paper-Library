@@ -1,0 +1,49 @@
+{
+  "title": "文獻庫",
+  "description": "在 LifeForge 中瀏覽已匯入的論文、AI 摘要與個人收藏。",
+  "subsections": {
+    "papers": "論文",
+    "favorites": "收藏",
+    "import": "匯入",
+    "run": "執行",
+    "settings": "設定"
+  },
+  "papersPage": {
+    "title": "文獻庫",
+    "description": "搜尋、篩選並閱讀已匯入的論文。"
+  },
+  "favoritesPage": {
+    "title": "收藏",
+    "description": "依資料夾整理你儲存的論文。"
+  },
+  "importPage": {
+    "title": "匯入",
+    "description": "把 JSON 或 JSONL 論文資料匯入 LifeForge。"
+  },
+  "runPage": {
+    "title": "執行",
+    "description": "為目前論文池啟動抓取、推薦與增強任務。"
+  },
+  "settingsPage": {
+    "title": "設定",
+    "description": "設定共享抓取來源，以及你自己的 Zotero 與 AI 流水線參數。"
+  },
+  "paperDetailPage": {
+    "title": "論文詳情",
+    "description": "查看單篇論文的翻譯標題、TL;DR 與摘要。"
+  },
+  "empty": {
+    "papers": {
+      "title": "沒有找到論文",
+      "description": "請先匯入論文，或放寬目前的篩選條件。"
+    },
+    "favorites": {
+      "title": "還沒有收藏",
+      "description": "在論文列表頁點選星號後，會顯示在這裡。"
+    },
+    "batches": {
+      "title": "還沒有匯入紀錄",
+      "description": "最近的匯入歷史會顯示在這裡。"
+    }
+  }
+}
