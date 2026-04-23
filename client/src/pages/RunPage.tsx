@@ -27,6 +27,18 @@ const STAGES = [
   { id: 'enhance', label: 'Enhance', icon: 'tabler:sparkles' }
 ] as const
 
+function asRunDetails(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+
+  return value as Record<string, unknown>
+}
+
+function asDetailNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
 function StatCard({
   icon,
   label,
@@ -48,6 +60,12 @@ function StatCard({
 }
 
 function RunCard({ run }: { run: PipelineRun }) {
+  const details = asRunDetails(run.details)
+  const skippedNoAbstractEligible = asDetailNumber(details?.skippedNoAbstractEligible)
+  const skippedNoStateOrBelowThreshold = asDetailNumber(
+    details?.skippedNoStateOrBelowThreshold
+  )
+
   return (
     <Card className="from-component-bg to-component-bg-lighter space-y-4 bg-gradient-to-br">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -93,6 +111,24 @@ function RunCard({ run }: { run: PipelineRun }) {
           <p className="text-lg font-semibold">{run.failedCount}</p>
         </div>
       </div>
+
+      {(skippedNoAbstractEligible !== undefined ||
+        skippedNoStateOrBelowThreshold !== undefined) && (
+        <div className="bg-bg-100 dark:bg-bg-900 grid gap-3 rounded-lg p-3 sm:grid-cols-2">
+          {skippedNoStateOrBelowThreshold !== undefined && (
+            <div>
+              <p className="text-bg-500 text-xs uppercase">Skip: No state / below threshold</p>
+              <p className="text-base font-semibold">{skippedNoStateOrBelowThreshold}</p>
+            </div>
+          )}
+          {skippedNoAbstractEligible !== undefined && (
+            <div>
+              <p className="text-bg-500 text-xs uppercase">Skip: No abstract</p>
+              <p className="text-base font-semibold">{skippedNoAbstractEligible}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {run.errorSummary && (
         <div className="bg-bg-100 dark:bg-bg-900 rounded-lg p-3 text-sm">

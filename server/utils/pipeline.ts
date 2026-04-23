@@ -1796,15 +1796,20 @@ async function runEnhanceStage(
   const statesByPaper = new Map<string, RecordLike>(
     states.map((state: RecordLike) => [String(state.paper), state])
   )
-  const eligiblePapers = papers.filter((paper: RecordLike) => {
+  const scopedPapers = papers.filter((paper: RecordLike) => {
     const fetchedAt = pickString(paper.fetched_at)
+
+    if (!fetchedAt) return false
+    if (rangeStart && dayjs(fetchedAt).isBefore(dayjs(rangeStart), 'day')) return false
+    if (rangeEnd && dayjs(fetchedAt).isAfter(dayjs(rangeEnd).endOf('day'))) return false
+
+    return true
+  })
+  const eligiblePapers = scopedPapers.filter((paper: RecordLike) => {
     const state = statesByPaper.get(String(paper.id))
 
     if (!state) return false
     if ((asNumber(state.score_max) ?? 0) < settings.enhanceThreshold) return false
-    if (!fetchedAt) return false
-    if (rangeStart && dayjs(fetchedAt).isBefore(dayjs(rangeStart), 'day')) return false
-    if (rangeEnd && dayjs(fetchedAt).isAfter(dayjs(rangeEnd).endOf('day'))) return false
 
     return true
   })
@@ -1819,7 +1824,9 @@ async function runEnhanceStage(
     title: string
     reason: string
   }> = []
-  const skippedNoAbstract = eligiblePapers.length - candidates.length
+  const skippedNoStateOrBelowThreshold = scopedPapers.length - eligiblePapers.length
+  const skippedNoAbstractEligible = eligiblePapers.length - candidates.length
+  const skippedTotal = skippedNoStateOrBelowThreshold + skippedNoAbstractEligible
 
   for (const paper of candidates) {
     try {
@@ -1871,11 +1878,13 @@ async function runEnhanceStage(
     processedTotal: candidates.length,
     insertedCount: 0,
     updatedCount,
-    skippedCount: skippedNoAbstract,
+    skippedCount: skippedTotal,
     failedCount,
     details: {
       failedItems: failedItems.slice(0, 20),
-      skippedNoAbstract
+      skippedNoAbstract: skippedNoAbstractEligible,
+      skippedNoAbstractEligible,
+      skippedNoStateOrBelowThreshold
     }
   }
 }
