@@ -1617,12 +1617,33 @@ async function runRecommendStage(
     inputHash: string
   }> = []
 
+  let skippedNoStateOrNoAbstract = 0
   let skippedNoAbstract = 0
   let skippedAlreadyCompletedUnchanged = 0
 
   for (const paper of scopedPapers) {
     const paperId = String(paper.id)
+    const state = statesByPaper.get(paperId)
     const abstract = getReadyAbstract(paper)
+
+    if (!state || !abstract) {
+      skippedNoStateOrNoAbstract += 1
+      if (state && !abstract) {
+        skippedNoAbstract += 1
+      }
+
+      await upsertUserState(pb, settings.userId, paperId, {
+        recommend_status: 'skipped',
+        recommend_last_run_id: runId,
+        recommend_last_reason: !state ? 'no_state' : 'no_abstract'
+      })
+
+      skippedItems.push({
+        paperId,
+        reason: !state ? 'no_state' : 'no_abstract'
+      })
+      continue
+    }
 
     if (!abstract) {
       skippedNoAbstract += 1
@@ -1741,10 +1762,12 @@ async function runRecommendStage(
     processedTotal: candidateDescriptors.length,
     insertedCount: 0,
     updatedCount,
-    skippedCount: skippedNoAbstract + skippedAlreadyCompletedUnchanged,
+    skippedCount:
+      skippedNoStateOrNoAbstract + skippedAlreadyCompletedUnchanged,
     failedCount: 0,
     details: {
       corpusSize: cacheEntries.length,
+      skippedNoStateOrNoAbstract,
       skippedNoAbstract,
       skippedAlreadyCompletedUnchanged,
       skippedItems: skippedItems.slice(0, 50)
@@ -1943,42 +1966,87 @@ async function runEnhanceStage(
 
     return true
   })
-  const candidatesWithAbstract = eligiblePapers.filter(
-    (paper: RecordLike) => !!getReadyAbstract(paper)
-  )
-  const candidates = candidatesWithAbstract.filter((paper: RecordLike) => {
-    const state = statesByPaper.get(String(paper.id))
-    const abstract = getReadyAbstract(paper)
-
-    if (!state || !abstract) return false
-
-    return !(
-      pickString(state.enhance_status) === 'completed' &&
-      pickString(state.enhance_input_hash) === buildEnhanceInputHash(abstract, settings)
-    )
-  })
-
-  let updatedCount = 0
-  let failedCount = 0
+  const candidateDescriptors: Array<{
+    paper: RecordLike
+    inputHash: string
+  }> = []
   const failedItems: Array<{
     paperId: string
     title: string
     reason: string
   }> = []
-  const skippedNoStateOrBelowThreshold = scopedPapers.length - eligiblePapers.length
-  const skippedNoAbstractEligible = eligiblePapers.length - candidatesWithAbstract.length
-  const skippedAlreadyCompletedUnchanged =
-    candidatesWithAbstract.length - candidates.length
+  let updatedCount = 0
+  let failedCount = 0
+  let skippedNoStateOrNoAbstract = 0
+  let skippedBelowThreshold = 0
+  let skippedAlreadyCompletedUnchanged = 0
+
+  for (const paper of scopedPapers) {
+    const paperId = String(paper.id)
+    const state = statesByPaper.get(paperId)
+    const abstract = getReadyAbstract(paper)
+
+    if (!state || !abstract) {
+      skippedNoStateOrNoAbstract += 1
+
+      if (state && !abstract) {
+        await upsertUserState(pb, settings.userId, paperId, {
+          enhance_status: 'skipped',
+          enhance_last_run_id: runId,
+          enhance_last_reason: 'no_state_or_no_abstract'
+        })
+      }
+
+      continue
+    }
+
+    if ((asNumber(state.score_max) ?? 0) < settings.enhanceThreshold) {
+      skippedBelowThreshold += 1
+
+      await upsertUserState(pb, settings.userId, paperId, {
+        enhance_status: 'skipped',
+        enhance_last_run_id: runId,
+        enhance_last_reason: 'below_threshold'
+      })
+      continue
+    }
+
+    const inputHash = buildEnhanceInputHash(abstract, settings)
+
+    if (
+      pickString(state.enhance_status) === 'completed' &&
+      pickString(state.enhance_input_hash) === inputHash
+    ) {
+      skippedAlreadyCompletedUnchanged += 1
+
+      await upsertUserState(pb, settings.userId, paperId, {
+        enhance_status: 'skipped',
+        enhance_input_hash: inputHash,
+        enhance_last_run_id: runId,
+        enhance_last_reason: 'unchanged'
+      })
+
+      continue
+    }
+
+    candidateDescriptors.push({
+      paper,
+      inputHash
+    })
+  }
+
   const skippedTotal =
-    skippedNoStateOrBelowThreshold +
-    skippedNoAbstractEligible +
+    skippedNoStateOrNoAbstract +
+    skippedBelowThreshold +
     skippedAlreadyCompletedUnchanged
 
-  for (const paper of candidates) {
+  for (const descriptor of candidateDescriptors) {
+    const paper = descriptor.paper
+    const paperId = String(paper.id)
+    const title = pickString(paper.title) ?? 'Untitled paper'
+
     try {
       throwIfRunCancelled(runId, 'enhance')
-      const paperId = String(paper.id)
-      const title = pickString(paper.title) ?? 'Untitled paper'
       const abstract = getReadyAbstract(paper) ?? ''
       const result = await requestEnhancement(
         settings,
@@ -1990,7 +2058,7 @@ async function runEnhanceStage(
         tldr: result.tldr,
         translated_title: result.translatedTitle,
         translated_abstract: result.translatedAbstract,
-        enhance_input_hash: buildEnhanceInputHash(abstract, settings),
+        enhance_input_hash: descriptor.inputHash,
         enhance_status: 'completed',
         enhance_last_run_id: runId,
         enhance_last_reason: '',
@@ -2004,8 +2072,6 @@ async function runEnhanceStage(
       }
 
       failedCount += 1
-      const paperId = String(paper.id)
-      const title = pickString(paper.title) ?? 'Untitled paper'
       const reason = getErrorMessage(error)
 
       console.error(
@@ -2026,60 +2092,18 @@ async function runEnhanceStage(
     }
   }
 
-  for (const paper of scopedPapers) {
-    const paperId = String(paper.id)
-    const state = statesByPaper.get(paperId)
-
-    if (!state) continue
-
-    const hasEligibleScore = (asNumber(state.score_max) ?? 0) >= settings.enhanceThreshold
-
-    if (!hasEligibleScore) {
-      await upsertUserState(pb, settings.userId, paperId, {
-        enhance_status: 'skipped',
-        enhance_last_run_id: runId,
-        enhance_last_reason: 'no_state_or_below_threshold'
-      })
-      continue
-    }
-
-    if (!getReadyAbstract(paper)) {
-      await upsertUserState(pb, settings.userId, paperId, {
-        enhance_status: 'skipped',
-        enhance_last_run_id: runId,
-        enhance_last_reason: 'no_abstract'
-      })
-      continue
-    }
-
-    const inputHash = buildEnhanceInputHash(getReadyAbstract(paper) ?? '', settings)
-
-    if (
-      pickString(state.enhance_status) === 'completed' &&
-      pickString(state.enhance_input_hash) === inputHash
-    ) {
-      await upsertUserState(pb, settings.userId, paperId, {
-        enhance_status: 'skipped',
-        enhance_input_hash: inputHash,
-        enhance_last_run_id: runId,
-        enhance_last_reason: 'unchanged'
-      })
-    }
-  }
-
   return {
-    processedTotal: candidates.length,
+    processedTotal: candidateDescriptors.length,
     insertedCount: 0,
     updatedCount,
     skippedCount: skippedTotal,
     failedCount,
-      details: {
-        failedItems: failedItems.slice(0, 20),
-        skippedNoAbstract: skippedNoAbstractEligible,
-        skippedNoAbstractEligible,
-        skippedNoStateOrBelowThreshold,
-        skippedAlreadyCompletedUnchanged
-      }
+    details: {
+      failedItems: failedItems.slice(0, 20),
+      skippedNoStateOrNoAbstract,
+      skippedBelowThreshold,
+      skippedAlreadyCompletedUnchanged
+    }
   }
 }
 

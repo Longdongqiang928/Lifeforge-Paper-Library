@@ -61,14 +61,17 @@ function StatCard({
 
 function RunCard({ run }: { run: PipelineRun }) {
   const details = asRunDetails(run.details)
-  const skippedNoAbstractEligible = asDetailNumber(details?.skippedNoAbstractEligible)
-  const skippedNoStateOrBelowThreshold = asDetailNumber(
-    details?.skippedNoStateOrBelowThreshold
+  const skippedRecommendNoStateOrNoAbstract = asDetailNumber(
+    details?.skippedNoStateOrNoAbstract
   )
-  const skippedRecommendAlreadyCompletedUnchanged = asDetailNumber(
+  const skippedNoStateOrNoAbstract = asDetailNumber(
+    details?.skippedNoStateOrNoAbstract
+  )
+  const skippedBelowThreshold = asDetailNumber(details?.skippedBelowThreshold)
+  const skippedEnhanceAlreadyCompletedUnchanged = asDetailNumber(
     details?.skippedAlreadyCompletedUnchanged
   )
-  const skippedEnhanceAlreadyCompletedUnchanged = asDetailNumber(
+  const skippedRecommendAlreadyCompletedUnchanged = asDetailNumber(
     details?.skippedAlreadyCompletedUnchanged
   )
 
@@ -118,21 +121,30 @@ function RunCard({ run }: { run: PipelineRun }) {
         </div>
       </div>
 
-      {(skippedNoAbstractEligible !== undefined ||
-        skippedNoStateOrBelowThreshold !== undefined ||
+      {(skippedRecommendNoStateOrNoAbstract !== undefined ||
+        skippedNoStateOrNoAbstract !== undefined ||
+        skippedBelowThreshold !== undefined ||
         skippedRecommendAlreadyCompletedUnchanged !== undefined ||
         skippedEnhanceAlreadyCompletedUnchanged !== undefined) && (
         <div className="bg-bg-100 dark:bg-bg-900 grid gap-3 rounded-lg p-3 sm:grid-cols-3">
-          {skippedNoStateOrBelowThreshold !== undefined && (
+          {run.stage === 'recommend' && skippedRecommendNoStateOrNoAbstract !== undefined && (
             <div>
-              <p className="text-bg-500 text-xs uppercase">Skip: No state / below threshold</p>
-              <p className="text-base font-semibold">{skippedNoStateOrBelowThreshold}</p>
+              <p className="text-bg-500 text-xs uppercase">Skip: No state / no abstract</p>
+              <p className="text-base font-semibold">
+                {skippedRecommendNoStateOrNoAbstract}
+              </p>
             </div>
           )}
-          {skippedNoAbstractEligible !== undefined && (
+          {run.stage === 'enhance' && skippedNoStateOrNoAbstract !== undefined && (
             <div>
-              <p className="text-bg-500 text-xs uppercase">Skip: No abstract</p>
-              <p className="text-base font-semibold">{skippedNoAbstractEligible}</p>
+              <p className="text-bg-500 text-xs uppercase">Skip: No state / no abstract</p>
+              <p className="text-base font-semibold">{skippedNoStateOrNoAbstract}</p>
+            </div>
+          )}
+          {skippedBelowThreshold !== undefined && (
+            <div>
+              <p className="text-bg-500 text-xs uppercase">Skip: Below threshold</p>
+              <p className="text-base font-semibold">{skippedBelowThreshold}</p>
             </div>
           )}
           {run.stage === 'recommend' && skippedRecommendAlreadyCompletedUnchanged !== undefined && (
