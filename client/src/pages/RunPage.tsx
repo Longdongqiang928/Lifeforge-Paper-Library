@@ -65,6 +65,9 @@ function RunCard({ run }: { run: PipelineRun }) {
   const skippedNoStateOrBelowThreshold = asDetailNumber(
     details?.skippedNoStateOrBelowThreshold
   )
+  const skippedAlreadyCompletedUnchanged = asDetailNumber(
+    details?.skippedAlreadyCompletedUnchanged
+  )
 
   return (
     <Card className="from-component-bg to-component-bg-lighter space-y-4 bg-gradient-to-br">
@@ -113,8 +116,9 @@ function RunCard({ run }: { run: PipelineRun }) {
       </div>
 
       {(skippedNoAbstractEligible !== undefined ||
-        skippedNoStateOrBelowThreshold !== undefined) && (
-        <div className="bg-bg-100 dark:bg-bg-900 grid gap-3 rounded-lg p-3 sm:grid-cols-2">
+        skippedNoStateOrBelowThreshold !== undefined ||
+        skippedAlreadyCompletedUnchanged !== undefined) && (
+        <div className="bg-bg-100 dark:bg-bg-900 grid gap-3 rounded-lg p-3 sm:grid-cols-3">
           {skippedNoStateOrBelowThreshold !== undefined && (
             <div>
               <p className="text-bg-500 text-xs uppercase">Skip: No state / below threshold</p>
@@ -125,6 +129,12 @@ function RunCard({ run }: { run: PipelineRun }) {
             <div>
               <p className="text-bg-500 text-xs uppercase">Skip: No abstract</p>
               <p className="text-base font-semibold">{skippedNoAbstractEligible}</p>
+            </div>
+          )}
+          {skippedAlreadyCompletedUnchanged !== undefined && (
+            <div>
+              <p className="text-bg-500 text-xs uppercase">Skip: Already enhanced / unchanged</p>
+              <p className="text-base font-semibold">{skippedAlreadyCompletedUnchanged}</p>
             </div>
           )}
         </div>

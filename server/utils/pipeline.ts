@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { createHash } from 'node:crypto'
 import { connectToPocketBase, validateEnvironmentVariables } from '@functions/database/dbUtils'
 import { decrypt2, encrypt2 } from '@functions/auth/encryption'
 
@@ -134,6 +135,10 @@ const cancelledRunIds = new Set<string>()
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function buildEnhanceSourceHash(abstract: string) {
+  return createHash('sha1').update(abstract).digest('hex')
 }
 
 async function runWithRetry<T>(
@@ -1813,9 +1818,20 @@ async function runEnhanceStage(
 
     return true
   })
-  const candidates = eligiblePapers.filter(
+  const candidatesWithAbstract = eligiblePapers.filter(
     (paper: RecordLike) => !!pickString(paper.abstract)
   )
+  const candidates = candidatesWithAbstract.filter((paper: RecordLike) => {
+    const state = statesByPaper.get(String(paper.id))
+    const abstract = pickString(paper.abstract)
+
+    if (!state || !abstract) return false
+
+    return !(
+      pickString(state.enhance_status) === 'completed' &&
+      pickString(state.enhance_source_hash) === buildEnhanceSourceHash(abstract)
+    )
+  })
 
   let updatedCount = 0
   let failedCount = 0
@@ -1825,8 +1841,13 @@ async function runEnhanceStage(
     reason: string
   }> = []
   const skippedNoStateOrBelowThreshold = scopedPapers.length - eligiblePapers.length
-  const skippedNoAbstractEligible = eligiblePapers.length - candidates.length
-  const skippedTotal = skippedNoStateOrBelowThreshold + skippedNoAbstractEligible
+  const skippedNoAbstractEligible = eligiblePapers.length - candidatesWithAbstract.length
+  const skippedAlreadyCompletedUnchanged =
+    candidatesWithAbstract.length - candidates.length
+  const skippedTotal =
+    skippedNoStateOrBelowThreshold +
+    skippedNoAbstractEligible +
+    skippedAlreadyCompletedUnchanged
 
   for (const paper of candidates) {
     try {
@@ -1843,6 +1864,7 @@ async function runEnhanceStage(
         tldr: result.tldr,
         translated_title: result.translatedTitle,
         translated_abstract: result.translatedAbstract,
+        enhance_source_hash: buildEnhanceSourceHash(pickString(paper.abstract) ?? ''),
         enhance_status: 'completed',
         enhanced_at: new Date().toISOString()
       })
@@ -1880,12 +1902,13 @@ async function runEnhanceStage(
     updatedCount,
     skippedCount: skippedTotal,
     failedCount,
-    details: {
-      failedItems: failedItems.slice(0, 20),
-      skippedNoAbstract: skippedNoAbstractEligible,
-      skippedNoAbstractEligible,
-      skippedNoStateOrBelowThreshold
-    }
+      details: {
+        failedItems: failedItems.slice(0, 20),
+        skippedNoAbstract: skippedNoAbstractEligible,
+        skippedNoAbstractEligible,
+        skippedNoStateOrBelowThreshold,
+        skippedAlreadyCompletedUnchanged
+      }
   }
 }
 
