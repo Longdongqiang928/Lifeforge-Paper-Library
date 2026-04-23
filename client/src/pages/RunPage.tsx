@@ -65,7 +65,10 @@ function RunCard({ run }: { run: PipelineRun }) {
   const skippedNoStateOrBelowThreshold = asDetailNumber(
     details?.skippedNoStateOrBelowThreshold
   )
-  const skippedAlreadyCompletedUnchanged = asDetailNumber(
+  const skippedRecommendAlreadyCompletedUnchanged = asDetailNumber(
+    details?.skippedAlreadyCompletedUnchanged
+  )
+  const skippedEnhanceAlreadyCompletedUnchanged = asDetailNumber(
     details?.skippedAlreadyCompletedUnchanged
   )
 
@@ -117,7 +120,8 @@ function RunCard({ run }: { run: PipelineRun }) {
 
       {(skippedNoAbstractEligible !== undefined ||
         skippedNoStateOrBelowThreshold !== undefined ||
-        skippedAlreadyCompletedUnchanged !== undefined) && (
+        skippedRecommendAlreadyCompletedUnchanged !== undefined ||
+        skippedEnhanceAlreadyCompletedUnchanged !== undefined) && (
         <div className="bg-bg-100 dark:bg-bg-900 grid gap-3 rounded-lg p-3 sm:grid-cols-3">
           {skippedNoStateOrBelowThreshold !== undefined && (
             <div>
@@ -131,10 +135,16 @@ function RunCard({ run }: { run: PipelineRun }) {
               <p className="text-base font-semibold">{skippedNoAbstractEligible}</p>
             </div>
           )}
-          {skippedAlreadyCompletedUnchanged !== undefined && (
+          {run.stage === 'recommend' && skippedRecommendAlreadyCompletedUnchanged !== undefined && (
+            <div>
+              <p className="text-bg-500 text-xs uppercase">Skip: Already recommended / unchanged</p>
+              <p className="text-base font-semibold">{skippedRecommendAlreadyCompletedUnchanged}</p>
+            </div>
+          )}
+          {run.stage === 'enhance' && skippedEnhanceAlreadyCompletedUnchanged !== undefined && (
             <div>
               <p className="text-bg-500 text-xs uppercase">Skip: Already enhanced / unchanged</p>
-              <p className="text-base font-semibold">{skippedAlreadyCompletedUnchanged}</p>
+              <p className="text-base font-semibold">{skippedEnhanceAlreadyCompletedUnchanged}</p>
             </div>
           )}
         </div>
