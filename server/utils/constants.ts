@@ -14,6 +14,8 @@ export const IMPORT_TEXT_MAX_LENGTH = 6000
 export const EMBEDDING_BATCH_SIZE = 32
 export const RUN_WAIT_POLL_MS = 5_000
 export const RUN_STALE_TIMEOUT_MS = 6 * 60 * 60_000
+export const FETCH_RETRY_LIMIT = 5
+export const FETCH_RETRY_DELAY_MS = 1_000
 
 export const COLLECTION_NAMES = {
   papers: 'ldq_paperlib_papers',

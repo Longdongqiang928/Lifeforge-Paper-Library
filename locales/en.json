@@ -28,6 +28,10 @@
     "title": "Settings",
     "description": "Configure shared fetch sources and your personal Zotero and AI pipeline."
   },
+  "abstractReviewPage": {
+    "title": "Abstract Review",
+    "description": "Inspect extracted abstracts, fix them manually, and open the source URL in a new tab."
+  },
   "paperDetailPage": {
     "title": "Paper detail",
     "description": "Read the translated title, TL;DR, and abstract of one paper."
@@ -44,6 +48,10 @@
     "batches": {
       "title": "No imports yet",
       "description": "Your recent import history will appear here."
+    },
+    "abstractReview": {
+      "title": "No papers match this review queue",
+      "description": "Adjust the source or fetch date filters to inspect another batch."
     }
   }
 }

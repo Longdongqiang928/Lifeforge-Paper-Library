@@ -4,6 +4,7 @@ import type { ModuleConfig } from 'shared'
 export default {
   routes: {
     '/': lazy(() => import('@/pages/PaperListPage')),
+    '/abstract-review': lazy(() => import('@/pages/AbstractReviewPage')),
     '/favorites': lazy(() => import('@/pages/FavoritesPage')),
     '/import': lazy(() => import('@/pages/ImportPage')),
     '/run': lazy(() => import('@/pages/RunPage')),

@@ -2,6 +2,8 @@ import { createForgeProxy } from 'shared'
 
 import { MODULE_API_ROUTE } from './module'
 import type {
+  AbstractReviewListInput,
+  AbstractReviewListResponse,
   ActivePipelineRun,
   CreateFavoriteFolderInput,
   FavoriteFolderSummary,
@@ -22,6 +24,7 @@ import type {
   ToggleFavoriteResponse,
   TriggerPipelineInput,
   TriggerPipelineResponse,
+  UpdateAbstractReviewInput,
   UpdateFetchSettingsInput,
   UpdatePersonalSettingsInput
 } from './types'
@@ -76,6 +79,18 @@ const forgeAPI = {
     },
     filters: {
       meta: proxy.untyped<PaperFiltersMeta>(withModuleRoute('papers/filters/meta'))
+    },
+    abstractReview: {
+      list: {
+        input: (input: AbstractReviewListInput) =>
+          createQueryEndpoint<AbstractReviewListResponse, AbstractReviewListInput>(
+            'papers/abstractReview/list',
+            input
+          )
+      },
+      update: proxy.untyped<{ success: boolean }, UpdateAbstractReviewInput>(
+        withModuleRoute('papers/abstractReview/update')
+      )
     },
     import: {
       batchStatus: proxy.untyped<ImportBatch[]>(withModuleRoute('papers/import/batchStatus')),

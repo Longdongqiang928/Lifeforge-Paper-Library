@@ -28,6 +28,10 @@
     "title": "设置",
     "description": "配置共享抓取源，以及你自己的 Zotero 与 AI 流水线参数。"
   },
+  "abstractReviewPage": {
+    "title": "摘要检查",
+    "description": "检查论文摘要提取结果、手动修正摘要，并在新标签页中打开原始链接。"
+  },
   "paperDetailPage": {
     "title": "论文详情",
     "description": "查看单篇论文的翻译标题、TL;DR 和摘要。"
@@ -44,6 +48,10 @@
     "batches": {
       "title": "还没有导入记录",
       "description": "最近的导入历史会显示在这里。"
+    },
+    "abstractReview": {
+      "title": "当前筛选下没有待检查论文",
+      "description": "请调整来源或抓取日期筛选条件，再检查另一批论文。"
     }
   }
 }

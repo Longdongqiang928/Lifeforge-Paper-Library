@@ -206,6 +206,14 @@ function PaperListPage() {
               </Button>
               <Button
                 as={Link}
+                icon="tabler:file-search"
+                to={`${MODULE_BASE_PATH}/abstract-review`}
+                variant="secondary"
+              >
+                Review
+              </Button>
+              <Button
+                as={Link}
                 icon="tabler:player-play"
                 to={`${MODULE_BASE_PATH}/run`}
                 variant="secondary"

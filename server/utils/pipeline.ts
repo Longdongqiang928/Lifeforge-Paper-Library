@@ -7,6 +7,8 @@ import {
   DEFAULT_FETCH_SETTINGS,
   DEFAULT_USER_SETTINGS,
   EMBEDDING_BATCH_SIZE,
+  FETCH_RETRY_DELAY_MS,
+  FETCH_RETRY_LIMIT,
   RUN_STALE_TIMEOUT_MS,
   RUN_STAGE_IDS,
   RUN_WAIT_POLL_MS,
@@ -132,6 +134,35 @@ const cancelledRunIds = new Set<string>()
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function runWithRetry<T>(
+  action: () => Promise<T>,
+  label: string,
+  attempts = FETCH_RETRY_LIMIT
+): Promise<T> {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await action()
+    } catch (error) {
+      lastError = error
+
+      if (attempt >= attempts) {
+        break
+      }
+
+      console.warn(
+        `[paper-library] ${label} failed on attempt ${attempt}/${attempts}: ${getErrorMessage(
+          error
+        )}`
+      )
+      await sleep(FETCH_RETRY_DELAY_MS * attempt)
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(getErrorMessage(lastError))
 }
 
 function getRunStartedAt(run: RecordLike) {
@@ -415,6 +446,16 @@ async function fetchJSON(url: string, init?: RequestInit) {
   }
 
   return response.json()
+}
+
+async function fetchText(url: string, init?: RequestInit) {
+  const response = await fetch(url, init)
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`)
+  }
+
+  return response.text()
 }
 
 async function getOrCreateFetchSettingsRecord(pb: PocketBase) {
@@ -883,6 +924,11 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
     url: string
     reason: string
   }> = []
+  const failedPapers: Array<{
+    source: string
+    title: string
+    reason: string
+  }> = []
   let insertedCount = 0
   let updatedCount = 0
   let skippedCount = 0
@@ -896,8 +942,10 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
       throwIfRunCancelled(runId, 'fetch')
 
       try {
-        const response = await fetch(url)
-        const xml = await response.text()
+        const xml = await runWithRetry(
+          () => fetchText(url),
+          `fetch feed ${sourceConfig.source} ${url}`
+        )
         const papers = parseRSSItems(xml, sourceConfig.source)
 
         for (const paper of papers) {
@@ -915,30 +963,55 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
             try {
               if (paper.doi && settings.natureApiKey) {
                 paper.abstract =
-                  (await resolveNatureAbstract(paper.doi, settings.natureApiKey)) ??
-                  paper.abstract
+                  (await runWithRetry(
+                    () => resolveNatureAbstract(paper.doi!, settings.natureApiKey!),
+                    `resolve Nature abstract for ${paper.doi}`
+                  )) ?? paper.abstract
               }
 
               if (!paper.abstract && settings.tavilyApiKey) {
                 paper.abstract =
-                  (await resolveTavilyAbstract(
-                    paper.title,
-                    paper.url,
-                    settings.tavilyApiKey
+                  (await runWithRetry(
+                    () =>
+                      resolveTavilyAbstract(
+                        paper.title,
+                        paper.url,
+                        settings.tavilyApiKey!
+                      ),
+                    `resolve Tavily abstract for ${paper.title}`
                   )) ?? paper.abstract
               }
 
               paper.abstractStatus = paper.abstract ? 'found' : 'missing'
-            } catch {
+            } catch (error) {
               paper.abstractStatus = 'error'
+              console.error(
+                `[paper-library] abstract resolution failed for ${paper.title}: ${getErrorMessage(
+                  error
+                )}`
+              )
             }
           }
 
-          const result = await saveFetchedPaper(pb, paper, runId)
+          try {
+            const result = await saveFetchedPaper(pb, paper, runId)
 
-          if (result === 'inserted') insertedCount += 1
-          if (result === 'updated') updatedCount += 1
-          if (result === 'skipped') skippedCount += 1
+            if (result === 'inserted') insertedCount += 1
+            if (result === 'updated') updatedCount += 1
+            if (result === 'skipped') skippedCount += 1
+          } catch (error) {
+            failedCount += 1
+            const reason = getErrorMessage(error)
+
+            failedPapers.push({
+              source: sourceConfig.source,
+              title: paper.title,
+              reason
+            })
+            console.error(
+              `[paper-library] failed to save fetched paper ${paper.title}: ${reason}`
+            )
+          }
         }
       } catch (error) {
         failedCount += 1
@@ -964,7 +1037,8 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
     failedCount,
     details: {
       rssSources: settings.rssSources,
-      failedFeeds
+      failedFeeds,
+      failedPapers: failedPapers.slice(0, 50)
     }
   }
 }

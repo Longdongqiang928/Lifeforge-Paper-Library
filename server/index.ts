@@ -15,6 +15,7 @@ export default forgeRouter({
     filters: {
       meta: detail.filtersMeta
     },
+    abstractReview: detail.abstractReview,
     import: imports,
     favorites
   },

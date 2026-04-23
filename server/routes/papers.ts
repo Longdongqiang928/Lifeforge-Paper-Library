@@ -108,8 +108,93 @@ const filtersMeta = forge
     return buildFiltersMeta(records, userStateMap)
   })
 
+const abstractReviewList = forge
+  .query()
+  .description('List papers for manual abstract review')
+  .input({
+    query: z.object({
+      page: z.coerce.number().min(1).default(1),
+      perPage: z.coerce.number().min(1).max(100).default(20),
+      source: z.string().optional(),
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional()
+    })
+  })
+  .callback(async ({ pb, query }) => {
+    ensureAuthenticatedUser(pb.instance)
+
+    const records = await pb.instance.collection(COLLECTION_NAMES.papers).getFullList({
+      sort: '-fetched_at,-published_at,-updated'
+    })
+
+    const filtered = records.filter(record => {
+      const source = String(record.source ?? '')
+      const fetchedAt = String(record.fetched_at ?? '')
+      const fetchedDate = fetchedAt.slice(0, 10)
+
+      if (query.source && source !== query.source) {
+        return false
+      }
+
+      if (query.dateFrom && (!fetchedDate || fetchedDate < query.dateFrom)) {
+        return false
+      }
+
+      if (query.dateTo && (!fetchedDate || fetchedDate > query.dateTo)) {
+        return false
+      }
+
+      return true
+    })
+
+    const start = (query.page - 1) * query.perPage
+
+    return {
+      page: query.page,
+      perPage: query.perPage,
+      totalItems: filtered.length,
+      totalPages: Math.max(1, Math.ceil(filtered.length / query.perPage)),
+      items: filtered.slice(start, start + query.perPage).map(record => ({
+        id: String(record.id),
+        title: String(record.title ?? 'Untitled paper'),
+        url: typeof record.url === 'string' ? record.url : '',
+        abstract: typeof record.abstract === 'string' ? record.abstract : '',
+        source: typeof record.source === 'string' ? record.source : '',
+        fetchedAt: typeof record.fetched_at === 'string' ? record.fetched_at : ''
+      }))
+    }
+  })
+
+const abstractReviewUpdate = forge
+  .mutation()
+  .description('Update one paper abstract manually')
+  .input({
+    body: z.object({
+      id: z.string(),
+      abstract: z.string().max(6000)
+    })
+  })
+  .callback(async ({ pb, body }) => {
+    ensureAuthenticatedUser(pb.instance)
+
+    const record = await pb.instance.collection(COLLECTION_NAMES.papers).getOne(body.id)
+
+    await pb.instance.collection(COLLECTION_NAMES.papers).update(record.id, {
+      abstract: body.abstract.trim(),
+      abstract_status: body.abstract.trim() ? 'found' : 'missing'
+    })
+
+    return {
+      success: true
+    }
+  })
+
 export default {
   list,
   detail,
-  filtersMeta
+  filtersMeta,
+  abstractReview: {
+    list: abstractReviewList,
+    update: abstractReviewUpdate
+  }
 }

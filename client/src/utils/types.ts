@@ -57,6 +57,36 @@ export interface PaperFiltersMeta {
   collections: string[]
 }
 
+export interface AbstractReviewItem {
+  id: string
+  title: string
+  url: string
+  abstract: string
+  source: string
+  fetchedAt?: string
+}
+
+export interface AbstractReviewListResponse {
+  page: number
+  perPage: number
+  totalItems: number
+  totalPages: number
+  items: AbstractReviewItem[]
+}
+
+export interface AbstractReviewListInput {
+  page: number
+  perPage: number
+  source?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
+export interface UpdateAbstractReviewInput {
+  id: string
+  abstract: string
+}
+
 export interface FavoriteFolder {
   id: string
   name: string
