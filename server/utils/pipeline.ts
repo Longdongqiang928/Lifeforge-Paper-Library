@@ -1523,6 +1523,10 @@ async function runRecommendStage(
 
     return true
   })
+  const candidatePapers = scopedPapers.filter(
+    (paper: RecordLike) => !!pickString(paper.abstract)
+  )
+  const skippedNoAbstract = scopedPapers.length - candidatePapers.length
 
   const cacheEntries = await refreshZoteroCache(pb, settings)
   throwIfRunCancelled(runId, 'recommend')
@@ -1538,7 +1542,7 @@ async function runRecommendStage(
     }
   }
 
-  const candidateTexts = scopedPapers.map(
+  const candidateTexts = candidatePapers.map(
     (paper: RecordLike) =>
       pickString(paper.abstract) ?? pickString(paper.title) ?? ''
   )
@@ -1553,7 +1557,7 @@ async function runRecommendStage(
 
   let updatedCount = 0
 
-  for (const [index, paper] of scopedPapers.entries()) {
+  for (const [index, paper] of candidatePapers.entries()) {
     throwIfRunCancelled(runId, 'recommend')
     const scoreBreakdown: Record<string, number> = {}
 
@@ -1606,13 +1610,14 @@ async function runRecommendStage(
   }
 
   return {
-    processedTotal: scopedPapers.length,
+    processedTotal: candidatePapers.length,
     insertedCount: 0,
     updatedCount,
-    skippedCount: 0,
+    skippedCount: skippedNoAbstract,
     failedCount: 0,
     details: {
-      corpusSize: cacheEntries.length
+      corpusSize: cacheEntries.length,
+      skippedNoAbstract
     }
   }
 }
@@ -1791,7 +1796,7 @@ async function runEnhanceStage(
   const statesByPaper = new Map<string, RecordLike>(
     states.map((state: RecordLike) => [String(state.paper), state])
   )
-  const candidates = papers.filter((paper: RecordLike) => {
+  const eligiblePapers = papers.filter((paper: RecordLike) => {
     const fetchedAt = pickString(paper.fetched_at)
     const state = statesByPaper.get(String(paper.id))
 
@@ -1803,6 +1808,9 @@ async function runEnhanceStage(
 
     return true
   })
+  const candidates = eligiblePapers.filter(
+    (paper: RecordLike) => !!pickString(paper.abstract)
+  )
 
   let updatedCount = 0
   let failedCount = 0
@@ -1811,6 +1819,7 @@ async function runEnhanceStage(
     title: string
     reason: string
   }> = []
+  const skippedNoAbstract = eligiblePapers.length - candidates.length
 
   for (const paper of candidates) {
     try {
@@ -1862,10 +1871,11 @@ async function runEnhanceStage(
     processedTotal: candidates.length,
     insertedCount: 0,
     updatedCount,
-    skippedCount: 0,
+    skippedCount: skippedNoAbstract,
     failedCount,
     details: {
-      failedItems: failedItems.slice(0, 20)
+      failedItems: failedItems.slice(0, 20),
+      skippedNoAbstract
     }
   }
 }
