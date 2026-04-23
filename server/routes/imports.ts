@@ -11,7 +11,6 @@ import {
 import {
   asNumber,
   asStringArray,
-  buildFingerprint,
   ensureAuthenticatedUser,
   normalizeIncomingPaper,
   pickString

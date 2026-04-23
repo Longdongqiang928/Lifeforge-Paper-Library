@@ -313,7 +313,7 @@ async function waitForStageToFinish(
       return
     }
 
-    const staleRuns = runs.filter(run => isRunStale(run))
+    const staleRuns = runs.filter((run: RecordLike) => isRunStale(run))
 
     if (staleRuns.length > 0) {
       for (const run of staleRuns) {
@@ -504,7 +504,7 @@ function buildFeedUrls(source: string, categories: string[]) {
   }
 
   if (source === 'optica') {
-    return categories.map(category => `https://opg.optica.org/rss/${category}`)
+    return categories.map(category => `https://opg.optica.org/rss/${category}_feed.xml`)
   }
 
   if (source === 'aps') {
@@ -560,7 +560,8 @@ function parseRSSItems(xml: string, source: string) {
     .map(item => {
       const title = extractTagValue(item, ['title'])
       const link = extractTagValue(item, ['link'])
-      const doi = extractTagValue(item, ['prism:doi', 'dc:identifier'])
+      const rawDoi = extractTagValue(item, ['prism:doi', 'dc:identifier'])
+      const doi = rawDoi ? rawDoi.replace(/^doi:/i, '') : undefined
       const publication = extractTagValue(item, [
         'prism:publicationname',
         'prism:publicationName'
@@ -572,7 +573,8 @@ function parseRSSItems(xml: string, source: string) {
         ...extractTagValues(item, 'author')
       ]
 
-      const shouldTrustRSSSummary = !['science', 'aps', 'optica'].includes(source)
+      const shouldTrustRSSSummary =
+        !['science', 'aps', 'optica', 'nature'].includes(source)
       const normalizedSummary = shouldTrustRSSSummary
         ? description?.includes('Abstract:')
           ? description.split('Abstract:').pop()?.trim()
@@ -631,7 +633,7 @@ async function getOrCreateFetchSettingsRecord(pb: PocketBase) {
       filter: pb.filter('config_key = {:key}', { key: 'global' }),
       sort: '-updated'
     })
-    .then(records => records[0] ?? null)
+    .then((records: RecordLike[]) => records[0] ?? null)
     .catch(() => null)
 
   if (existing) return existing
@@ -992,51 +994,321 @@ async function finishRun(
   })
 }
 
-async function resolveNatureAbstract(doi: string, apiKey: string) {
-  const query = encodeURIComponent(`doi:"${doi}"`)
-  const url =
-    `https://api.springernature.com/metadata/json?api_key=${apiKey}` +
-    `&s=1&p=1&q=${query}`
-
-  const data = (await fetchJSON(url)) as { records?: Array<RecordLike> }
-  const record = data.records?.[0]
-
-  if (!record) return undefined
-
-  return pickString(record.abstract)
+function normalizeDoiValue(value: string) {
+  return value
+    .trim()
+    .replace(/^doi:/i, '')
+    .replace(/^https?:\/\/doi\.org\//i, '')
+    .replace(/^https?:\/\/dx\.doi\.org\//i, '')
 }
 
-async function resolveTavilyAbstract(
-  title: string,
-  url: string | undefined,
+function normalizeUrlForMatch(url: string) {
+  return url
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/+$/, '')
+}
+
+function urlsMatch(url1: string, url2: string) {
+  const doiPattern = /10\.\d{4,}\/[^\s]+/i
+  const doi1 = url1.match(doiPattern)
+  const doi2 = url2.match(doiPattern)
+
+  if (doi1 && doi2) {
+    return normalizeDoiValue(doi1[0]) === normalizeDoiValue(doi2[0])
+  }
+
+  return normalizeUrlForMatch(url1) === normalizeUrlForMatch(url2)
+}
+
+async function resolveNatureAbstractBatch(
+  papers: Array<RecordLike>,
   apiKey: string,
   source: string
 ) {
-  const data = (await fetchJSON('https://api.tavily.com/search', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      api_key: apiKey,
-      query: url ? `${title} ${url}` : title,
-      search_depth: 'basic',
-      max_results: 1,
-      include_raw_content: true
-    })
-  })) as {
-    results?: Array<{
-      content?: string
-      raw_content?: string
-    }>
+  const papersWithAbs: Array<RecordLike> = []
+  const papersWithoutAbs: Array<RecordLike> = []
+  const paperFailed: Array<RecordLike> = []
+  const doiToPaper = new Map<string, RecordLike>()
+  const doisToFetch: string[] = []
+
+  for (const paper of papers) {
+    if (pickString(paper.abstract)) {
+      papersWithAbs.push(paper)
+      continue
+    }
+
+    const rawDoi = pickString(paper.doi, paper.id)
+    const doi = rawDoi ? normalizeDoiValue(rawDoi) : undefined
+
+    if (doi) {
+      doisToFetch.push(doi)
+      doiToPaper.set(doi, paper)
+    } else {
+      papersWithoutAbs.push(paper)
+    }
   }
 
-  const result = data.results?.[0]
-  const rawContent =
-    pickString(result?.raw_content) ?? pickString(result?.content) ?? ''
-  const extracted = extractAbstractFromTavilyContent(rawContent, source)
+  if (!doisToFetch.length) {
+    return {
+      papersWithAbs,
+      papersWithoutAbs,
+      paperFailed
+    }
+  }
 
-  return extracted || undefined
+  let remainingDois = Array.from(new Set(doisToFetch))
+  const maxRetries = FETCH_RETRY_LIMIT
+
+  for (let attempt = 0; attempt < maxRetries; attempt += 1) {
+    if (!remainingDois.length) break
+
+    if (attempt > 0) {
+      const waitTime = (2 ** attempt) + Math.random()
+      console.log(
+        `[paper-library] Retrying Nature API (attempt ${attempt + 1}/${maxRetries}) in ${waitTime.toFixed(2)}s...`
+      )
+      await sleep(waitTime * 1000)
+    }
+
+    const currentBatchDois = [...remainingDois]
+    const batchSize = 20
+
+    for (let index = 0; index < currentBatchDois.length; index += batchSize) {
+      const batch = currentBatchDois.slice(index, index + batchSize)
+      console.log(
+        `[paper-library] Fetching Nature batch ${Math.floor(index / batchSize) + 1} (${batch.length} DOIs), attempt ${attempt + 1}`
+      )
+
+      try {
+        const query = batch
+          .map(doi => `doi:"${encodeURIComponent(doi)}"`)
+          .join(' OR ')
+        const data = (await fetchJSON(
+          `https://api.springernature.com/metadata/json?api_key=${apiKey}&callback=&s=1&p=25&q=(${query})`
+        )) as { records?: Array<RecordLike> }
+        const records = data.records ?? []
+
+        console.log(
+          `[paper-library] Nature batch ${Math.floor(index / batchSize) + 1} returned ${records.length} articles`
+        )
+
+        for (const record of records) {
+          const recordDoiRaw = pickString(record.doi, record.identifier)
+          const recordDoi = recordDoiRaw
+            ? normalizeDoiValue(recordDoiRaw)
+            : undefined
+
+          if (!recordDoi) continue
+
+          const original = doiToPaper.get(recordDoi)
+          if (!original) continue
+
+          const abstract = pickString(record.abstract)
+          if (!abstract) continue
+
+          if (remainingDois.includes(recordDoi)) {
+            remainingDois = remainingDois.filter(doi => doi !== recordDoi)
+          }
+
+          original.abstract = abstract
+          if (!pickString(original.journal)) {
+            original.journal = pickString(record.publicationName)
+          }
+          if (!asStringArray(original.authors).length) {
+            original.authors = asStringArray(
+              (record.creators as Array<RecordLike> | undefined)?.map(
+                creator => creator.creator
+              ) ?? []
+            )
+          }
+          if (!pickString(original.publishedAt)) {
+            original.publishedAt = pickString(record.publicationDate)
+          }
+          if (!asStringArray(original.keywords).length) {
+            original.keywords = asStringArray(record.subjects)
+          }
+          papersWithAbs.push(original)
+        }
+      } catch (error) {
+        console.warn(
+          `[paper-library] Nature batch ${Math.floor(index / batchSize) + 1} failed (round ${attempt + 1}): ${getErrorMessage(
+            error
+          )}`
+        )
+      }
+    }
+  }
+
+  if (remainingDois.length) {
+    for (const doi of remainingDois) {
+      const paper = doiToPaper.get(doi)
+      if (!paper) continue
+      paperFailed.push(paper)
+      console.warn(
+        `[paper-library] Nature API failed after ${maxRetries} attempts for DOI: ${doi}`
+      )
+    }
+  }
+
+  return {
+    papersWithAbs,
+    papersWithoutAbs,
+    paperFailed
+  }
+}
+
+async function resolveTavilyAbstractBatch(
+  papers: Array<RecordLike>,
+  apiKey: string,
+  source: string
+) {
+  const papersWithAbs: Array<RecordLike> = []
+  const papersWithoutAbs: Array<RecordLike> = []
+  const paperFailed: Array<RecordLike> = []
+  const urlToPaper = new Map<string, RecordLike>()
+  const urlsToFetch: string[] = []
+
+  for (const paper of papers) {
+    if (pickString(paper.abstract)) {
+      papersWithAbs.push(paper)
+      continue
+    }
+
+    const url = pickString(paper.url, paper.abs)
+    if (!url) {
+      papersWithoutAbs.push(paper)
+      continue
+    }
+
+    urlsToFetch.push(url)
+    urlToPaper.set(url, paper)
+  }
+
+  if (!urlsToFetch.length) {
+    return {
+      papersWithAbs,
+      papersWithoutAbs,
+      paperFailed
+    }
+  }
+
+  let remainingUrls = Array.from(new Set(urlsToFetch))
+  const maxRetries = FETCH_RETRY_LIMIT
+
+  for (let attempt = 0; attempt < maxRetries; attempt += 1) {
+    if (!remainingUrls.length) break
+
+    if (attempt > 0) {
+      const waitTime = (2 ** attempt) + Math.random()
+      console.log(
+        `[paper-library] Retrying Tavily API (attempt ${attempt + 1}/${maxRetries}) in ${waitTime.toFixed(2)}s...`
+      )
+      await sleep(waitTime * 1000)
+    }
+
+    const currentRoundUrls = [...remainingUrls]
+    const batchSize = 20
+
+    for (let index = 0; index < currentRoundUrls.length; index += batchSize) {
+      const batchUrls = currentRoundUrls.slice(index, index + batchSize)
+      const batchNum = Math.floor(index / batchSize) + 1
+
+      console.log(
+        `[paper-library] Processing Tavily batch ${batchNum} (${batchUrls.length} URLs), attempt ${attempt + 1}`
+      )
+
+      try {
+        const data = (await fetchJSON('https://api.tavily.com/extract', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            urls: batchUrls,
+            extract_depth: 'advanced'
+          })
+        })) as {
+          results?: Array<{
+            url?: string
+            raw_content?: string
+            content?: string
+          }>
+          failed_results?: Array<{ url?: string }>
+        }
+
+        const results = data.results ?? []
+        if (!results.length) {
+          console.warn(
+            `[paper-library] Empty Tavily response for batch ${batchNum} (round ${attempt + 1})`
+          )
+          continue
+        }
+
+        for (const result of results) {
+          const resultUrl = pickString(result.url)
+          const rawContent =
+            pickString(result.raw_content) ?? pickString(result.content) ?? ''
+
+          if (!resultUrl) continue
+
+          let matchedUrl = resultUrl
+          let matchedPaper = urlToPaper.get(resultUrl) ?? null
+
+          if (!matchedPaper) {
+            for (const originalUrl of batchUrls) {
+              if (urlsMatch(originalUrl, resultUrl)) {
+                matchedUrl = originalUrl
+                matchedPaper = urlToPaper.get(originalUrl) ?? null
+                break
+              }
+            }
+          }
+
+          if (!matchedPaper) continue
+
+          if (remainingUrls.includes(matchedUrl)) {
+            remainingUrls = remainingUrls.filter(url => url !== matchedUrl)
+          }
+
+          const abstract = extractAbstractFromTavilyContent(rawContent, source)
+          matchedPaper.abstract = abstract
+
+          if (abstract) {
+            papersWithAbs.push(matchedPaper)
+          } else {
+            papersWithoutAbs.push(matchedPaper)
+          }
+        }
+      } catch (error) {
+        console.warn(
+          `[paper-library] Tavily batch ${batchNum} API error (round ${attempt + 1}): ${getErrorMessage(
+            error
+          )}`
+        )
+      }
+    }
+  }
+
+  if (remainingUrls.length) {
+    for (const url of remainingUrls) {
+      const paper = urlToPaper.get(url)
+      if (!paper) continue
+      paperFailed.push(paper)
+      console.warn(
+        `[paper-library] Tavily API failed after ${maxRetries} attempts for URL: ${url}`
+      )
+    }
+  }
+
+  return {
+    papersWithAbs,
+    papersWithoutAbs,
+    paperFailed
+  }
 }
 
 async function saveFetchedPaper(
@@ -1129,6 +1401,59 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
 
         const papers = parseRSSItems(xml, sourceConfig.source)
 
+        if (sourceConfig.source === 'nature' && settings.natureApiKey) {
+          const natureCandidates = papers.filter(
+            paper => !pickString(paper.abstract) && pickString(paper.doi)
+          )
+
+          if (natureCandidates.length > 0) {
+            console.log(
+              `[paper-library] resolving Nature abstracts for ${natureCandidates.length} papers`
+            )
+
+            const resolvedNature = await resolveNatureAbstractBatch(
+              natureCandidates,
+              settings.natureApiKey,
+              sourceConfig.source
+            )
+
+            for (const failedPaper of resolvedNature.paperFailed) {
+              if (!pickString(failedPaper.abstract_status)) {
+                failedPaper.abstract_status = 'error'
+              }
+            }
+          }
+        } else if (sourceConfig.source === 'nature' && !settings.natureApiKey) {
+          console.log(
+            '[paper-library] skipping Nature API: no API key configured'
+          )
+        }
+
+        const tavilyCandidates = papers.filter(paper => !pickString(paper.abstract))
+
+        if (settings.tavilyApiKey && tavilyCandidates.length > 0) {
+          const resolvedTavily = await resolveTavilyAbstractBatch(
+            tavilyCandidates,
+            settings.tavilyApiKey,
+            sourceConfig.source
+          )
+
+          for (const paper of resolvedTavily.papersWithAbs) {
+            if (!pickString(paper.abstract)) continue
+            paper.abstract_status = 'ready'
+          }
+          for (const paper of resolvedTavily.papersWithoutAbs) {
+            if (!pickString(paper.abstract)) {
+              paper.abstract_status = 'missing'
+            }
+          }
+          for (const paper of resolvedTavily.paperFailed) {
+            if (!pickString(paper.abstract)) {
+              paper.abstract_status = 'error'
+            }
+          }
+        }
+
         for (const paper of papers) {
           throwIfRunCancelled(runId, 'fetch')
           processedTotal += 1
@@ -1139,40 +1464,10 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
           }
 
           seenFingerprints.add(paper.fingerprint)
-
-          if (!paper.abstract) {
-            try {
-              if (paper.doi && settings.natureApiKey) {
-                paper.abstract =
-                  (await runWithRetry(
-                    () => resolveNatureAbstract(paper.doi!, settings.natureApiKey!),
-                    `resolve Nature abstract for ${paper.doi}`
-                  )) ?? paper.abstract
-              }
-
-              if (!paper.abstract && settings.tavilyApiKey) {
-                paper.abstract =
-                  (await runWithRetry(
-                    () =>
-                      resolveTavilyAbstract(
-                        paper.title,
-                        paper.url,
-                        settings.tavilyApiKey!,
-                        sourceConfig.source
-                      ),
-                    `resolve Tavily abstract for ${paper.title}`
-                  )) ?? paper.abstract
-              }
-
-              paper.abstractStatus = paper.abstract ? 'ready' : 'missing'
-            } catch (error) {
-              paper.abstractStatus = 'error'
-              console.error(
-                `[paper-library] abstract resolution failed for ${paper.title}: ${getErrorMessage(
-                  error
-                )}`
-              )
-            }
+          if (paper.abstract) {
+            paper.abstractStatus = 'ready'
+          } else if (!pickString(paper.abstract_status)) {
+            paper.abstractStatus = 'missing'
           }
 
           try {
@@ -1955,14 +2250,6 @@ async function runEnhanceStage(
     if (!fetchedAt) return false
     if (rangeStart && dayjs(fetchedAt).isBefore(dayjs(rangeStart), 'day')) return false
     if (rangeEnd && dayjs(fetchedAt).isAfter(dayjs(rangeEnd).endOf('day'))) return false
-
-    return true
-  })
-  const eligiblePapers = scopedPapers.filter((paper: RecordLike) => {
-    const state = statesByPaper.get(String(paper.id))
-
-    if (!state) return false
-    if ((asNumber(state.score_max) ?? 0) < settings.enhanceThreshold) return false
 
     return true
   })
