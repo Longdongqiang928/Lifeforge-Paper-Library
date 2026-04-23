@@ -181,7 +181,7 @@ const abstractReviewUpdate = forge
 
     await pb.instance.collection(COLLECTION_NAMES.papers).update(record.id, {
       abstract: body.abstract.trim(),
-      abstract_status: body.abstract.trim() ? 'found' : 'missing'
+      abstract_status: body.abstract.trim() ? 'ready' : 'missing'
     })
 
     return {

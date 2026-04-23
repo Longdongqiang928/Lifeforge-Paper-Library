@@ -88,6 +88,7 @@ interface DecryptedFetchSettings {
   tavilyApiKey?: string
   fetchEnabled: boolean
   fetchTime: string
+  lastFetchScheduleKey?: string
 }
 
 interface DecryptedUserSettings {
@@ -105,6 +106,8 @@ interface DecryptedUserSettings {
   recommendTime: string
   enhanceEnabled: boolean
   enhanceTime: string
+  lastRecommendScheduleKey?: string
+  lastEnhanceScheduleKey?: string
   recommendLookbackDays: number
   enhanceLookbackDays: number
 }
@@ -137,8 +140,59 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-function buildEnhanceSourceHash(abstract: string) {
-  return createHash('sha1').update(abstract).digest('hex')
+function buildStableHash(parts: Array<string | undefined>) {
+  return createHash('sha1')
+    .update(parts.map(part => part ?? '').join('::'))
+    .digest('hex')
+}
+
+function getPaperAbstractState(paper: RecordLike) {
+  const rawStatus = pickString(paper.abstract_status)
+  const abstract = pickString(paper.abstract)
+
+  if (abstract) return 'ready' as const
+  if (rawStatus === 'error') return 'error' as const
+
+  return 'missing' as const
+}
+
+function getReadyAbstract(paper: RecordLike) {
+  if (getPaperAbstractState(paper) !== 'ready') return undefined
+
+  return pickString(paper.abstract)
+}
+
+function buildRecommendCorpusHash(entries: Array<RecordLike>) {
+  return buildStableHash(
+    entries
+      .map(entry =>
+        [
+          getCacheEntryKey(entry),
+          getCacheEntryText(entry),
+          asStringArray(entry.collections).sort().join('|')
+        ].join('::')
+      )
+      .sort()
+  )
+}
+
+function buildRecommendInputHash(
+  abstract: string,
+  settings: Pick<DecryptedUserSettings, 'embeddingModel'>,
+  corpusHash: string
+) {
+  return buildStableHash([abstract, settings.embeddingModel, corpusHash])
+}
+
+function buildEnhanceInputHash(
+  abstract: string,
+  settings: Pick<DecryptedUserSettings, 'aiModel' | 'outputLanguage'>
+) {
+  return buildStableHash([abstract, settings.aiModel, settings.outputLanguage])
+}
+
+function buildScheduleKey(now: dayjs.Dayjs, time: string) {
+  return `${now.format('YYYY-MM-DD')}::${time}`
 }
 
 async function runWithRetry<T>(
@@ -627,7 +681,8 @@ async function getFetchSettingsInternal(pb: PocketBase): Promise<DecryptedFetchS
     natureApiKey: decryptSecret(pickString(record.nature_api_key)),
     tavilyApiKey: decryptSecret(pickString(record.tavily_api_key)),
     fetchEnabled: !!record.fetch_enabled,
-    fetchTime: pickString(record.fetch_time) ?? DEFAULT_FETCH_SETTINGS.fetchTime
+    fetchTime: pickString(record.fetch_time) ?? DEFAULT_FETCH_SETTINGS.fetchTime,
+    lastFetchScheduleKey: pickString(record.last_fetch_schedule_key)
   }
 }
 
@@ -663,6 +718,8 @@ async function getUserSettingsInternal(
         : DEFAULT_USER_SETTINGS.enhanceEnabled,
     enhanceTime:
       pickString(record.enhance_time) ?? DEFAULT_USER_SETTINGS.enhanceTime,
+    lastRecommendScheduleKey: pickString(record.last_recommend_schedule_key),
+    lastEnhanceScheduleKey: pickString(record.last_enhance_schedule_key),
     recommendLookbackDays:
       asNumber(record.recommend_lookback_days) ??
       DEFAULT_USER_SETTINGS.recommendLookbackDays,
@@ -1107,7 +1164,7 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
                   )) ?? paper.abstract
               }
 
-              paper.abstractStatus = paper.abstract ? 'found' : 'missing'
+              paper.abstractStatus = paper.abstract ? 'ready' : 'missing'
             } catch (error) {
               paper.abstractStatus = 'error'
               console.error(
@@ -1528,10 +1585,6 @@ async function runRecommendStage(
 
     return true
   })
-  const candidatePapers = scopedPapers.filter(
-    (paper: RecordLike) => !!pickString(paper.abstract)
-  )
-  const skippedNoAbstract = scopedPapers.length - candidatePapers.length
 
   const cacheEntries = await refreshZoteroCache(pb, settings)
   throwIfRunCancelled(runId, 'recommend')
@@ -1546,10 +1599,76 @@ async function runRecommendStage(
       collectionBuckets.set(collection, current)
     }
   }
+  const states = await pb.collection(COLLECTION_NAMES.userPaperStates).getFullList({
+    filter: pb.filter('user = {:user}', {
+      user: settings.userId
+    })
+  })
+  const statesByPaper = new Map<string, RecordLike>(
+    states.map((state: RecordLike) => [String(state.paper), state])
+  )
+  const corpusHash = buildRecommendCorpusHash(cacheEntries)
+  const skippedItems: Array<{
+    paperId: string
+    reason: string
+  }> = []
+  const candidateDescriptors: Array<{
+    paper: RecordLike
+    inputHash: string
+  }> = []
 
-  const candidateTexts = candidatePapers.map(
-    (paper: RecordLike) =>
-      pickString(paper.abstract) ?? pickString(paper.title) ?? ''
+  let skippedNoAbstract = 0
+  let skippedAlreadyCompletedUnchanged = 0
+
+  for (const paper of scopedPapers) {
+    const paperId = String(paper.id)
+    const abstract = getReadyAbstract(paper)
+
+    if (!abstract) {
+      skippedNoAbstract += 1
+      skippedItems.push({
+        paperId,
+        reason: 'no_abstract'
+      })
+
+      await upsertUserState(pb, settings.userId, paperId, {
+        recommend_status: 'skipped',
+        recommend_last_run_id: runId,
+        recommend_last_reason: 'no_abstract'
+      })
+      continue
+    }
+
+    const inputHash = buildRecommendInputHash(abstract, settings, corpusHash)
+    const existingState = statesByPaper.get(paperId)
+
+    if (
+      pickString(existingState?.recommend_status) === 'completed' &&
+      pickString(existingState?.recommend_input_hash) === inputHash
+    ) {
+      skippedAlreadyCompletedUnchanged += 1
+      skippedItems.push({
+        paperId,
+        reason: 'unchanged'
+      })
+
+      await upsertUserState(pb, settings.userId, paperId, {
+        recommend_status: 'skipped',
+        recommend_input_hash: inputHash,
+        recommend_last_run_id: runId,
+        recommend_last_reason: 'unchanged'
+      })
+      continue
+    }
+
+    candidateDescriptors.push({
+      paper,
+      inputHash
+    })
+  }
+
+  const candidateTexts = candidateDescriptors.map(
+    ({ paper }) => getReadyAbstract(paper) ?? pickString(paper.title) ?? ''
   )
   const candidateEmbeddings = await requestEmbeddings(
     settings.aiBaseUrl,
@@ -1562,8 +1681,9 @@ async function runRecommendStage(
 
   let updatedCount = 0
 
-  for (const [index, paper] of candidatePapers.entries()) {
+  for (const [index, descriptor] of candidateDescriptors.entries()) {
     throwIfRunCancelled(runId, 'recommend')
+    const { paper, inputHash } = descriptor
     const scoreBreakdown: Record<string, number> = {}
 
     for (const [collection, entries] of collectionBuckets.entries()) {
@@ -1605,9 +1725,12 @@ async function runRecommendStage(
         matchedCollections.length > 0
           ? matchedCollections
           : sortedCollections[0]
-            ? [sortedCollections[0][0]]
-            : [],
+          ? [sortedCollections[0][0]]
+          : [],
+      recommend_input_hash: inputHash,
       recommend_status: 'completed',
+      recommend_last_run_id: runId,
+      recommend_last_reason: '',
       recommended_at: new Date().toISOString()
     })
 
@@ -1615,14 +1738,16 @@ async function runRecommendStage(
   }
 
   return {
-    processedTotal: candidatePapers.length,
+    processedTotal: candidateDescriptors.length,
     insertedCount: 0,
     updatedCount,
-    skippedCount: skippedNoAbstract,
+    skippedCount: skippedNoAbstract + skippedAlreadyCompletedUnchanged,
     failedCount: 0,
     details: {
       corpusSize: cacheEntries.length,
-      skippedNoAbstract
+      skippedNoAbstract,
+      skippedAlreadyCompletedUnchanged,
+      skippedItems: skippedItems.slice(0, 50)
     }
   }
 }
@@ -1819,17 +1944,17 @@ async function runEnhanceStage(
     return true
   })
   const candidatesWithAbstract = eligiblePapers.filter(
-    (paper: RecordLike) => !!pickString(paper.abstract)
+    (paper: RecordLike) => !!getReadyAbstract(paper)
   )
   const candidates = candidatesWithAbstract.filter((paper: RecordLike) => {
     const state = statesByPaper.get(String(paper.id))
-    const abstract = pickString(paper.abstract)
+    const abstract = getReadyAbstract(paper)
 
     if (!state || !abstract) return false
 
     return !(
       pickString(state.enhance_status) === 'completed' &&
-      pickString(state.enhance_source_hash) === buildEnhanceSourceHash(abstract)
+      pickString(state.enhance_input_hash) === buildEnhanceInputHash(abstract, settings)
     )
   })
 
@@ -1854,18 +1979,21 @@ async function runEnhanceStage(
       throwIfRunCancelled(runId, 'enhance')
       const paperId = String(paper.id)
       const title = pickString(paper.title) ?? 'Untitled paper'
+      const abstract = getReadyAbstract(paper) ?? ''
       const result = await requestEnhancement(
         settings,
         title,
-        pickString(paper.abstract) ?? ''
+        abstract
       )
 
       await upsertUserState(pb, settings.userId, paperId, {
         tldr: result.tldr,
         translated_title: result.translatedTitle,
         translated_abstract: result.translatedAbstract,
-        enhance_source_hash: buildEnhanceSourceHash(pickString(paper.abstract) ?? ''),
+        enhance_input_hash: buildEnhanceInputHash(abstract, settings),
         enhance_status: 'completed',
+        enhance_last_run_id: runId,
+        enhance_last_reason: '',
         enhanced_at: new Date().toISOString()
       })
 
@@ -1891,7 +2019,50 @@ async function runEnhanceStage(
       })
 
       await upsertUserState(pb, settings.userId, paperId, {
-        enhance_status: 'failed'
+        enhance_status: 'failed',
+        enhance_last_run_id: runId,
+        enhance_last_reason: reason
+      })
+    }
+  }
+
+  for (const paper of scopedPapers) {
+    const paperId = String(paper.id)
+    const state = statesByPaper.get(paperId)
+
+    if (!state) continue
+
+    const hasEligibleScore = (asNumber(state.score_max) ?? 0) >= settings.enhanceThreshold
+
+    if (!hasEligibleScore) {
+      await upsertUserState(pb, settings.userId, paperId, {
+        enhance_status: 'skipped',
+        enhance_last_run_id: runId,
+        enhance_last_reason: 'no_state_or_below_threshold'
+      })
+      continue
+    }
+
+    if (!getReadyAbstract(paper)) {
+      await upsertUserState(pb, settings.userId, paperId, {
+        enhance_status: 'skipped',
+        enhance_last_run_id: runId,
+        enhance_last_reason: 'no_abstract'
+      })
+      continue
+    }
+
+    const inputHash = buildEnhanceInputHash(getReadyAbstract(paper) ?? '', settings)
+
+    if (
+      pickString(state.enhance_status) === 'completed' &&
+      pickString(state.enhance_input_hash) === inputHash
+    ) {
+      await upsertUserState(pb, settings.userId, paperId, {
+        enhance_status: 'skipped',
+        enhance_input_hash: inputHash,
+        enhance_last_run_id: runId,
+        enhance_last_reason: 'unchanged'
       })
     }
   }
@@ -2089,7 +2260,6 @@ export async function getSchedulerPocketBase() {
 export async function runScheduledStages(now = dayjs()) {
   const pb = await getSchedulerPocketBase()
   const currentMinutes = now.hour() * 60 + now.minute()
-  const schedulerWindowStart = now.startOf('day').toISOString()
 
   const hasReachedScheduledTime = (time: string) => {
     const [hoursPart, minutesPart] = time.split(':')
@@ -2110,35 +2280,15 @@ export async function runScheduledStages(now = dayjs()) {
     return currentMinutes >= hours * 60 + minutes
   }
 
-  const findSchedulerRunStartedToday = (stage: RunStageId, userId?: string) =>
-    pb
-      .collection(COLLECTION_NAMES.pipelineRuns)
-      .getFirstListItem(
-        userId
-          ? pb.filter(
-              'stage = {:stage} && triggered_by = "scheduler" && user = {:user} && created >= {:start}',
-              {
-                stage,
-                user: userId,
-                start: schedulerWindowStart
-              }
-            )
-          : pb.filter(
-              'stage = {:stage} && triggered_by = "scheduler" && created >= {:start}',
-              {
-                stage,
-                start: schedulerWindowStart
-              }
-            )
-      )
-      .catch(() => null)
-
   const fetchSettings = await getFetchSettingsInternal(pb)
 
   if (fetchSettings.fetchEnabled && hasReachedScheduledTime(fetchSettings.fetchTime)) {
-    const alreadyRan = await findSchedulerRunStartedToday('fetch')
+    const scheduleKey = buildScheduleKey(now, fetchSettings.fetchTime)
 
-    if (!alreadyRan) {
+    if (fetchSettings.lastFetchScheduleKey !== scheduleKey) {
+      await pb.collection(COLLECTION_NAMES.fetchSettings).update(fetchSettings.id, {
+        last_fetch_schedule_key: scheduleKey
+      })
       await executeStage(pb, 'fetch', 'scheduler', {})
     }
   }
@@ -2150,9 +2300,12 @@ export async function runScheduledStages(now = dayjs()) {
     const settings = await getUserSettingsInternal(pb, userId)
 
     if (settings.recommendEnabled && hasReachedScheduledTime(settings.recommendTime)) {
-      const alreadyRan = await findSchedulerRunStartedToday('recommend', userId)
+      const scheduleKey = buildScheduleKey(now, settings.recommendTime)
 
-      if (!alreadyRan) {
+      if (settings.lastRecommendScheduleKey !== scheduleKey) {
+        await pb.collection(COLLECTION_NAMES.userSettings).update(settings.id, {
+          last_recommend_schedule_key: scheduleKey
+        })
         const range = buildDefaultRange(settings.recommendLookbackDays)
         await executeStage(pb, 'recommend', 'scheduler', {
           userId,
@@ -2163,9 +2316,12 @@ export async function runScheduledStages(now = dayjs()) {
     }
 
     if (settings.enhanceEnabled && hasReachedScheduledTime(settings.enhanceTime)) {
-      const alreadyRan = await findSchedulerRunStartedToday('enhance', userId)
+      const scheduleKey = buildScheduleKey(now, settings.enhanceTime)
 
-      if (!alreadyRan) {
+      if (settings.lastEnhanceScheduleKey !== scheduleKey) {
+        await pb.collection(COLLECTION_NAMES.userSettings).update(settings.id, {
+          last_enhance_schedule_key: scheduleKey
+        })
         const range = buildDefaultRange(settings.enhanceLookbackDays)
         await executeStage(pb, 'enhance', 'scheduler', {
           userId,

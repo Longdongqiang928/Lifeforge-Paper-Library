@@ -5,12 +5,27 @@ import { runScheduledStages } from './pipeline'
 
 let schedulerStarted = false
 let schedulerHandle: ReturnType<typeof setInterval> | null = null
+let schedulerTickPromise: Promise<void> | null = null
 
 async function tick() {
+  if (schedulerTickPromise) {
+    return schedulerTickPromise
+  }
+
+  schedulerTickPromise = (async () => {
+    try {
+      await runScheduledStages(dayjs())
+    } catch (error) {
+      console.error('[paper-library] scheduler tick failed', error)
+    } finally {
+      schedulerTickPromise = null
+    }
+  })()
+
   try {
-    await runScheduledStages(dayjs())
-  } catch (error) {
-    console.error('[paper-library] scheduler tick failed', error)
+    await schedulerTickPromise
+  } finally {
+    // no-op
   }
 }
 

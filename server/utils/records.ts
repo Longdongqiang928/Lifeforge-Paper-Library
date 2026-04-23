@@ -69,7 +69,7 @@ export interface NormalizedPaper {
   externalId?: string
   fingerprint: string
   rawPayload: unknown
-  abstractStatus: 'pending' | 'found' | 'missing' | 'error'
+  abstractStatus: 'ready' | 'missing' | 'error'
   warnings: string[]
 }
 
@@ -266,7 +266,7 @@ export function normalizeIncomingPaper(
       source: pickString(paper.source, options?.source)
     }),
     rawPayload: paper,
-    abstractStatus: abstract ? 'found' : 'pending',
+    abstractStatus: abstract ? 'ready' : 'missing',
     warnings
   }
 }

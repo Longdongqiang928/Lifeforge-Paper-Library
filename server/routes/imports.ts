@@ -273,6 +273,8 @@ async function upsertUserState(
     translated_abstract: overlay.translatedAbstract,
     recommend_status: recommendComplete ? 'completed' : 'idle',
     enhance_status: enhanceComplete ? 'completed' : 'idle',
+    recommend_last_reason: '',
+    enhance_last_reason: '',
     recommended_at: recommendComplete ? now : undefined,
     enhanced_at: enhanceComplete ? now : undefined
   })
