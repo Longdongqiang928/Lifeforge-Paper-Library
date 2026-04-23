@@ -278,6 +278,10 @@ function throwIfRunCancelled(runId: string, stage: RunStageId) {
   }
 }
 
+function isRunCancellationError(error: unknown) {
+  return getErrorMessage(error).includes('cancelled in favor of a newer')
+}
+
 function getMasterKey() {
   if (!process.env.MASTER_KEY) {
     throw new Error('MASTER_KEY is not configured')
@@ -324,6 +328,102 @@ function parseRSSSources(input: string) {
           .filter(Boolean)
       }
     })
+}
+
+function cleanExtractedAbstract(text: string) {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\[\d+\]/g, '')
+    .replace(/\*\*Fig\..*?\*\*/gi, '')
+    .replace(/Download Full Size.*?PDF/gi, '')
+    .replace(/View in Article.*/gi, '')
+    .split(/\s+/)
+    .join(' ')
+    .trim()
+}
+
+function extractByPatterns(text: string, patterns: RegExp[]) {
+  for (const pattern of patterns) {
+    const match = pattern.exec(text)
+
+    if (!match?.[1]) {
+      continue
+    }
+
+    const content = cleanExtractedAbstract(match[1])
+
+    if (content.length > 150) {
+      return content
+    }
+  }
+
+  return ''
+}
+
+function extractScienceAbstract(text: string) {
+  return extractByPatterns(text, [
+    /## Abstract\s*\n\s*(.+?)(?=\n\s*(?:##|###|Access|Supplementary|References|Information|Metrics))/is,
+    /Abstract\s*\n[= \-]+\n\s*(.+?)(?=\n\s*(?:##|###|Access|Supplementary|References|Information|Metrics))/is,
+    /\nAbstract\n\s*(.+?)(?=\n\s*(?:##|###|Access|Supplementary|References|Information|Metrics))/is
+  ])
+}
+
+function extractAPSAbstract(text: string) {
+  return extractByPatterns(text, [
+    /Abstract\s*\n[= \-]+\n\s*(.+?)(?=\n\s*(?:Received|Published|DOI:|Introduction|### ))/is,
+    /Abstract\s*\n\s*(.+?)(?=\n\s*(?:Received|Published|DOI:|Introduction|### ))/is
+  ])
+}
+
+function extractOpticaAbstract(text: string) {
+  if (/Radware Captcha Page/i.test(text)) {
+    return ''
+  }
+
+  return extractByPatterns(text, [
+    /Abstract\s*\n[= \-]+\n\s*(.+?)(?=\n\s*(?:©|Introduction|Methods|References|###|Related Topics))/is,
+    /Abstract\s*\n\s*(.+?)(?=\n\s*(?:©|Introduction|Methods|References|###))/is,
+    /Abstract\s*\n[= \-]+\n\s*(.+?)(?=\n\n\n|$)/is
+  ])
+}
+
+function extractGenericAbstract(text: string) {
+  const extracted = extractByPatterns(text, [
+    /Abstract\s*\n[-=]+\s*\n(.+?)(?=\n\d+\.\s|\n[A-Z][A-Z]+\n|© \d{4}|INTRODUCTION|Keywords|References)/is,
+    /\bAbstract\b[:\s]*\n?(.+?)(?=\n\d+\.\s|\n##|\n\*\*[A-Z]|© \d{4}|\n[A-Z]{4,}\n|Introduction\n)/is,
+    /\bAbstract\b[:\s]+(.+?)(?=\n\n\d+\.|\n\n[A-Z][a-z]+:)/is
+  ])
+
+  if (extracted) {
+    return extracted
+  }
+
+  if (text.length > 500 && text.length < 10000) {
+    return cleanExtractedAbstract(text.slice(0, 2000))
+  }
+
+  return ''
+}
+
+function extractAbstractFromTavilyContent(text: string, source: string) {
+  if (!text) {
+    return ''
+  }
+
+  const extracted =
+    source === 'science'
+      ? extractScienceAbstract(text)
+      : source === 'aps'
+        ? extractAPSAbstract(text)
+        : source === 'optica'
+          ? extractOpticaAbstract(text)
+          : extractGenericAbstract(text)
+
+  if (extracted) {
+    return extracted
+  }
+
+  return extractGenericAbstract(text)
 }
 
 function buildFeedUrls(source: string, categories: string[]) {
@@ -413,10 +513,13 @@ function parseRSSItems(xml: string, source: string) {
         ...extractTagValues(item, 'author')
       ]
 
-      const normalizedSummary =
-        description?.includes('Abstract:')
+      const shouldTrustRSSSummary = !['science', 'aps', 'optica'].includes(source)
+      const normalizedSummary = shouldTrustRSSSummary
+        ? description?.includes('Abstract:')
           ? description.split('Abstract:').pop()?.trim()
           : description
+        : undefined
+      const abstractUrl = doi ? `https://doi.org/${doi}` : link
 
       return normalizeIncomingPaper(
         {
@@ -428,7 +531,7 @@ function parseRSSItems(xml: string, source: string) {
           published,
           doi,
           url: link,
-          abs: link
+          abs: abstractUrl
         },
         {
           source
@@ -456,6 +559,10 @@ async function fetchText(url: string, init?: RequestInit) {
   }
 
   return response.text()
+}
+
+function looksLikeRSSDocument(content: string) {
+  return /<rss[\s>]|<feed[\s>]|<channel[\s>]|<item[\s>]|<entry[\s>]/i.test(content)
 }
 
 async function getOrCreateFetchSettingsRecord(pb: PocketBase) {
@@ -840,7 +947,8 @@ async function resolveNatureAbstract(doi: string, apiKey: string) {
 async function resolveTavilyAbstract(
   title: string,
   url: string | undefined,
-  apiKey: string
+  apiKey: string,
+  source: string
 ) {
   const data = (await fetchJSON('https://api.tavily.com/search', {
     method: 'POST',
@@ -852,15 +960,21 @@ async function resolveTavilyAbstract(
       query: url ? `${title} ${url}` : title,
       search_depth: 'basic',
       max_results: 1,
-      include_raw_content: false
+      include_raw_content: true
     })
   })) as {
     results?: Array<{
       content?: string
+      raw_content?: string
     }>
   }
 
-  return pickString(data.results?.[0]?.content)
+  const result = data.results?.[0]
+  const rawContent =
+    pickString(result?.raw_content) ?? pickString(result?.content) ?? ''
+  const extracted = extractAbstractFromTavilyContent(rawContent, source)
+
+  return extracted || undefined
 }
 
 async function saveFetchedPaper(
@@ -946,6 +1060,11 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
           () => fetchText(url),
           `fetch feed ${sourceConfig.source} ${url}`
         )
+
+        if (!looksLikeRSSDocument(xml)) {
+          throw new Error('Feed response is not a valid RSS/Atom document')
+        }
+
         const papers = parseRSSItems(xml, sourceConfig.source)
 
         for (const paper of papers) {
@@ -976,7 +1095,8 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
                       resolveTavilyAbstract(
                         paper.title,
                         paper.url,
-                        settings.tavilyApiKey!
+                        settings.tavilyApiKey!,
+                        sourceConfig.source
                       ),
                     `resolve Tavily abstract for ${paper.title}`
                   )) ?? paper.abstract
@@ -1713,6 +1833,10 @@ async function runEnhanceStage(
 
       updatedCount += 1
     } catch (error) {
+      if (isRunCancellationError(error)) {
+        throw error
+      }
+
       failedCount += 1
       const paperId = String(paper.id)
       const title = pickString(paper.title) ?? 'Untitled paper'
@@ -1794,6 +1918,7 @@ async function executeStage(
       )
     }
 
+    throwIfRunCancelled(String(run.id), stage)
     await finishRun(pb, run.id, 'completed', stats)
 
     return run.id
@@ -1921,22 +2046,55 @@ export async function getSchedulerPocketBase() {
 
 export async function runScheduledStages(now = dayjs()) {
   const pb = await getSchedulerPocketBase()
-  const currentTime = now.format('HH:mm')
+  const currentMinutes = now.hour() * 60 + now.minute()
+  const schedulerWindowStart = now.startOf('day').toISOString()
+
+  const hasReachedScheduledTime = (time: string) => {
+    const [hoursPart, minutesPart] = time.split(':')
+    const hours = Number.parseInt(hoursPart ?? '', 10)
+    const minutes = Number.parseInt(minutesPart ?? '', 10)
+
+    if (
+      Number.isNaN(hours) ||
+      Number.isNaN(minutes) ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes > 59
+    ) {
+      return false
+    }
+
+    return currentMinutes >= hours * 60 + minutes
+  }
+
+  const findSchedulerRunStartedToday = (stage: RunStageId, userId?: string) =>
+    pb
+      .collection(COLLECTION_NAMES.pipelineRuns)
+      .getFirstListItem(
+        userId
+          ? pb.filter(
+              'stage = {:stage} && triggered_by = "scheduler" && user = {:user} && created >= {:start}',
+              {
+                stage,
+                user: userId,
+                start: schedulerWindowStart
+              }
+            )
+          : pb.filter(
+              'stage = {:stage} && triggered_by = "scheduler" && created >= {:start}',
+              {
+                stage,
+                start: schedulerWindowStart
+              }
+            )
+      )
+      .catch(() => null)
 
   const fetchSettings = await getFetchSettingsInternal(pb)
 
-  if (fetchSettings.fetchEnabled && fetchSettings.fetchTime === currentTime) {
-    const alreadyRan = await pb
-      .collection(COLLECTION_NAMES.pipelineRuns)
-      .getFirstListItem(
-        pb.filter(
-          'stage = "fetch" && status = "completed" && created >= {:start}',
-          {
-            start: now.startOf('day').toISOString()
-          }
-        )
-      )
-      .catch(() => null)
+  if (fetchSettings.fetchEnabled && hasReachedScheduledTime(fetchSettings.fetchTime)) {
+    const alreadyRan = await findSchedulerRunStartedToday('fetch')
 
     if (!alreadyRan) {
       await executeStage(pb, 'fetch', 'scheduler', {})
@@ -1949,19 +2107,8 @@ export async function runScheduledStages(now = dayjs()) {
     const userId = String(record.user)
     const settings = await getUserSettingsInternal(pb, userId)
 
-    if (settings.recommendEnabled && settings.recommendTime === currentTime) {
-      const alreadyRan = await pb
-        .collection(COLLECTION_NAMES.pipelineRuns)
-        .getFirstListItem(
-          pb.filter(
-            'stage = "recommend" && user = {:user} && status = "completed" && created >= {:start}',
-            {
-              user: userId,
-              start: now.startOf('day').toISOString()
-            }
-          )
-        )
-        .catch(() => null)
+    if (settings.recommendEnabled && hasReachedScheduledTime(settings.recommendTime)) {
+      const alreadyRan = await findSchedulerRunStartedToday('recommend', userId)
 
       if (!alreadyRan) {
         const range = buildDefaultRange(settings.recommendLookbackDays)
@@ -1973,19 +2120,8 @@ export async function runScheduledStages(now = dayjs()) {
       }
     }
 
-    if (settings.enhanceEnabled && settings.enhanceTime === currentTime) {
-      const alreadyRan = await pb
-        .collection(COLLECTION_NAMES.pipelineRuns)
-        .getFirstListItem(
-          pb.filter(
-            'stage = "enhance" && user = {:user} && status = "completed" && created >= {:start}',
-            {
-              user: userId,
-              start: now.startOf('day').toISOString()
-            }
-          )
-        )
-        .catch(() => null)
+    if (settings.enhanceEnabled && hasReachedScheduledTime(settings.enhanceTime)) {
+      const alreadyRan = await findSchedulerRunStartedToday('enhance', userId)
 
       if (!alreadyRan) {
         const range = buildDefaultRange(settings.enhanceLookbackDays)
