@@ -1363,10 +1363,25 @@ async function saveFetchedPaper(
   return 'updated' as const
 }
 
+// Load fingerprints from existing papers in database
+async function loadFingerprintSnapshot(pb: PocketBase): Promise<Set<string>> {
+  try {
+    const papers = await pb.collection(COLLECTION_NAMES.papers).getFullList({
+      fields: 'fingerprint'
+    })
+    const fingerprints = papers.map((p: RecordLike) => p.fingerprint).filter(Boolean)
+    console.log(`[paper-library] loaded ${fingerprints.length} fingerprints from database`)
+    return new Set(fingerprints)
+  } catch (error) {
+    console.log('[paper-library] failed to load fingerprints from database:', error)
+    return new Set()
+  }
+}
+
 async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
   const settings = await getFetchSettingsInternal(pb)
   const rssSources = parseRSSSources(settings.rssSources)
-  const seenFingerprints = new Set<string>()
+  const seenFingerprints = await loadFingerprintSnapshot(pb)
   const failedFeeds: Array<{
     source: string
     url: string
@@ -1401,8 +1416,19 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
 
         const papers = parseRSSItems(xml, sourceConfig.source)
 
+        // Deduplicate against previous fetch and within current batch
+        const newPapers: typeof papers = []
+        for (const paper of papers) {
+          if (seenFingerprints.has(paper.fingerprint)) {
+            skippedCount += 1
+            continue
+          }
+          seenFingerprints.add(paper.fingerprint)
+          newPapers.push(paper)
+        }
+
         if (sourceConfig.source === 'nature' && settings.natureApiKey) {
-          const natureCandidates = papers.filter(
+          const natureCandidates = newPapers.filter(
             paper => !pickString(paper.abstract) && pickString(paper.doi)
           )
 
@@ -1429,7 +1455,7 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
           )
         }
 
-        const tavilyCandidates = papers.filter(paper => !pickString(paper.abstract))
+        const tavilyCandidates = newPapers.filter(paper => !pickString(paper.abstract))
 
         if (settings.tavilyApiKey && tavilyCandidates.length > 0) {
           const resolvedTavily = await resolveTavilyAbstractBatch(
@@ -1454,16 +1480,10 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
           }
         }
 
-        for (const paper of papers) {
+        for (const paper of newPapers) {
           throwIfRunCancelled(runId, 'fetch')
           processedTotal += 1
 
-          if (seenFingerprints.has(paper.fingerprint)) {
-            skippedCount += 1
-            continue
-          }
-
-          seenFingerprints.add(paper.fingerprint)
           if (paper.abstract) {
             paper.abstractStatus = 'ready'
           } else if (!pickString(paper.abstract_status)) {
