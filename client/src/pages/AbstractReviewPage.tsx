@@ -28,8 +28,10 @@ function ReviewCard({
 }) {
   const [abstract, setAbstract] = useState(item.abstract)
 
+  const normalizeAbstract = (value: string) => value.replace(/[\r\n]+/g, '')
+
   useEffect(() => {
-    setAbstract(item.abstract)
+    setAbstract(normalizeAbstract(item.abstract))
   }, [item.abstract, item.id])
 
   const isDirty = abstract !== item.abstract
@@ -90,7 +92,7 @@ function ReviewCard({
           placeholder="Review or edit the extracted abstract here"
           value={abstract}
           variant="plain"
-          onChange={setAbstract}
+          onChange={value => setAbstract(normalizeAbstract(value))}
         />
       </div>
     </Card>
