@@ -61,12 +61,8 @@ function StatCard({
 
 function RunCard({ run }: { run: PipelineRun }) {
   const details = asRunDetails(run.details)
-  const skippedRecommendNoStateOrNoAbstract = asDetailNumber(
-    details?.skippedNoStateOrNoAbstract
-  )
-  const skippedNoStateOrNoAbstract = asDetailNumber(
-    details?.skippedNoStateOrNoAbstract
-  )
+  const skippedRecommendNoAbstract = asDetailNumber(details?.skippedNoAbstract)
+  const skippedNoStateOrNoAbstract = asDetailNumber(details?.skippedNoStateOrNoAbstract)
   const skippedBelowThreshold = asDetailNumber(details?.skippedBelowThreshold)
   const skippedEnhanceAlreadyCompletedUnchanged = asDetailNumber(
     details?.skippedAlreadyCompletedUnchanged
@@ -121,18 +117,16 @@ function RunCard({ run }: { run: PipelineRun }) {
         </div>
       </div>
 
-      {(skippedRecommendNoStateOrNoAbstract !== undefined ||
+      {(skippedRecommendNoAbstract !== undefined ||
         skippedNoStateOrNoAbstract !== undefined ||
         skippedBelowThreshold !== undefined ||
         skippedRecommendAlreadyCompletedUnchanged !== undefined ||
         skippedEnhanceAlreadyCompletedUnchanged !== undefined) && (
-        <div className="bg-bg-100 dark:bg-bg-900 grid gap-3 rounded-lg p-3 sm:grid-cols-3">
-          {run.stage === 'recommend' && skippedRecommendNoStateOrNoAbstract !== undefined && (
+      <div className="bg-bg-100 dark:bg-bg-900 grid gap-3 rounded-lg p-3 sm:grid-cols-3">
+          {run.stage === 'recommend' && skippedRecommendNoAbstract !== undefined && (
             <div>
-              <p className="text-bg-500 text-xs uppercase">Skip: No state / no abstract</p>
-              <p className="text-base font-semibold">
-                {skippedRecommendNoStateOrNoAbstract}
-              </p>
+              <p className="text-bg-500 text-xs uppercase">Skip: No abstract</p>
+              <p className="text-base font-semibold">{skippedRecommendNoAbstract}</p>
             </div>
           )}
           {run.stage === 'enhance' && skippedNoStateOrNoAbstract !== undefined && (

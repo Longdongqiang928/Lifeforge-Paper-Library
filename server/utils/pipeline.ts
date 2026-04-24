@@ -1912,7 +1912,6 @@ async function runRecommendStage(
     inputHash: string
   }> = []
 
-  let skippedNoStateOrNoAbstract = 0
   let skippedNoAbstract = 0
   let skippedAlreadyCompletedUnchanged = 0
 
@@ -1920,25 +1919,6 @@ async function runRecommendStage(
     const paperId = String(paper.id)
     const state = statesByPaper.get(paperId)
     const abstract = getReadyAbstract(paper)
-
-    if (!state || !abstract) {
-      skippedNoStateOrNoAbstract += 1
-      if (state && !abstract) {
-        skippedNoAbstract += 1
-      }
-
-      await upsertUserState(pb, settings.userId, paperId, {
-        recommend_status: 'skipped',
-        recommend_last_run_id: runId,
-        recommend_last_reason: !state ? 'no_state' : 'no_abstract'
-      })
-
-      skippedItems.push({
-        paperId,
-        reason: !state ? 'no_state' : 'no_abstract'
-      })
-      continue
-    }
 
     if (!abstract) {
       skippedNoAbstract += 1
@@ -2057,12 +2037,10 @@ async function runRecommendStage(
     processedTotal: candidateDescriptors.length,
     insertedCount: 0,
     updatedCount,
-    skippedCount:
-      skippedNoStateOrNoAbstract + skippedAlreadyCompletedUnchanged,
+    skippedCount: skippedNoAbstract + skippedAlreadyCompletedUnchanged,
     failedCount: 0,
     details: {
       corpusSize: cacheEntries.length,
-      skippedNoStateOrNoAbstract,
       skippedNoAbstract,
       skippedAlreadyCompletedUnchanged,
       skippedItems: skippedItems.slice(0, 50)
