@@ -104,16 +104,18 @@ function RunCard({ run }: { run: PipelineRun }) {
           <p className="text-lg font-semibold">{run.insertedCount}</p>
         </div>
         <div>
-          <p className="text-bg-500 text-xs uppercase">Updated</p>
-          <p className="text-lg font-semibold">{run.updatedCount}</p>
-        </div>
-        <div>
           <p className="text-bg-500 text-xs uppercase">Skipped</p>
           <p className="text-lg font-semibold">{run.skippedCount}</p>
         </div>
         <div>
           <p className="text-bg-500 text-xs uppercase">Failed</p>
           <p className="text-lg font-semibold">{run.failedCount}</p>
+        </div>
+        <div>
+          <p className="text-bg-500 text-xs uppercase">Total</p>
+          <p className="text-lg font-semibold">
+            {run.processedTotal + run.skippedCount + run.failedCount}
+          </p>
         </div>
       </div>
 

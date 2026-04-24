@@ -45,16 +45,16 @@ function ImportBatchCard({ batch }: { batch: ImportBatch }) {
           <p className="text-lg font-semibold">{batch.inserted}</p>
         </div>
         <div>
-          <p className="text-bg-500 text-xs uppercase">Updated</p>
-          <p className="text-lg font-semibold">{batch.updatedCount}</p>
-        </div>
-        <div>
           <p className="text-bg-500 text-xs uppercase">Skipped</p>
           <p className="text-lg font-semibold">{batch.skipped}</p>
         </div>
         <div>
           <p className="text-bg-500 text-xs uppercase">Failed</p>
           <p className="text-lg font-semibold">{batch.failed}</p>
+        </div>
+        <div>
+          <p className="text-bg-500 text-xs uppercase">Total</p>
+          <p className="text-lg font-semibold">{batch.inserted + batch.skipped + batch.failed}</p>
         </div>
       </div>
       {batch.errorLog && (
