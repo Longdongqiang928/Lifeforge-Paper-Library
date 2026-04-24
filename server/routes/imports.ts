@@ -207,31 +207,24 @@ async function upsertPaper(pb: PocketBase, rawPaper: unknown, source?: string) {
 
   const overlay = extractImportOverlay(rawPaper)
 
-  if (!existing) {
-    const created = await pb.instance.collection(COLLECTION_NAMES.papers).create({
-      ...payload,
-      fetched_at: now
-    })
-
+  if (existing) {
     return {
-      paperId: String(created.id),
-      operation: 'inserted' as const,
+      paperId: String(existing.id),
+      operation: 'skipped' as const,
       overlay,
-      warnings: [...normalized.warnings, ...overlay.warnings]
+      warnings: [...normalized.warnings, ...overlay.warnings],
+      skippedReason: 'duplicate_fingerprint'
     }
   }
 
-  await pb.instance.collection(COLLECTION_NAMES.papers).update(
-    existing.id,
-    compactUpdate({
-      ...payload,
-      fetched_at: pickString(existing.fetched_at) ?? now
-    })
-  )
+  const created = await pb.instance.collection(COLLECTION_NAMES.papers).create({
+    ...payload,
+    fetched_at: now
+  })
 
   return {
-    paperId: String(existing.id),
-    operation: 'updated' as const,
+    paperId: String(created.id),
+    operation: 'inserted' as const,
     overlay,
     warnings: [...normalized.warnings, ...overlay.warnings]
   }
@@ -328,7 +321,13 @@ async function ingestPapers(params: {
       }
 
       if (result.operation === 'inserted') inserted += 1
-      if (result.operation === 'updated') updated += 1
+      if (result.operation === 'skipped') {
+        skipped += 1
+        warnings.push(
+          `Item ${index + 1}: skipped duplicate paper (${result.skippedReason ?? 'duplicate'})`
+        )
+        continue
+      }
 
       await upsertUserState(pb, userId, result.paperId, result.overlay)
 
