@@ -71,6 +71,13 @@ function ReviewCard({
         >
           Save abstract
         </Button>
+        <Button
+          icon="tabler:eraser"
+          variant="secondary"
+          onClick={() => onSave({ id: item.id, abstract: '' })}
+        >
+          Clear abstract
+        </Button>
       </div>
 
       <div className="space-y-2">
