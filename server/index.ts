@@ -4,6 +4,7 @@ import detail from './routes/papers'
 import favorites from './routes/favorites'
 import imports from './routes/imports'
 import pipeline from './routes/pipeline'
+import semanticScholar from './routes/semanticScholar'
 import { startPipelineScheduler } from './utils/scheduler'
 
 startPipelineScheduler()
@@ -19,5 +20,6 @@ export default forgeRouter({
     import: imports,
     favorites
   },
-  pipeline
+  pipeline,
+  semanticScholar
 })
