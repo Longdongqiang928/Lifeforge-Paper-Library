@@ -1349,18 +1349,16 @@ async function saveFetchedPaper(
     last_seen_at: now
   }
 
-  if (!existing) {
-    await pb.collection(COLLECTION_NAMES.papers).create({
-      ...payload,
-      fetched_at: now
-    })
-
-    return 'inserted' as const
+  if (existing) {
+    return 'skipped' as const
   }
 
-  await pb.collection(COLLECTION_NAMES.papers).update(existing.id, payload)
+  await pb.collection(COLLECTION_NAMES.papers).create({
+    ...payload,
+    fetched_at: now
+  })
 
-  return 'updated' as const
+  return 'inserted' as const
 }
 
 // Load fingerprints from existing papers in database
@@ -1494,7 +1492,6 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
             const result = await saveFetchedPaper(pb, paper, runId)
 
             if (result === 'inserted') insertedCount += 1
-            if (result === 'updated') updatedCount += 1
             if (result === 'skipped') skippedCount += 1
           } catch (error) {
             failedCount += 1
