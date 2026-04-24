@@ -89,8 +89,6 @@ The module now uses four separate state layers:
   - `recommend_status`, `enhance_status`
   - values:
     - `idle`
-    - `running`
-    - `skipped`
     - `completed`
     - `failed`
   - paired metadata:
@@ -121,9 +119,7 @@ The module now uses four separate state layers:
 - Computes similarity between fetched papers and Zotero collections
 - Writes scores and matched collections into `ldq_paperlib_user_states`
 - Only processes papers where `abstract_status = ready`
-- Marks skipped papers explicitly, for example:
-  - `no_abstract`
-  - `unchanged`
+- Skip reasons such as `no_abstract` and `unchanged` are tracked in the current run details, not as long-lived user-state statuses
 - Uses `recommend_input_hash` so already completed unchanged papers can be skipped cleanly
 
 ### Enhance
@@ -139,10 +135,7 @@ The module now uses four separate state layers:
   - `recommend` data exists
   - score passes the threshold
 - Uses `enhance_input_hash` so already completed unchanged papers are skipped instead of re-running the model
-- Records explicit skip reasons, including:
-  - `no_state_or_below_threshold`
-  - `no_abstract`
-  - `unchanged`
+- Skip reasons such as `no_state`, `no_abstract`, `below_threshold`, and `unchanged` are tracked in the current run details, not as long-lived user-state statuses
 
 ## Scheduling Rules
 
@@ -174,6 +167,7 @@ Import can also seed user overlay state:
 
 - imported score / collections mark `recommend_status = completed`
 - imported TL;DR / translations mark `enhance_status = completed`
+- imported overlay rows use `recommend_last_reason = imported` / `enhance_last_reason = imported`
 - imported overlay defaults now align with the current stage-state model
 
 Long text handling:

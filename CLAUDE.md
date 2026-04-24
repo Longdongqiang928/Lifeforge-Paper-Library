@@ -90,8 +90,6 @@ The current implementation separates state into four layers:
    - `recommend_status`, `enhance_status`
    - values:
      - `idle`
-     - `running`
-     - `skipped`
      - `completed`
      - `failed`
    - paired metadata:
@@ -130,9 +128,7 @@ The current implementation separates state into four layers:
   - `recommend_input_hash`
   - `recommend_last_run_id`
   - `recommend_last_reason`
-- Explicit skip reasons currently include:
-  - `no_abstract`
-  - `unchanged`
+- Skip reasons such as `no_abstract` and `unchanged` are stored in the current `runs.details`, not as long-lived `recommend_status` values
 
 **Enhance** (`runEnhanceStage`):
 - Selects papers where `score_max >= enhance_threshold` (default 3.6)
@@ -146,10 +142,7 @@ The current implementation separates state into four layers:
   - `enhance_input_hash`
   - `enhance_last_run_id`
   - `enhance_last_reason`
-- Explicit skip reasons currently include:
-  - `no_state_or_below_threshold`
-  - `no_abstract`
-  - `unchanged`
+- Skip reasons such as `no_state`, `no_abstract`, `below_threshold`, and `unchanged` are stored in the current `runs.details`, not as long-lived `enhance_status` values
 
 ### Scheduler Coordination
 

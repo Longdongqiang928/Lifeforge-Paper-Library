@@ -73,6 +73,10 @@ export interface NormalizedPaper {
   warnings: string[]
 }
 
+function normalizeProcessStatus(value: unknown): ProcessStatusId {
+  return value === 'completed' || value === 'failed' ? value : 'idle'
+}
+
 function isRecord(value: unknown): value is RecordLike {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -305,11 +309,9 @@ export function mapPaperRecord(
     isFavorite: favoriteFolderId !== undefined,
     favoriteFolderId,
     recommendStatus:
-      (pickString(userState?.recommend_status) as ProcessStatusId | undefined) ??
-      'idle',
+      normalizeProcessStatus(pickString(userState?.recommend_status)),
     enhanceStatus:
-      (pickString(userState?.enhance_status) as ProcessStatusId | undefined) ??
-      'idle',
+      normalizeProcessStatus(pickString(userState?.enhance_status)),
     recommendedAt: pickString(userState?.recommended_at),
     enhancedAt: pickString(userState?.enhanced_at)
   }

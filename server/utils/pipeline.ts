@@ -148,12 +148,12 @@ function buildStableHash(parts: Array<string | undefined>) {
 
 function getPaperAbstractState(paper: RecordLike) {
   const rawStatus = pickString(paper.abstract_status)
-  const abstract = pickString(paper.abstract)
 
-  if (abstract) return 'ready' as const
-  if (rawStatus === 'error') return 'error' as const
+  if (rawStatus === 'ready' || rawStatus === 'missing' || rawStatus === 'error') {
+    return rawStatus
+  }
 
-  return 'missing' as const
+  return pickString(paper.abstract) ? ('ready' as const) : ('missing' as const)
 }
 
 function getReadyAbstract(paper: RecordLike) {
@@ -1926,12 +1926,6 @@ async function runRecommendStage(
         paperId,
         reason: 'no_abstract'
       })
-
-      await upsertUserState(pb, settings.userId, paperId, {
-        recommend_status: 'skipped',
-        recommend_last_run_id: runId,
-        recommend_last_reason: 'no_abstract'
-      })
       continue
     }
 
@@ -1946,13 +1940,6 @@ async function runRecommendStage(
       skippedItems.push({
         paperId,
         reason: 'unchanged'
-      })
-
-      await upsertUserState(pb, settings.userId, paperId, {
-        recommend_status: 'skipped',
-        recommend_input_hash: inputHash,
-        recommend_last_run_id: runId,
-        recommend_last_reason: 'unchanged'
       })
       continue
     }
@@ -2253,26 +2240,11 @@ async function runEnhanceStage(
 
     if (!state || !abstract) {
       skippedNoStateOrNoAbstract += 1
-
-      if (state && !abstract) {
-        await upsertUserState(pb, settings.userId, paperId, {
-          enhance_status: 'skipped',
-          enhance_last_run_id: runId,
-          enhance_last_reason: 'no_state_or_no_abstract'
-        })
-      }
-
       continue
     }
 
     if ((asNumber(state.score_max) ?? 0) < settings.enhanceThreshold) {
       skippedBelowThreshold += 1
-
-      await upsertUserState(pb, settings.userId, paperId, {
-        enhance_status: 'skipped',
-        enhance_last_run_id: runId,
-        enhance_last_reason: 'below_threshold'
-      })
       continue
     }
 
@@ -2283,14 +2255,6 @@ async function runEnhanceStage(
       pickString(state.enhance_input_hash) === inputHash
     ) {
       skippedAlreadyCompletedUnchanged += 1
-
-      await upsertUserState(pb, settings.userId, paperId, {
-        enhance_status: 'skipped',
-        enhance_input_hash: inputHash,
-        enhance_last_run_id: runId,
-        enhance_last_reason: 'unchanged'
-      })
-
       continue
     }
 

@@ -36,13 +36,7 @@ export type RunStageId = (typeof RUN_STAGE_IDS)[number]
 export const RUN_STATUS_IDS = ['running', 'completed', 'failed'] as const
 export type RunStatusId = (typeof RUN_STATUS_IDS)[number]
 
-export const PROCESS_STATUS_IDS = [
-  'idle',
-  'running',
-  'skipped',
-  'completed',
-  'failed'
-] as const
+export const PROCESS_STATUS_IDS = ['idle', 'completed', 'failed'] as const
 export type ProcessStatusId = (typeof PROCESS_STATUS_IDS)[number]
 
 export const ABSTRACT_STATUS_IDS = ['ready', 'missing', 'error'] as const

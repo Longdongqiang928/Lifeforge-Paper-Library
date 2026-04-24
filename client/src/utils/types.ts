@@ -16,8 +16,8 @@ export interface PaperListItem {
   tldr?: string
   isFavorite: boolean
   favoriteFolderId?: string | null
-  recommendStatus: 'idle' | 'running' | 'completed' | 'failed'
-  enhanceStatus: 'idle' | 'running' | 'completed' | 'failed'
+  recommendStatus: 'idle' | 'completed' | 'failed'
+  enhanceStatus: 'idle' | 'completed' | 'failed'
   recommendedAt?: string
   enhancedAt?: string
 }
