@@ -3,6 +3,7 @@ import { forgeRouter } from '@lifeforge/server-utils'
 import detail from './routes/papers'
 import favorites from './routes/favorites'
 import imports from './routes/imports'
+import openalex from './routes/openalex'
 import pipeline from './routes/pipeline'
 import semanticScholar from './routes/semanticScholar'
 import { startPipelineScheduler } from './utils/scheduler'
@@ -21,5 +22,6 @@ export default forgeRouter({
     favorites
   },
   pipeline,
-  semanticScholar
+  semanticScholar,
+  openalex
 })
