@@ -2524,6 +2524,7 @@ export async function getSchedulerPocketBase() {
 }
 
 export async function runScheduledStages(now = dayjs()) {
+  console.log('[paper-library] scheduler tick at', now.format('YYYY-MM-DD HH:mm'))
   const pb = await getSchedulerPocketBase()
   const currentMinutes = now.hour() * 60 + now.minute()
 
@@ -2547,14 +2548,17 @@ export async function runScheduledStages(now = dayjs()) {
   }
 
   const fetchSettings = await getFetchSettingsInternal(pb)
+  console.log('[paper-library] fetchEnabled:', fetchSettings.fetchEnabled, 'fetchTime:', fetchSettings.fetchTime, 'lastKey:', fetchSettings.lastFetchScheduleKey)
 
   if (fetchSettings.fetchEnabled && hasReachedScheduledTime(fetchSettings.fetchTime)) {
     const scheduleKey = buildScheduleKey(now, fetchSettings.fetchTime)
+    console.log('[paper-library] scheduleKey:', scheduleKey, 'shouldTrigger:', fetchSettings.lastFetchScheduleKey !== scheduleKey)
 
     if (fetchSettings.lastFetchScheduleKey !== scheduleKey) {
       await pb.collection(COLLECTION_NAMES.fetchSettings).update(fetchSettings.id, {
         last_fetch_schedule_key: scheduleKey
       })
+      console.log('[paper-library] triggering fetch...')
       await executeStage(pb, 'fetch', 'scheduler', {})
     }
   }
