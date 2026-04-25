@@ -629,11 +629,7 @@ function looksLikeRSSDocument(content: string) {
 async function getOrCreateFetchSettingsRecord(pb: PocketBase) {
   const existing = await pb
     .collection(COLLECTION_NAMES.fetchSettings)
-    .getFullList({
-      filter: pb.filter('config_key = {:key}', { key: 'global' }),
-      sort: '-updated'
-    })
-    .then((records: RecordLike[]) => records[0] ?? null)
+    .getFirstListItem('config_key = "global"')
     .catch(() => null)
 
   if (existing) return existing
