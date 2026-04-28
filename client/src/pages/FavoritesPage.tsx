@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, EmptyStateScreen, ModuleHeader, WithQuery, useModalStore } from 'lifeforge-ui'
+import { Button, Card, EmptyStateScreen, ModuleHeader, WithQuery, useModalStore } from 'lifeforge-ui'
 import { toast } from 'react-toastify'
 
 import CreateFolderModal from '@/components/CreateFolderModal'
@@ -59,7 +59,7 @@ function FavoritesPage() {
 
       <WithQuery query={favoritesQuery}>
         {data =>
-          data.totalFavorites === 0 ? (
+          data.folders.length === 0 ? (
             <EmptyStateScreen
               icon="tabler:stars-off"
               message={{
@@ -81,9 +81,7 @@ function FavoritesPage() {
                 </div>
               </div>
 
-              {data.folders
-                .filter(folder => folder.count > 0)
-                .map(folder => (
+              {data.folders.map(folder => (
                   <section key={folder.id} className="space-y-4">
                     <div className="border-bg-500/10 flex items-end justify-between gap-4 border-b pb-3">
                       <div>
@@ -92,42 +90,51 @@ function FavoritesPage() {
                         <p className="text-bg-500 text-sm">{folder.count} saved papers</p>
                       </div>
                     </div>
-                    <div className="grid gap-4 xl:grid-cols-2">
-                      {folder.papers.map(paper => (
-                        <PaperCard
-                          key={paper.id}
-                          detailTo={`${MODULE_BASE_PATH}/${paper.id}`}
-                          favoriteLoading={
-                            toggleFavoriteMutation.isPending &&
-                            toggleFavoriteMutation.variables?.paperId === paper.id
-                          }
-                          paper={paper}
-                          secondaryAction={
-                            data.folders.length > 1 ? (
-                              <Button
-                                icon="tabler:arrows-exchange"
-                                variant="secondary"
-                                onClick={() => {
-                                  open(MoveFavoriteModal, {
-                                    currentFolderId: folder.id,
-                                    folders: data.folders,
-                                    paperId: paper.id
-                                  })
-                                }}
-                              >
-                                Move
-                              </Button>
-                            ) : undefined
-                          }
-                          onToggleFavorite={() => {
-                            toggleFavoriteMutation.mutate({
-                              paperId: paper.id,
-                              folderId: folder.id
-                            })
-                          }}
-                        />
-                      ))}
-                    </div>
+                    {folder.papers.length === 0 ? (
+                      <Card className="border-bg-500/10 bg-component-bg/50 rounded-2xl border border-dashed p-5">
+                        <p className="text-sm font-medium">Empty folder</p>
+                        <p className="text-bg-500 mt-1 text-sm">
+                          Save papers into this folder to build a curated reading shelf.
+                        </p>
+                      </Card>
+                    ) : (
+                      <div className="grid gap-4 xl:grid-cols-2">
+                        {folder.papers.map(paper => (
+                          <PaperCard
+                            key={paper.id}
+                            detailTo={`${MODULE_BASE_PATH}/${paper.id}`}
+                            favoriteLoading={
+                              toggleFavoriteMutation.isPending &&
+                              toggleFavoriteMutation.variables?.paperId === paper.id
+                            }
+                            paper={paper}
+                            secondaryAction={
+                              data.folders.length > 1 ? (
+                                <Button
+                                  icon="tabler:arrows-exchange"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    open(MoveFavoriteModal, {
+                                      currentFolderId: folder.id,
+                                      folders: data.folders,
+                                      paperId: paper.id
+                                    })
+                                  }}
+                                >
+                                  Move
+                                </Button>
+                              ) : undefined
+                            }
+                            onToggleFavorite={() => {
+                              toggleFavoriteMutation.mutate({
+                                paperId: paper.id,
+                                folderId: folder.id
+                              })
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </section>
                 ))}
             </div>
