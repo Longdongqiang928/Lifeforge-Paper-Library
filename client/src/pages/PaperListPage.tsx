@@ -18,6 +18,7 @@ import { Link, useSearchParams } from 'shared'
 
 import PaperCard from '@/components/PaperCard'
 import PaperDetailModal from '@/components/PaperDetailModal'
+import ModuleSubnav from '@/components/ModuleSubnav'
 import forgeAPI from '@/utils/forgeAPI'
 import {
   MODULE_BASE_PATH,
@@ -192,138 +193,72 @@ function PaperListPage() {
       >
         <ModuleHeader
           actionButton={
-            <div className="flex items-center gap-2">
-              <Button as={Link} icon="tabler:star" to={`${MODULE_BASE_PATH}/favorites`}>
-                Favorites
-              </Button>
-              <Button
-                as={Link}
-                icon="tabler:file-import"
-                to={`${MODULE_BASE_PATH}/import`}
-                variant="secondary"
-              >
-                Import
-              </Button>
-              <Button
-                as={Link}
-                icon="tabler:file-search"
-                to={`${MODULE_BASE_PATH}/abstract-review`}
-                variant="secondary"
-              >
-                Review
-              </Button>
-              <Button
-                as={Link}
-                icon="tabler:player-play"
-                to={`${MODULE_BASE_PATH}/run`}
-                variant="secondary"
-              >
-                Run
-              </Button>
-              <Button
-                as={Link}
-                icon="tabler:settings"
-                to={`${MODULE_BASE_PATH}/settings`}
-                variant="secondary"
-              >
-                Settings
-              </Button>
-            </div>
+            <Button as={Link} icon="tabler:player-play" to={`${MODULE_BASE_PATH}/run`}>
+              Run pipeline
+            </Button>
           }
           icon="tabler:books"
           namespace={MODULE_NAMESPACE}
           title="papersPage"
           totalItems={totalItems}
         />
+        <ModuleSubnav />
 
         <div className="mb-6 space-y-4">
-          <Card className="from-component-bg-lighter to-component-bg space-y-5 bg-gradient-to-br">
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
-            <div className="space-y-4">
-              <div className="space-y-2">
+          <Card className="border-bg-500/10 from-component-bg to-component-bg-lighter border bg-gradient-to-br">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(17rem,0.8fr)]">
+              <div className="space-y-5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <TagChip
-                    icon="tabler:database"
-                    label={`${totalItems ?? 0} matching papers`}
-                    variant="filled"
-                  />
-                  <TagChip
-                    icon="tabler:filter"
-                    label={`${activeFilterCount} active filters`}
-                    variant="outlined"
-                  />
-                  <TagChip
-                    icon="tabler:chart-bar"
-                    label="Top score"
-                    variant="outlined"
-                  />
+                  <TagChip icon="tabler:sparkles" label="Editorial view" variant="filled" />
+                  <TagChip icon="tabler:database" label={`${totalItems ?? 0} papers`} variant="outlined" />
+                  <TagChip icon="tabler:filter" label={`${activeFilterCount} filters`} variant="outlined" />
                 </div>
-                <h2 className="text-2xl font-semibold">Explore the current paper pool</h2>
-                <p className="text-bg-500 max-w-3xl text-sm leading-6">
-                  By default, the homepage shows papers fetched today and ranks them by your
-                  current score. The filters below still let you widen the fetch window or
-                  narrow it by source, journal, and collections.
-                </p>
-              </div>
-
-              <SearchInput
-                debounceMs={250}
-                namespace={MODULE_NAMESPACE}
-                searchTarget="paper"
-                value={query}
-                onChange={setQuery}
-              />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-              <Card className="component-bg-lighter space-y-1 p-4">
-                <p className="text-sm font-medium">Today by default</p>
-                <p className="text-bg-500 text-sm">
-                  The first view focuses on papers fetched today, and the date filter keeps using
-                  fetch time rather than publication time.
-                </p>
-              </Card>
-              <Card className="component-bg-lighter space-y-1 p-4">
-                <p className="text-sm font-medium">Score-ranked view</p>
-                <p className="text-bg-500 text-sm">
-                  The paper feed is ordered by your current recommend score so the most relevant
-                  items rise to the top first.
-                </p>
-              </Card>
-              <Card className="component-bg-lighter flex items-center justify-between gap-3 p-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Need a clean slate?</p>
-                  <p className="text-bg-500 text-sm">
-                    Reset the current search and filter stack in one step.
+                <div className="space-y-2">
+                  <h2 className="text-3xl leading-tight font-semibold">Today&apos;s scored reading list</h2>
+                  <p className="text-bg-500 max-w-3xl text-sm leading-7">
+                    Papers fetched today stay in focus first. Search and filters still let you widen
+                    the pool without losing the score-ranked reading flow.
                   </p>
                 </div>
-                <Button
-                  icon="tabler:filter-x"
-                  variant="secondary"
-                  onClick={resetFilters}
-                >
-                  Reset
-                </Button>
-              </Card>
-            </div>
-          </div>
-          </Card>
-
-          <Card className="space-y-5">
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-            <Card className="component-bg-lighter space-y-4">
-              <div className="space-y-1">
-                <h2 className="text-lg font-semibold">Quick filters</h2>
-                <p className="text-bg-500 text-sm">
-                  Narrow the list by fetched time, saved state, and summary availability.
-                </p>
+                <SearchInput
+                  debounceMs={250}
+                  namespace={MODULE_NAMESPACE}
+                  searchTarget="paper"
+                  value={query}
+                  onChange={setQuery}
+                />
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-bg-500 block text-sm font-medium">
-                    From
-                  </label>
+              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                <Card className="component-bg-lighter border-bg-500/10 border p-4">
+                  <p className="text-sm font-medium">Default window</p>
+                  <p className="text-bg-500 mt-1 text-sm">Fetched today</p>
+                </Card>
+                <Card className="component-bg-lighter border-bg-500/10 border p-4">
+                  <p className="text-sm font-medium">Ranking mode</p>
+                  <p className="text-bg-500 mt-1 text-sm">Sorted by recommend score</p>
+                </Card>
+                <Card className="component-bg-lighter border-bg-500/10 flex items-center justify-between gap-3 border p-4">
+                  <div>
+                    <p className="text-sm font-medium">Reset view</p>
+                    <p className="text-bg-500 mt-1 text-sm">Return to today&apos;s clean feed.</p>
+                  </div>
+                  <Button icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
+                    Reset
+                  </Button>
+                </Card>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg border bg-gradient-to-br">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_16rem]">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Fetched time</p>
+                  <h3 className="text-lg font-semibold">Window</h3>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
                   <DateInput
                     value={dateFrom ? dayjs(dateFrom).toDate() : null}
                     variant="plain"
@@ -331,11 +266,6 @@ function PaperListPage() {
                       setDateFrom(value ? dayjs(value).format('YYYY-MM-DD') : '')
                     }}
                   />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-bg-500 block text-sm font-medium">
-                    To
-                  </label>
                   <DateInput
                     value={dateTo ? dayjs(dateTo).toDate() : null}
                     variant="plain"
@@ -344,102 +274,96 @@ function PaperListPage() {
                     }}
                   />
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-medium">Only favorites</p>
-                  <p className="text-bg-500 text-sm">Show only items already pinned into your folders.</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium">Favorites only</p>
+                    </div>
+                    <Switch value={favoritesOnly} onChange={setFavoritesOnly} />
+                  </div>
+                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium">With abstract</p>
+                    </div>
+                    <Switch value={hasAbstractOnly} onChange={setHasAbstractOnly} />
+                  </div>
                 </div>
-                <Switch value={favoritesOnly} onChange={setFavoritesOnly} />
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-medium">Only with summaries</p>
-                  <p className="text-bg-500 text-sm">
-                    Keep the list focused on papers that already have an abstract or TL;DR.
-                  </p>
-                </div>
-                <Switch value={hasAbstractOnly} onChange={setHasAbstractOnly} />
-              </div>
-            </Card>
-
-            <Card className="component-bg-lighter space-y-4">
-              <div className="space-y-1">
-                <h2 className="text-lg font-semibold">Metadata filters</h2>
-                <p className="text-bg-500 text-sm">
-                  Filter by source, journal, or matched Zotero collections.
-                </p>
               </div>
 
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Sources</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {(filtersMetaQuery.data?.sources ?? []).map(source => (
-                      <TagChip
-                        key={source}
-                        icon="tabler:rss"
-                        label={source}
-                        variant={
-                          selectedSources.includes(source) ? 'filled' : 'outlined'
-                        }
-                        onClick={() => {
-                          setSelectedSources(current =>
-                            toggleStringInList(current, source)
-                          )
-                        }}
-                      />
-                    ))}
-                  </div>
+                <div className="space-y-1">
+                  <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Metadata</p>
+                  <h3 className="text-lg font-semibold">Source, journal, collections</h3>
                 </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Journals</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {(filtersMetaQuery.data?.journals ?? []).map(journal => (
-                      <TagChip
-                        key={journal}
-                        icon="tabler:book"
-                        label={journal}
-                        variant={
-                          selectedJournals.includes(journal) ? 'filled' : 'outlined'
-                        }
-                        onClick={() => {
-                          setSelectedJournals(current =>
-                            toggleStringInList(current, journal)
-                          )
-                        }}
-                      />
-                    ))}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Sources</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(filtersMetaQuery.data?.sources ?? []).map(source => (
+                        <TagChip
+                          key={source}
+                          icon="tabler:rss"
+                          label={source}
+                          variant={selectedSources.includes(source) ? 'filled' : 'outlined'}
+                          onClick={() => {
+                            setSelectedSources(current => toggleStringInList(current, source))
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Collections</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {(filtersMetaQuery.data?.collections ?? []).map(collection => (
-                      <TagChip
-                        key={collection}
-                        icon="tabler:folders"
-                        label={collection}
-                        variant={
-                          selectedCollections.includes(collection)
-                            ? 'filled'
-                            : 'outlined'
-                        }
-                        onClick={() => {
-                          setSelectedCollections(current =>
-                            toggleStringInList(current, collection)
-                          )
-                        }}
-                      />
-                    ))}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Journals</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(filtersMetaQuery.data?.journals ?? []).map(journal => (
+                        <TagChip
+                          key={journal}
+                          icon="tabler:book"
+                          label={journal}
+                          variant={selectedJournals.includes(journal) ? 'filled' : 'outlined'}
+                          onClick={() => {
+                            setSelectedJournals(current => toggleStringInList(current, journal))
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Collections</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(filtersMetaQuery.data?.collections ?? []).map(collection => (
+                        <TagChip
+                          key={collection}
+                          icon="tabler:folders"
+                          label={collection}
+                          variant={selectedCollections.includes(collection) ? 'filled' : 'outlined'}
+                          onClick={() => {
+                            setSelectedCollections(current => toggleStringInList(current, collection))
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </Card>
+
+              <div className="space-y-3">
+                <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Actions</p>
+                <Button as={Link} icon="tabler:file-import" to={`${MODULE_BASE_PATH}/import`} variant="secondary">
+                  Import
+                </Button>
+                <Button as={Link} icon="tabler:file-search" to={`${MODULE_BASE_PATH}/abstract-review`} variant="secondary">
+                  Review
+                </Button>
+                <Button as={Link} icon="tabler:star" to={`${MODULE_BASE_PATH}/favorites`} variant="secondary">
+                  Favorites
+                </Button>
+                <Button as={Link} icon="tabler:settings" to={`${MODULE_BASE_PATH}/settings`} variant="secondary">
+                  Settings
+                </Button>
+              </div>
             </div>
           </Card>
         </div>
@@ -458,13 +382,8 @@ function PaperListPage() {
               <div className="space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium">
-                      Showing {data.items.length} of {data.totalItems} matching papers
-                    </p>
-                    <p className="text-bg-500 text-sm">
-                      Results are ordered by score, while cards still surface your favorites,
-                      matched collections, and AI overlays.
-                    </p>
+                    <p className="text-sm font-medium">Showing {data.items.length} of {data.totalItems} papers</p>
+                    <p className="text-bg-500 text-sm">Cards keep score, overlays, and saved state visible at a glance.</p>
                   </div>
                   {data.totalPages > 1 && (
                     <TagChip

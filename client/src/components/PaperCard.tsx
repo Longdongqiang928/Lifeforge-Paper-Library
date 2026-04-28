@@ -39,9 +39,9 @@ function PaperCard({
 
   return (
     <Card
-      className={`from-component-bg to-component-bg-lighter flex h-full flex-col gap-4 bg-gradient-to-br ${
+      className={`border-bg-500/10 from-component-bg to-component-bg-lighter flex h-full flex-col gap-5 border bg-gradient-to-br ${
         onOpenDetail
-          ? 'cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl'
+          ? 'cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl'
           : ''
       }`}
       role={onOpenDetail ? 'button' : undefined}
@@ -49,41 +49,19 @@ function PaperCard({
       onClick={onOpenDetail}
       onKeyDown={handleCardKeyDown}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          <TagChip
-            icon="tabler:database-import"
-            label={`Fetched ${formatPaperDate(paper.fetchedAt)}`}
-            variant="outlined"
-          />
-          <TagChip
-            icon="tabler:calendar"
-            label={`Published ${formatPaperDate(paper.publishedAt)}`}
-          />
-          {paper.source && (
-            <TagChip icon="tabler:rss" label={paper.source} variant="filled" />
-          )}
-          {paper.journal && (
-            <TagChip
-              icon="tabler:book"
-              label={paper.journal}
-              variant="outlined"
-            />
-          )}
-          {typeof paper.score === 'number' && (
-            <TagChip
-              icon="tabler:chart-bar"
-              label={`Score ${paper.score.toFixed(2)}`}
-              variant="filled"
-            />
-          )}
-          {statusLabel && (
-            <TagChip
-              icon="tabler:sparkles"
-              label={statusLabel}
-              variant="outlined"
-            />
-          )}
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {paper.source && <TagChip icon="tabler:rss" label={paper.source} variant="filled" />}
+            {paper.journal && <TagChip icon="tabler:book" label={paper.journal} variant="outlined" />}
+            {statusLabel && (
+              <TagChip icon="tabler:sparkles" label={statusLabel} variant="outlined" />
+            )}
+          </div>
+          <div className="text-bg-500 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            <span>Fetched {formatPaperDate(paper.fetchedAt)}</span>
+            <span>Published {formatPaperDate(paper.publishedAt)}</span>
+          </div>
         </div>
         <Button
           className="p-2!"
@@ -97,20 +75,27 @@ function PaperCard({
         />
       </div>
 
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold">{paper.translatedTitle || paper.title}</h2>
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-2xl leading-8 font-semibold">{paper.translatedTitle || paper.title}</h2>
+          {typeof paper.score === 'number' && (
+            <div className="bg-component-bg-lighter text-primary rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap">
+              {paper.score.toFixed(2)}
+            </div>
+          )}
+        </div>
         {paper.translatedTitle && paper.translatedTitle !== paper.title && (
           <p className="text-bg-500 text-sm">{paper.title}</p>
         )}
-        <p className="text-bg-500 text-sm">{formatAuthors(paper.authors)}</p>
+        <p className="text-bg-500 text-sm leading-6">{formatAuthors(paper.authors)}</p>
       </div>
 
-      <p className="text-bg-500 line-clamp-4 flex-1 text-sm leading-6">
+      <p className="text-bg-500 line-clamp-5 flex-1 text-sm leading-7">
         {paper.tldr || 'No TL;DR available for this paper yet.'}
       </p>
 
       {(paper.matchedCollections.length > 0 || paper.keywords.length > 0) && (
-        <div className="border-bg-500/10 flex flex-wrap gap-2 border-t pt-3">
+        <div className="border-bg-500/10 flex flex-wrap gap-2 border-t pt-4">
           {paper.matchedCollections.slice(0, 3).map(collection => (
             <TagChip
               key={collection}
@@ -130,7 +115,7 @@ function PaperCard({
         </div>
       )}
 
-      <div className="border-bg-500/10 flex flex-wrap items-center gap-2 border-t pt-3">
+      <div className="border-bg-500/10 flex flex-wrap items-center gap-2 border-t pt-4">
         {onOpenDetail ? (
           <Button
             icon="tabler:arrow-right"

@@ -4,6 +4,7 @@ import { toast } from 'react-toastify'
 
 import CreateFolderModal from '@/components/CreateFolderModal'
 import MoveFavoriteModal from '@/components/MoveFavoriteModal'
+import ModuleSubnav from '@/components/ModuleSubnav'
 import PaperCard from '@/components/PaperCard'
 import forgeAPI from '@/utils/forgeAPI'
 import {
@@ -54,6 +55,7 @@ function FavoritesPage() {
         title="favoritesPage"
         totalItems={favoritesQuery.data?.totalFavorites}
       />
+      <ModuleSubnav />
 
       <WithQuery query={favoritesQuery}>
         {data =>
@@ -66,17 +68,31 @@ function FavoritesPage() {
               }}
             />
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
+              <div className="border-bg-500/10 from-component-bg to-component-bg-lighter rounded-2xl border bg-gradient-to-br p-6">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div className="space-y-2">
+                    <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Saved reading</p>
+                    <h2 className="text-3xl leading-tight font-semibold">Curated folders for papers worth returning to</h2>
+                    <p className="text-bg-500 text-sm leading-7">
+                      Favorites stay grouped by folder, using the same reading cards as the main paper feed.
+                    </p>
+                  </div>
+                  <div className="bg-component-bg-lighter rounded-full px-4 py-2 text-sm font-medium">
+                    {data.totalFavorites} saved papers
+                  </div>
+                </div>
+              </div>
+
               {data.folders
                 .filter(folder => folder.count > 0)
                 .map(folder => (
                   <section key={folder.id} className="space-y-4">
-                    <div className="flex items-end justify-between gap-4">
+                    <div className="border-bg-500/10 flex items-end justify-between gap-4 border-b pb-3">
                       <div>
+                        <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Folder</p>
                         <h2 className="text-2xl font-semibold">{folder.name}</h2>
-                        <p className="text-bg-500 text-sm">
-                          {folder.count} saved papers
-                        </p>
+                        <p className="text-bg-500 text-sm">{folder.count} saved papers</p>
                       </div>
                     </div>
                     <div className="grid gap-4 xl:grid-cols-2">

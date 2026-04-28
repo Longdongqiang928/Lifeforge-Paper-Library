@@ -10,11 +10,10 @@ import {
 } from 'lifeforge-ui'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { Link } from 'shared'
 
+import ModuleSubnav from '@/components/ModuleSubnav'
 import forgeAPI from '@/utils/forgeAPI'
 import {
-  MODULE_BASE_PATH,
   MODULE_NAMESPACE,
   MODULE_ROUTE_KEY
 } from '@/utils/module'
@@ -125,46 +124,23 @@ function SettingsPage() {
   return (
     <>
       <ModuleHeader
-        actionButton={
-          <div className="flex items-center gap-2">
-            <Button as={Link} icon="tabler:books" to={MODULE_BASE_PATH} variant="secondary">
-              Back to papers
-            </Button>
-            <Button
-              as={Link}
-              icon="tabler:file-import"
-              to={`${MODULE_BASE_PATH}/import`}
-              variant="secondary"
-            >
-              Import
-            </Button>
-            <Button
-              as={Link}
-              icon="tabler:player-play"
-              to={`${MODULE_BASE_PATH}/run`}
-              variant="secondary"
-            >
-              Run
-            </Button>
-          </div>
-        }
         icon="tabler:settings"
         namespace={MODULE_NAMESPACE}
         title="settingsPage"
       />
+      <ModuleSubnav />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <WithQuery query={fetchSettingsQuery}>
           {fetchSettings => (
-            <Card className="space-y-5 overflow-hidden">
+            <Card className="border-bg-500/10 space-y-5 overflow-hidden border">
               <div className="from-component-bg-lighter to-component-bg bg-gradient-to-br p-1">
                 <div className="component-bg rounded-xl p-5">
                   <div className="mb-3 flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <h2 className="text-xl font-semibold">Shared fetch settings</h2>
-                      <p className="text-bg-500 text-sm">
-                        Global RSS sources and abstract lookup credentials for the whole module.
-                      </p>
+                      <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Shared configuration</p>
+                      <h2 className="text-2xl font-semibold">Fetch and abstract</h2>
+                      <p className="text-bg-500 text-sm">Global inputs for the shared paper pool.</p>
                     </div>
                     <div className="component-bg-lighter rounded-full px-3 py-1 text-xs font-medium">
                       Admin scope
@@ -195,9 +171,7 @@ function SettingsPage() {
 
               <div className="space-y-1">
                 <h3 className="text-lg font-semibold">Source definition</h3>
-                <p className="text-bg-500 text-sm">
-                  Keep one compact source map here. Each entry follows `source:category+category`.
-                </p>
+                <p className="text-bg-500 text-sm">One compact source map for the whole module.</p>
               </div>
 
               <TextAreaInput
@@ -327,15 +301,14 @@ function SettingsPage() {
 
         <WithQuery query={personalSettingsQuery}>
           {personalSettings => (
-            <Card className="space-y-5 overflow-hidden">
+            <Card className="border-bg-500/10 space-y-5 overflow-hidden border">
               <div className="from-component-bg-lighter to-component-bg bg-gradient-to-br p-1">
                 <div className="component-bg rounded-xl p-5">
                   <div className="mb-3 flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <h2 className="text-xl font-semibold">Personal pipeline settings</h2>
-                      <p className="text-bg-500 text-sm">
-                        Your Zotero source, AI endpoints, thresholds, and automatic jobs.
-                      </p>
+                      <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Personal configuration</p>
+                      <h2 className="text-2xl font-semibold">Zotero, models, and schedules</h2>
+                      <p className="text-bg-500 text-sm">Inputs used for your scoring and enhancement passes.</p>
                     </div>
                     <div className="component-bg-lighter rounded-full px-3 py-1 text-xs font-medium">
                       User scope

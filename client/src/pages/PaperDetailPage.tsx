@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, EmptyStateScreen, ModuleHeader, WithQuery } from 'lifeforge-ui'
+import { Button, Card, EmptyStateScreen, ModuleHeader, WithQuery } from 'lifeforge-ui'
 import { toast } from 'react-toastify'
 import { Link, useParams } from 'shared'
 
+import ModuleSubnav from '@/components/ModuleSubnav'
 import PaperDetailContent from '@/components/PaperDetailContent'
 import forgeAPI from '@/utils/forgeAPI'
 import {
@@ -72,6 +73,15 @@ function PaperDetailPage() {
             namespace={MODULE_NAMESPACE}
             title="paperDetailPage"
           />
+          <ModuleSubnav />
+
+          <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg mb-6 border bg-gradient-to-br">
+            <div className="space-y-2">
+              <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Standalone detail</p>
+              <h2 className="text-3xl leading-tight font-semibold">Reading view</h2>
+              <p className="text-bg-500 text-sm leading-7">This fallback route keeps the same content hierarchy as the modal reading panel.</p>
+            </div>
+          </Card>
 
           <PaperDetailContent
             favoriteLoading={toggleFavoriteMutation.isPending}

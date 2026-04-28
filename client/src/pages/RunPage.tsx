@@ -11,11 +11,10 @@ import {
 } from 'lifeforge-ui'
 import { useState } from 'react'
 import { toast } from 'react-toastify'
-import { Link } from 'shared'
 
+import ModuleSubnav from '@/components/ModuleSubnav'
 import forgeAPI from '@/utils/forgeAPI'
 import {
-  MODULE_BASE_PATH,
   MODULE_NAMESPACE,
   MODULE_ROUTE_KEY
 } from '@/utils/module'
@@ -73,13 +72,12 @@ function RunCard({ run }: { run: PipelineRun }) {
   )
 
   return (
-    <Card className="from-component-bg to-component-bg-lighter space-y-4 bg-gradient-to-br">
+    <Card className="border-bg-500/10 from-component-bg to-component-bg-lighter space-y-4 border bg-gradient-to-br">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
+          <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">{run.triggeredBy}</p>
           <h3 className="text-lg font-semibold capitalize">{run.stage}</h3>
-          <p className="text-bg-500 text-sm">
-            {new Date(run.created).toLocaleString()}
-          </p>
+          <p className="text-bg-500 text-sm">{new Date(run.created).toLocaleString()}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <TagChip icon="tabler:stack-2" label={run.scope} variant="outlined" />
@@ -210,36 +208,14 @@ function RunPage() {
   return (
     <>
       <ModuleHeader
-        actionButton={
-          <div className="flex items-center gap-2">
-            <Button as={Link} icon="tabler:books" to={MODULE_BASE_PATH} variant="secondary">
-              Back to papers
-            </Button>
-            <Button
-              as={Link}
-              icon="tabler:file-import"
-              to={`${MODULE_BASE_PATH}/import`}
-              variant="secondary"
-            >
-              Import
-            </Button>
-            <Button
-              as={Link}
-              icon="tabler:settings"
-              to={`${MODULE_BASE_PATH}/settings`}
-              variant="secondary"
-            >
-              Settings
-            </Button>
-          </div>
-        }
         icon="tabler:player-play"
         namespace={MODULE_NAMESPACE}
         title="runPage"
       />
+      <ModuleSubnav />
 
       <div className="space-y-4">
-        <Card className="from-component-bg-lighter to-component-bg space-y-5 bg-gradient-to-br">
+        <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg space-y-5 border bg-gradient-to-br">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -255,9 +231,9 @@ function RunPage() {
                 />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold">Orchestrate the paper pipeline</h2>
-                <p className="text-bg-500 max-w-3xl text-sm leading-6">
-                  Trigger fetch, abstract, recommend, and enhance manually. Execution order: fetch → abstract → recommend → enhance.
+                <h2 className="text-3xl leading-tight font-semibold">Pipeline orchestration</h2>
+                <p className="text-bg-500 max-w-3xl text-sm leading-7">
+                  Trigger fetch, abstract, recommend, and enhance with one consistent control surface.
                 </p>
               </div>
             </div>
@@ -286,12 +262,10 @@ function RunPage() {
         </Card>
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
-          <Card className="space-y-5">
+          <Card className="border-bg-500/10 space-y-5 border">
             <div className="space-y-1">
               <h2 className="text-xl font-semibold">Run pipeline</h2>
-              <p className="text-bg-500 text-sm">
-                Fetch always runs for today. Abstract, recommend, and enhance use fetched-time range.
-              </p>
+              <p className="text-bg-500 text-sm">Fetch always runs for today. Later stages use fetched-time range.</p>
             </div>
 
             <div className="space-y-3">
@@ -348,11 +322,10 @@ function RunPage() {
               </div>
             </div>
 
-            <div className="component-bg-lighter space-y-3 rounded-xl p-4">
-              <p className="text-sm font-medium">Execution notes</p>
+            <div className="component-bg-lighter space-y-2 rounded-xl p-4">
+              <p className="text-sm font-medium">Execution rule</p>
               <p className="text-bg-500 text-sm leading-6">
-                `fetch` ignores the date range and only looks at today&apos;s feeds. `abstract`,
-                `recommend`, and `enhance` work on papers by fetched time, not publication date.
+                Fetch ignores the date range. Abstract, recommend, and enhance use fetched time.
               </p>
             </div>
 
@@ -409,11 +382,9 @@ function RunPage() {
               ) : (
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-xl font-semibold">Recent runs</h2>
-                      <p className="text-bg-500 text-sm">
-                        The newest runs appear first, including manual and scheduled work.
-                      </p>
+                    <div className="space-y-1">
+                      <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Run history</p>
+                      <h2 className="text-2xl font-semibold">Recent executions</h2>
                     </div>
                     <TagChip
                       icon="tabler:history"

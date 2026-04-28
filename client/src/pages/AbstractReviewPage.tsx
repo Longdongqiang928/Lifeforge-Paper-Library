@@ -13,10 +13,10 @@ import {
 } from 'lifeforge-ui'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { Link } from 'shared'
 
+import ModuleSubnav from '@/components/ModuleSubnav'
 import forgeAPI from '@/utils/forgeAPI'
-import { MODULE_BASE_PATH, MODULE_NAMESPACE, MODULE_ROUTE_KEY } from '@/utils/module'
+import { MODULE_NAMESPACE, MODULE_ROUTE_KEY } from '@/utils/module'
 import type { AbstractReviewItem, AbstractReviewListResponse } from '@/utils/types'
 
 function ReviewCard({
@@ -37,7 +37,7 @@ function ReviewCard({
   const isDirty = abstract !== item.abstract
 
   return (
-    <Card className="from-component-bg to-component-bg-lighter space-y-4 bg-gradient-to-br">
+    <Card className="border-bg-500/10 from-component-bg to-component-bg-lighter space-y-4 border bg-gradient-to-br">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -66,20 +66,22 @@ function ReviewCard({
           )}
         </div>
 
-        <Button
-          disabled={!isDirty}
-          icon="tabler:device-floppy"
-          onClick={() => onSave({ id: item.id, abstract })}
-        >
-          Save abstract
-        </Button>
-        <Button
-          icon="tabler:eraser"
-          variant="secondary"
-          onClick={() => onSave({ id: item.id, abstract: '' })}
-        >
-          Clear abstract
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            disabled={!isDirty}
+            icon="tabler:device-floppy"
+            onClick={() => onSave({ id: item.id, abstract })}
+          >
+            Save abstract
+          </Button>
+          <Button
+            icon="tabler:eraser"
+            variant="secondary"
+            onClick={() => onSave({ id: item.id, abstract: '' })}
+          >
+            Clear abstract
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -155,29 +157,15 @@ function AbstractReviewPage() {
   return (
     <>
       <ModuleHeader
-        actionButton={
-          <div className="flex items-center gap-2">
-            <Button as={Link} icon="tabler:arrow-left" to={MODULE_BASE_PATH} variant="secondary">
-              Back to Papers
-            </Button>
-            <Button
-              as={Link}
-              icon="tabler:settings"
-              to={`${MODULE_BASE_PATH}/settings`}
-              variant="secondary"
-            >
-              Settings
-            </Button>
-          </div>
-        }
         icon="tabler:file-search"
         namespace={MODULE_NAMESPACE}
         title="abstractReviewPage"
         totalItems={data?.totalItems}
       />
+      <ModuleSubnav />
 
       <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.95fr)]">
-        <Card className="from-component-bg-lighter to-component-bg space-y-4 bg-gradient-to-br">
+        <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg space-y-4 border bg-gradient-to-br">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <TagChip
@@ -191,20 +179,15 @@ function AbstractReviewPage() {
                 variant="outlined"
               />
             </div>
-            <h2 className="text-2xl font-semibold">Manual abstract review</h2>
-            <p className="text-bg-500 max-w-3xl text-sm leading-6">
-              Check the extracted abstract for each paper, fix bad captures in place, and jump to
-              the original URL in a new browser tab whenever the source needs verification.
-            </p>
+            <h2 className="text-3xl leading-tight font-semibold">Abstract review queue</h2>
+            <p className="text-bg-500 max-w-3xl text-sm leading-7">Verify extracted abstracts, clean broken captures, and jump to the source when needed.</p>
           </div>
         </Card>
 
-        <Card className="space-y-4">
+        <Card className="border-bg-500/10 space-y-4 border">
           <div className="space-y-1">
             <h3 className="text-lg font-semibold">Filters</h3>
-            <p className="text-bg-500 text-sm">
-              Narrow the review queue by source and fetch date while keeping the list editable.
-            </p>
+            <p className="text-bg-500 text-sm">Narrow the queue by source and fetch date.</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

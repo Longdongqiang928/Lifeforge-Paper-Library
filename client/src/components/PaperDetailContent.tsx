@@ -17,21 +17,21 @@ function PaperDetailContent({
   compact = false
 }: PaperDetailContentProps) {
   return (
-    <div className={`space-y-4 ${compact ? 'min-h-[22rem]' : ''}`}>
-      <Card className="space-y-4">
-        <div className="space-y-3">
-          <h1 className={compact ? 'text-2xl font-semibold' : 'text-3xl font-semibold'}>
+    <div className={`space-y-5 ${compact ? 'min-h-[22rem]' : ''}`}>
+      <Card className="border-bg-500/10 space-y-5 border">
+        <div className="space-y-4">
+          <h1 className={compact ? 'text-3xl leading-10 font-semibold' : 'text-4xl leading-[1.15] font-semibold'}>
             {paper.translatedTitle || paper.title}
           </h1>
           {paper.translatedTitle && paper.translatedTitle !== paper.title && (
-            <p className={`${compact ? 'text-base' : 'text-lg'} text-bg-500`}>
+            <p className={`${compact ? 'text-base' : 'text-lg'} text-bg-500 leading-7`}>
               {paper.title}
             </p>
           )}
-          <p className="text-bg-500">{formatAuthors(paper.authors)}</p>
+          <p className="text-bg-500 leading-7">{formatAuthors(paper.authors)}</p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="border-bg-500/10 bg-component-bg-lighter grid gap-3 rounded-2xl border p-4 sm:grid-cols-2 xl:grid-cols-3">
           {paper.fetchedAt && (
             <TagChip
               icon="tabler:database-import"
@@ -53,7 +53,7 @@ function PaperDetailContent({
         </div>
 
         {(paper.matchedCollections.length > 0 || paper.keywords.length > 0) && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {paper.matchedCollections.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {paper.matchedCollections.map(collection => (
@@ -71,7 +71,7 @@ function PaperDetailContent({
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 pt-1">
           <Button
             icon={paper.isFavorite ? 'tabler:star-filled' : 'tabler:star'}
             loading={favoriteLoading}
@@ -101,30 +101,30 @@ function PaperDetailContent({
       </Card>
 
       {paper.tldr && (
-        <Card className="space-y-2">
-          <h2 className="text-xl font-semibold">TL;DR</h2>
-          <p className="text-bg-500 leading-7">{paper.tldr}</p>
+        <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg space-y-3 border bg-gradient-to-br">
+          <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">TL;DR</p>
+          <p className="text-base leading-8">{paper.tldr}</p>
         </Card>
       )}
 
       {paper.translatedTitle && (
-        <Card className="space-y-2">
-          <h2 className="text-xl font-semibold">Translated title</h2>
-          <p className="text-bg-500 leading-7">{paper.translatedTitle}</p>
+        <Card className="border-bg-500/10 space-y-3 border">
+          <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Translated title</p>
+          <p className="leading-8">{paper.translatedTitle}</p>
         </Card>
       )}
 
       {paper.translatedAbstract && (
-        <Card className="space-y-2">
-          <h2 className="text-xl font-semibold">Translated abstract</h2>
-          <p className="text-bg-500 leading-7">{paper.translatedAbstract}</p>
+        <Card className="border-bg-500/10 space-y-3 border">
+          <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Translated abstract</p>
+          <p className="text-bg-500 leading-8">{paper.translatedAbstract}</p>
         </Card>
       )}
 
       {paper.abstract && (
-        <Card className="space-y-2">
-          <h2 className="text-xl font-semibold">Original abstract</h2>
-          <p className="text-bg-500 leading-7">{paper.abstract}</p>
+        <Card className="border-bg-500/10 space-y-3 border">
+          <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Original abstract</p>
+          <p className="text-bg-500 leading-8">{paper.abstract}</p>
         </Card>
       )}
     </div>

@@ -154,7 +154,7 @@ function PaperDetailModal({
 
   return (
     <div
-      className="fixed inset-y-0 right-0 z-[10020] flex items-center justify-center bg-black/35 p-4 backdrop-blur-md sm:p-6 lg:py-8 lg:pr-8"
+      className="fixed inset-y-0 right-0 z-[10020] flex items-center justify-center bg-black/40 p-4 backdrop-blur-md sm:p-6 lg:py-8 lg:pr-8"
       style={
         {
           left: sidebarExpanded ? 'clamp(18rem, 20vw, 24rem)' : '5.4rem'
@@ -169,10 +169,10 @@ function PaperDetailModal({
       <div
         className="relative flex w-full items-center justify-center"
         style={{
-          maxWidth: 'min(68rem, calc(100vw - 5rem))'
+          maxWidth: 'min(72rem, calc(100vw - 5rem))'
         }}
       >
-        <div className="pointer-events-none absolute top-1/2 left-0 z-40 hidden -translate-x-1/2 -translate-y-1/2 items-center lg:flex">
+        <div className="pointer-events-none absolute top-1/2 left-0 z-50 hidden -translate-x-[60%] -translate-y-1/2 items-center lg:flex">
           <Button
             className="pointer-events-auto shadow-xl"
             disabled={!hasPrev}
@@ -186,7 +186,7 @@ function PaperDetailModal({
           />
         </div>
 
-        <div className="pointer-events-none absolute top-1/2 right-0 z-40 hidden translate-x-1/2 -translate-y-1/2 items-center lg:flex">
+        <div className="pointer-events-none absolute top-1/2 right-0 z-50 hidden translate-x-[60%] -translate-y-1/2 items-center lg:flex">
           <Button
             className="pointer-events-auto shadow-xl"
             disabled={!hasNext}
@@ -201,16 +201,16 @@ function PaperDetailModal({
         </div>
 
         <Card
-          className="from-component-bg to-component-bg-lighter border-bg-500/20 relative z-10 flex h-[calc(100vh-2rem)] w-full flex-col overflow-hidden border bg-gradient-to-br shadow-2xl sm:h-[calc(100vh-3rem)] lg:h-[calc(100vh-4rem)]"
+          className="from-component-bg to-component-bg-lighter border-bg-500/15 relative z-10 flex h-[calc(100vh-2rem)] w-full flex-col overflow-hidden border bg-gradient-to-br shadow-2xl sm:h-[calc(100vh-3rem)] lg:h-[calc(100vh-4rem)]"
           style={{
             maxHeight: '60rem'
           }}
         >
-          <div className="border-bg-500/10 flex items-center justify-between gap-4 border-b px-5 py-4 sm:px-6 lg:px-12">
+          <div className="border-bg-500/10 component-bg flex items-center justify-between gap-4 border-b px-5 py-4 backdrop-blur sm:px-6 lg:px-12">
             <div className="flex items-center gap-2">
               <TagChip
                 icon="tabler:layout-sidebar-right-collapse"
-                label="Paper detail"
+                label="Reading panel"
                 variant="filled"
               />
               {typeof currentPosition === 'number' && typeof totalItems === 'number' && (
@@ -251,7 +251,7 @@ function PaperDetailModal({
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5 lg:px-12">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6 lg:px-12">
             <div
               className={`transition-all duration-300 ease-out ${getMotionClass(motionState)}`}
             >

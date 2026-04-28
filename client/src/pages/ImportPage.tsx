@@ -10,11 +10,10 @@ import {
 } from 'lifeforge-ui'
 import { useRef, useState } from 'react'
 import { toast } from 'react-toastify'
-import { Link } from 'shared'
 
+import ModuleSubnav from '@/components/ModuleSubnav'
 import forgeAPI from '@/utils/forgeAPI'
 import {
-  MODULE_BASE_PATH,
   MODULE_NAMESPACE,
   MODULE_ROUTE_KEY
 } from '@/utils/module'
@@ -22,7 +21,7 @@ import type { ImportBatch } from '@/utils/types'
 
 function ImportBatchCard({ batch }: { batch: ImportBatch }) {
   return (
-    <Card className="space-y-3">
+    <Card className="border-bg-500/10 from-component-bg to-component-bg-lighter space-y-4 border bg-gradient-to-br">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold">
@@ -31,10 +30,10 @@ function ImportBatchCard({ batch }: { batch: ImportBatch }) {
           <p className="text-bg-500 text-sm">{new Date(batch.created).toLocaleString()}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <span className="bg-bg-200 dark:bg-bg-800 rounded-full px-3 py-1 text-sm">
+          <span className="bg-component-bg-lighter rounded-full px-3 py-1 text-sm">
             {batch.status}
           </span>
-          <span className="bg-bg-200 dark:bg-bg-800 rounded-full px-3 py-1 text-sm">
+          <span className="bg-component-bg-lighter rounded-full px-3 py-1 text-sm">
             {batch.type.toUpperCase()}
           </span>
         </div>
@@ -173,34 +172,18 @@ function ImportPage() {
   return (
     <>
       <ModuleHeader
-        actionButton={
-          <div className="flex items-center gap-2">
-            <Button as={Link} icon="tabler:books" to={MODULE_BASE_PATH} variant="secondary">
-              Back to papers
-            </Button>
-            <Button
-              as={Link}
-              icon="tabler:settings"
-              to={`${MODULE_BASE_PATH}/settings`}
-              variant="secondary"
-            >
-              Settings
-            </Button>
-          </div>
-        }
         icon="tabler:file-import"
         namespace={MODULE_NAMESPACE}
         title="importPage"
       />
+      <ModuleSubnav />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <Card className="space-y-5">
+        <Card className="border-bg-500/10 space-y-5 border">
           <div className="space-y-1">
-            <h2 className="text-xl font-semibold">Import content</h2>
-            <p className="text-bg-500 text-sm">
-              Upload a file from your Daily Paper workflow or paste raw JSON / JSONL
-              directly.
-            </p>
+            <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Import</p>
+            <h2 className="text-2xl font-semibold">Bring external batches into the shared paper pool</h2>
+            <p className="text-bg-500 text-sm">Upload a file or paste raw JSON / JSONL directly.</p>
           </div>
 
           {importNotice && (
@@ -301,16 +284,14 @@ function ImportPage() {
           </div>
         </Card>
 
-        <Card className="space-y-4 overflow-hidden">
+        <Card className="border-bg-500/10 space-y-4 overflow-hidden border">
           <div className="from-component-bg-lighter to-component-bg bg-gradient-to-br p-1">
             <div className="component-bg rounded-xl p-5">
               <div className="mb-3 flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <h2 className="text-xl font-semibold">Supported data</h2>
-                  <p className="text-bg-500 text-sm">
-                    Import respects the new three-field AI contract and merges duplicates into
-                    the current paper pool.
-                  </p>
+                  <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Accepted content</p>
+                  <h2 className="text-2xl font-semibold">Shared metadata plus your overlay fields</h2>
+                  <p className="text-bg-500 text-sm">The importer keeps the current three-field AI contract.</p>
                 </div>
                 <div className="component-bg-lighter rounded-full px-3 py-1 text-xs font-medium">
                   Current model
@@ -330,9 +311,9 @@ function ImportPage() {
                   </p>
                 </Card>
                 <Card className="component-bg-lighter space-y-1 p-4">
-                  <p className="text-sm font-medium">Duplicate merge</p>
+                  <p className="text-sm font-medium">Duplicate skip</p>
                   <p className="text-bg-500 text-sm">
-                    DOI, external id, and fingerprint are used to upsert instead of duplicating.
+                    DOI, external id, and fingerprint are used to skip repeats.
                   </p>
                 </Card>
               </div>
@@ -349,7 +330,7 @@ function ImportPage() {
           <ul className="text-bg-500 list-disc space-y-2 pl-5 text-sm leading-6">
             <li>Recognized metadata includes title, authors, journal, source, date, DOI, URL, PDF URL, collections, keywords, and score.</li>
             <li>Legacy AI sections like Motivation, Method, Result, and Conclusion are ignored as business fields, but preserved in raw payload.</li>
-            <li>Duplicate papers are merged using DOI, external ID, or a stable fingerprint.</li>
+            <li>Duplicate papers are skipped using DOI, external ID, or a stable fingerprint.</li>
           </ul>
           <div className="bg-bg-100 dark:bg-bg-900 rounded-lg p-4 text-sm">
             <p className="font-medium">What is preserved</p>
@@ -366,9 +347,7 @@ function ImportPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold">Recent imports</h2>
-            <p className="text-bg-500 text-sm">
-              Track completed and failed import batches for your account.
-            </p>
+            <p className="text-bg-500 text-sm">Track recent import batches and review warnings or failures.</p>
           </div>
           <Button
             disabled={isImporting}
