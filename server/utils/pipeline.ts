@@ -32,6 +32,9 @@ export interface FetchSettingsView {
   rssSources: string
   fetchEnabled: boolean
   fetchTime: string
+  abstractEnabled: boolean
+  abstractTime: string
+  abstractLookbackDays: number
   hasNatureApiKey: boolean
   hasTavilyApiKey: boolean
   updatedAt?: string
@@ -48,12 +51,9 @@ export interface PersonalSettingsView {
   enhanceThreshold: number
   recommendEnabled: boolean
   recommendTime: string
-  abstractEnabled: boolean
-  abstractTime: string
   enhanceEnabled: boolean
   enhanceTime: string
   recommendLookbackDays: number
-  abstractLookbackDays: number
   enhanceLookbackDays: number
   updatedAt?: string
 }
@@ -91,7 +91,11 @@ interface DecryptedFetchSettings {
   tavilyApiKey?: string
   fetchEnabled: boolean
   fetchTime: string
+  abstractEnabled: boolean
+  abstractTime: string
+  abstractLookbackDays: number
   lastFetchScheduleKey?: string
+  lastAbstractScheduleKey?: string
 }
 
 interface DecryptedUserSettings {
@@ -109,14 +113,10 @@ interface DecryptedUserSettings {
   recommendTime: string
   enhanceEnabled: boolean
   enhanceTime: string
-  abstractEnabled: boolean
-  abstractTime: string
   lastRecommendScheduleKey?: string
   lastEnhanceScheduleKey?: string
-  lastAbstractScheduleKey?: string
   recommendLookbackDays: number
   enhanceLookbackDays: number
-  abstractLookbackDays: number
 }
 
 interface RunStats {
@@ -645,7 +645,10 @@ async function getOrCreateFetchSettingsRecord(pb: PocketBase) {
     config_key: 'global',
     rss_sources: DEFAULT_FETCH_SETTINGS.rssSources,
     fetch_enabled: DEFAULT_FETCH_SETTINGS.fetchEnabled,
-    fetch_time: DEFAULT_FETCH_SETTINGS.fetchTime
+    fetch_time: DEFAULT_FETCH_SETTINGS.fetchTime,
+    abstract_enabled: DEFAULT_FETCH_SETTINGS.abstractEnabled,
+    abstract_time: DEFAULT_FETCH_SETTINGS.abstractTime,
+    abstract_lookback_days: DEFAULT_FETCH_SETTINGS.abstractLookbackDays
   })
 }
 
@@ -670,12 +673,9 @@ async function getOrCreateUserSettingsRecord(pb: PocketBase, userId: string) {
     enhance_threshold: DEFAULT_USER_SETTINGS.enhanceThreshold,
     recommend_enabled: DEFAULT_USER_SETTINGS.recommendEnabled,
     recommend_time: DEFAULT_USER_SETTINGS.recommendTime,
-    abstract_enabled: DEFAULT_USER_SETTINGS.abstractEnabled,
-    abstract_time: DEFAULT_USER_SETTINGS.abstractTime,
     enhance_enabled: DEFAULT_USER_SETTINGS.enhanceEnabled,
     enhance_time: DEFAULT_USER_SETTINGS.enhanceTime,
     recommend_lookback_days: DEFAULT_USER_SETTINGS.recommendLookbackDays,
-    abstract_lookback_days: DEFAULT_USER_SETTINGS.abstractLookbackDays,
     enhance_lookback_days: DEFAULT_USER_SETTINGS.enhanceLookbackDays
   })
 }
@@ -690,7 +690,17 @@ async function getFetchSettingsInternal(pb: PocketBase): Promise<DecryptedFetchS
     tavilyApiKey: decryptSecret(pickString(record.tavily_api_key)),
     fetchEnabled: !!record.fetch_enabled,
     fetchTime: pickString(record.fetch_time) ?? DEFAULT_FETCH_SETTINGS.fetchTime,
-    lastFetchScheduleKey: pickString(record.last_fetch_schedule_key)
+    abstractEnabled:
+      typeof record.abstract_enabled === 'boolean'
+        ? record.abstract_enabled
+        : DEFAULT_FETCH_SETTINGS.abstractEnabled,
+    abstractTime:
+      pickString(record.abstract_time) ?? DEFAULT_FETCH_SETTINGS.abstractTime,
+    abstractLookbackDays:
+      asNumber(record.abstract_lookback_days) ??
+      DEFAULT_FETCH_SETTINGS.abstractLookbackDays,
+    lastFetchScheduleKey: pickString(record.last_fetch_schedule_key),
+    lastAbstractScheduleKey: pickString(record.last_abstract_schedule_key)
   }
 }
 
@@ -726,24 +736,14 @@ async function getUserSettingsInternal(
         : DEFAULT_USER_SETTINGS.enhanceEnabled,
     enhanceTime:
       pickString(record.enhance_time) ?? DEFAULT_USER_SETTINGS.enhanceTime,
-    abstractEnabled:
-      typeof record.abstract_enabled === 'boolean'
-        ? record.abstract_enabled
-        : DEFAULT_USER_SETTINGS.abstractEnabled,
-    abstractTime:
-      pickString(record.abstract_time) ?? DEFAULT_USER_SETTINGS.abstractTime,
     lastRecommendScheduleKey: pickString(record.last_recommend_schedule_key),
     lastEnhanceScheduleKey: pickString(record.last_enhance_schedule_key),
-    lastAbstractScheduleKey: pickString(record.last_abstract_schedule_key),
     recommendLookbackDays:
       asNumber(record.recommend_lookback_days) ??
       DEFAULT_USER_SETTINGS.recommendLookbackDays,
     enhanceLookbackDays:
       asNumber(record.enhance_lookback_days) ??
-      DEFAULT_USER_SETTINGS.enhanceLookbackDays,
-    abstractLookbackDays:
-      asNumber(record.abstract_lookback_days) ??
-      DEFAULT_USER_SETTINGS.abstractLookbackDays
+      DEFAULT_USER_SETTINGS.enhanceLookbackDays
   }
 }
 
@@ -754,6 +754,15 @@ export async function getFetchSettingsView(pb: PocketBase): Promise<FetchSetting
     rssSources: pickString(record.rss_sources) ?? DEFAULT_FETCH_SETTINGS.rssSources,
     fetchEnabled: !!record.fetch_enabled,
     fetchTime: pickString(record.fetch_time) ?? DEFAULT_FETCH_SETTINGS.fetchTime,
+    abstractEnabled:
+      typeof record.abstract_enabled === 'boolean'
+        ? record.abstract_enabled
+        : DEFAULT_FETCH_SETTINGS.abstractEnabled,
+    abstractTime:
+      pickString(record.abstract_time) ?? DEFAULT_FETCH_SETTINGS.abstractTime,
+    abstractLookbackDays:
+      asNumber(record.abstract_lookback_days) ??
+      DEFAULT_FETCH_SETTINGS.abstractLookbackDays,
     hasNatureApiKey: !!pickString(record.nature_api_key),
     hasTavilyApiKey: !!pickString(record.tavily_api_key),
     updatedAt: pickString(record.updated)
@@ -767,6 +776,9 @@ export async function updateFetchSettingsView(
     rssSources: string
     fetchEnabled: boolean
     fetchTime: string
+    abstractEnabled: boolean
+    abstractTime: string
+    abstractLookbackDays: number
     natureApiKey?: string
     tavilyApiKey?: string
   }
@@ -780,6 +792,9 @@ export async function updateFetchSettingsView(
       rss_sources: input.rssSources.trim() || current.rssSources,
       fetch_enabled: input.fetchEnabled,
       fetch_time: input.fetchTime,
+      abstract_enabled: input.abstractEnabled,
+      abstract_time: input.abstractTime,
+      abstract_lookback_days: input.abstractLookbackDays,
       nature_api_key:
         input.natureApiKey !== undefined
           ? encryptSecret(input.natureApiKey.trim())
@@ -819,12 +834,6 @@ export async function getPersonalSettingsView(
         : DEFAULT_USER_SETTINGS.recommendEnabled,
     recommendTime:
       pickString(record.recommend_time) ?? DEFAULT_USER_SETTINGS.recommendTime,
-    abstractEnabled:
-      typeof record.abstract_enabled === 'boolean'
-        ? record.abstract_enabled
-        : DEFAULT_USER_SETTINGS.abstractEnabled,
-    abstractTime:
-      pickString(record.abstract_time) ?? DEFAULT_USER_SETTINGS.abstractTime,
     enhanceEnabled:
       typeof record.enhance_enabled === 'boolean'
         ? record.enhance_enabled
@@ -834,9 +843,6 @@ export async function getPersonalSettingsView(
     recommendLookbackDays:
       asNumber(record.recommend_lookback_days) ??
       DEFAULT_USER_SETTINGS.recommendLookbackDays,
-    abstractLookbackDays:
-      asNumber(record.abstract_lookback_days) ??
-      DEFAULT_USER_SETTINGS.abstractLookbackDays,
     enhanceLookbackDays:
       asNumber(record.enhance_lookback_days) ??
       DEFAULT_USER_SETTINGS.enhanceLookbackDays,
@@ -858,12 +864,9 @@ export async function updatePersonalSettingsView(
     enhanceThreshold: number
     recommendEnabled: boolean
     recommendTime: string
-    abstractEnabled: boolean
-    abstractTime: string
     enhanceEnabled: boolean
     enhanceTime: string
     recommendLookbackDays: number
-    abstractLookbackDays: number
     enhanceLookbackDays: number
   }
 ) {
@@ -888,12 +891,9 @@ export async function updatePersonalSettingsView(
       enhance_threshold: input.enhanceThreshold,
       recommend_enabled: input.recommendEnabled,
       recommend_time: input.recommendTime,
-      abstract_enabled: input.abstractEnabled,
-      abstract_time: input.abstractTime,
       enhance_enabled: input.enhanceEnabled,
       enhance_time: input.enhanceTime,
       recommend_lookback_days: input.recommendLookbackDays,
-      abstract_lookback_days: input.abstractLookbackDays,
       enhance_lookback_days: input.enhanceLookbackDays
     })
   )
@@ -2724,7 +2724,7 @@ export async function triggerStages(
     }
 
     if (stage === 'abstract') {
-      const settings = await getUserSettingsInternal(pb, userId)
+      const settings = await getFetchSettingsInternal(pb)
       const fallback = buildDefaultRange(settings.abstractLookbackDays)
 
       resultIds.push(
@@ -2855,24 +2855,18 @@ export async function runScheduledStages(now = dayjs()) {
 
   const userSettings = await pb.collection(COLLECTION_NAMES.userSettings).getFullList()
 
-  // Abstract schedule (global scope, uses first user's settings for timing/lookback)
-  const firstUserRecord = userSettings[0]
-  if (firstUserRecord) {
-    const firstUserSettings = await getUserSettingsInternal(pb, String(firstUserRecord.user))
+  if (fetchSettings.abstractEnabled && hasReachedScheduledTime(fetchSettings.abstractTime)) {
+    const scheduleKey = buildScheduleKey(now, fetchSettings.abstractTime)
 
-    if (firstUserSettings.abstractEnabled && hasReachedScheduledTime(firstUserSettings.abstractTime)) {
-      const scheduleKey = buildScheduleKey(now, firstUserSettings.abstractTime)
-
-      if (firstUserSettings.lastAbstractScheduleKey !== scheduleKey) {
-        await pb.collection(COLLECTION_NAMES.userSettings).update(firstUserSettings.id, {
-          last_abstract_schedule_key: scheduleKey
-        })
-        const range = buildDefaultRange(firstUserSettings.abstractLookbackDays)
-        await executeStage(pb, 'abstract', 'scheduler', {
-          rangeStart: range.rangeStart,
-          rangeEnd: range.rangeEnd
-        })
-      }
+    if (fetchSettings.lastAbstractScheduleKey !== scheduleKey) {
+      await pb.collection(COLLECTION_NAMES.fetchSettings).update(fetchSettings.id, {
+        last_abstract_schedule_key: scheduleKey
+      })
+      const range = buildDefaultRange(fetchSettings.abstractLookbackDays)
+      await executeStage(pb, 'abstract', 'scheduler', {
+        rangeStart: range.rangeStart,
+        rangeEnd: range.rangeEnd
+      })
     }
   }
 

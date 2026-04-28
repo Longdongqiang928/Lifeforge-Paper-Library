@@ -186,7 +186,7 @@ export interface ActivePipelineRun {
 }
 
 export interface TriggerPipelineInput {
-  stages: Array<'fetch' | 'recommend' | 'enhance'>
+  stages: Array<'fetch' | 'abstract' | 'recommend' | 'enhance'>
   rangeStart?: string
   rangeEnd?: string
 }
@@ -199,6 +199,9 @@ export interface FetchSettings {
   rssSources: string
   fetchEnabled: boolean
   fetchTime: string
+  abstractEnabled: boolean
+  abstractTime: string
+  abstractLookbackDays: number
   hasNatureApiKey: boolean
   hasTavilyApiKey: boolean
   updatedAt?: string
@@ -226,6 +229,9 @@ export interface UpdateFetchSettingsInput {
   rssSources: string
   fetchEnabled: boolean
   fetchTime: string
+  abstractEnabled: boolean
+  abstractTime: string
+  abstractLookbackDays: number
   natureApiKey?: string
   tavilyApiKey?: string
 }

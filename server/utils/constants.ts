@@ -53,7 +53,10 @@ export const DEFAULT_FETCH_SETTINGS = {
   rssSources:
     'arxiv:physics+quant-ph+cond-mat+nlin,nature:nature+nphoton+ncomms+nphys+natrevphys+lsa+natmachintell,science:science+sciadv,optica:optica,aps:prl+prx+rmp',
   fetchEnabled: false,
-  fetchTime: '08:00'
+  fetchTime: '08:00',
+  abstractEnabled: false,
+  abstractTime: '10:00',
+  abstractLookbackDays: DEFAULT_ABSTRACT_LOOKBACK_DAYS
 } as const
 
 export const DEFAULT_USER_SETTINGS = {
@@ -64,11 +67,8 @@ export const DEFAULT_USER_SETTINGS = {
   enhanceThreshold: DEFAULT_ENHANCE_THRESHOLD,
   recommendEnabled: false,
   recommendTime: '09:00',
-  abstractEnabled: false,
-  abstractTime: '10:00',
   enhanceEnabled: false,
   enhanceTime: '09:30',
   recommendLookbackDays: DEFAULT_RECOMMEND_LOOKBACK_DAYS,
-  enhanceLookbackDays: DEFAULT_ENHANCE_LOOKBACK_DAYS,
-  abstractLookbackDays: DEFAULT_ABSTRACT_LOOKBACK_DAYS
+  enhanceLookbackDays: DEFAULT_ENHANCE_LOOKBACK_DAYS
 } as const

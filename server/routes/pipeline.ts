@@ -28,6 +28,9 @@ const fetchUpdate = forge
       rssSources: z.string().min(1),
       fetchEnabled: z.boolean(),
       fetchTime: z.string().min(4),
+      abstractEnabled: z.boolean(),
+      abstractTime: z.string().min(4),
+      abstractLookbackDays: z.coerce.number().min(1).max(365),
       natureApiKey: z.string().optional(),
       tavilyApiKey: z.string().optional()
     })
@@ -63,12 +66,9 @@ const personalUpdate = forge
       enhanceThreshold: z.coerce.number(),
       recommendEnabled: z.boolean(),
       recommendTime: z.string(),
-      abstractEnabled: z.boolean(),
-      abstractTime: z.string(),
       enhanceEnabled: z.boolean(),
       enhanceTime: z.string(),
       recommendLookbackDays: z.coerce.number().min(1).max(365),
-      abstractLookbackDays: z.coerce.number().min(1).max(365),
       enhanceLookbackDays: z.coerce.number().min(1).max(365)
     })
   })
