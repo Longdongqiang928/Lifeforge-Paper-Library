@@ -214,187 +214,177 @@ function RunPage() {
       <ModuleSubnav />
 
       <div className="space-y-4">
-        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-5 border shadow-sm transition-shadow hover:shadow-md">
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <TagChip
-                  icon="tabler:stack-2"
-                  label={selectedStageLabels || 'No stage selected'}
-                  variant="filled"
-                />
-                <TagChip
-                  icon="tabler:calendar-time"
-                  label={hasRangeStage ? 'Fetched-time range enabled' : 'Fetch only'}
-                  variant="outlined"
-                />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-3xl leading-tight font-semibold">Pipeline orchestration</h2>
-                
-              </div>
+        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-6 border shadow-sm transition-shadow hover:shadow-md">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <TagChip
+                icon="tabler:stack-2"
+                label={selectedStageLabels || 'No stage selected'}
+                variant="filled"
+              />
+              <TagChip
+                icon="tabler:calendar-time"
+                label={hasRangeStage ? 'Fetched-time range enabled' : 'Fetch only'}
+                variant="outlined"
+              />
             </div>
+            <h2 className="text-3xl leading-tight font-semibold">Pipeline orchestration</h2>
+          </div>
 
-            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-              <StatCard
-                description=""
-                icon="tabler:clock-play"
-                label="Active"
-                value={String(activeRunsQuery.data?.length ?? 0)}
-              />
-              <StatCard
-                description=""
-                icon="tabler:history"
-                label="History"
-                value={String(runsQuery.data?.length ?? 0)}
-              />
-              <StatCard
-                description=""
-                icon="tabler:calendar-search"
-                label="Range rule"
-                value={hasRangeStage ? 'Enabled' : 'Skipped'}
-              />
-            </div>
+          <div className="border-bg-500/10 grid gap-3 border-t pt-6 sm:grid-cols-3">
+            <StatCard
+              description=""
+              icon="tabler:clock-play"
+              label="Active"
+              value={String(activeRunsQuery.data?.length ?? 0)}
+            />
+            <StatCard
+              description=""
+              icon="tabler:history"
+              label="History"
+              value={String(runsQuery.data?.length ?? 0)}
+            />
+            <StatCard
+              description=""
+              icon="tabler:calendar-search"
+              label="Range rule"
+              value={hasRangeStage ? 'Enabled' : 'Skipped'}
+            />
           </div>
         </Card>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
-          <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-5 border shadow-sm transition-shadow hover:shadow-md">
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold">Run pipeline</h2>
-              
-            </div>
+        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-5 border shadow-sm transition-shadow hover:shadow-md">
+          <div className="space-y-1">
+            <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Manual run</p>
+            <h2 className="text-2xl font-semibold">Select stages and launch</h2>
+          </div>
 
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Stages</p>
-              <div className="flex flex-wrap gap-2">
-                {STAGES.map(stage => {
-                  const selected = selectedStages.includes(stage.id)
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Stages</p>
+            <div className="flex flex-wrap gap-2">
+              {STAGES.map(stage => {
+                const selected = selectedStages.includes(stage.id)
 
-                  return (
-                    <TagChip
-                      key={stage.id}
-                      icon={stage.icon}
-                      label={stage.label}
-                      variant={selected ? 'filled' : 'outlined'}
-                      onClick={() => {
-                        setSelectedStages(current =>
-                          current.includes(stage.id)
-                            ? current.filter(item => item !== stage.id)
-                            : [...current, stage.id]
-                        )
-                      }}
-                    />
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-bg-500 block text-sm font-medium">
-                  Range start
-                </label>
-                <DateInput
-                  disabled={!hasRangeStage}
-                  value={rangeStart ? dayjs(rangeStart).toDate() : null}
-                  variant="plain"
-                  onChange={value => {
-                    setRangeStart(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                  }}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-bg-500 block text-sm font-medium">
-                  Range end
-                </label>
-                <DateInput
-                  disabled={!hasRangeStage}
-                  value={rangeEnd ? dayjs(rangeEnd).toDate() : null}
-                  variant="plain"
-                  onChange={value => {
-                    setRangeEnd(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="component-bg-lighter space-y-2 rounded-xl p-4">
-              <p className="text-sm font-medium">Execution rule</p>
-              
-            </div>
-
-            <Button
-              disabled={selectedStages.length === 0}
-              icon="tabler:player-play"
-              loading={triggerMutation.isPending}
-              onClick={() => {
-                triggerMutation.mutate({
-                  stages: selectedStages as Array<'fetch' | 'abstract' | 'recommend' | 'enhance'>,
-                  rangeStart: hasRangeStage && rangeStart ? dayjs(rangeStart).startOf('day').toISOString() : undefined,
-                  rangeEnd: hasRangeStage && rangeEnd ? dayjs(rangeEnd).endOf('day').toISOString() : undefined
-                })
-              }}
-            >
-              Run selected stages
-            </Button>
-
-            <WithQuery query={activeRunsQuery}>
-              {(activeRuns: ActivePipelineRun[]) =>
-                activeRuns.length === 0 ? (
-                  <div className="bg-bg-100 dark:bg-bg-900 rounded-lg p-4 text-sm">
-                    No active runs right now.
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Active runs</p>
-                    <div className="flex flex-wrap gap-2">
-                      {activeRuns.map(run => (
-                        <TagChip
-                          key={run.id}
-                          icon="tabler:clock-play"
-                          label={`${run.stage} (${run.scope})`}
-                          variant="filled"
-                        />
-                      ))}
-                    </div>
-                  </div>
+                return (
+                  <TagChip
+                    key={stage.id}
+                    icon={stage.icon}
+                    label={stage.label}
+                    variant={selected ? 'filled' : 'outlined'}
+                    onClick={() => {
+                      setSelectedStages(current =>
+                        current.includes(stage.id)
+                          ? current.filter(item => item !== stage.id)
+                          : [...current, stage.id]
+                      )
+                    }}
+                  />
                 )
-              }
-            </WithQuery>
-          </Card>
+              })}
+            </div>
+          </div>
 
-          <WithQuery query={runsQuery}>
-            {(runs: PipelineRun[]) =>
-              runs.length === 0 ? (
-                <EmptyStateScreen
-                  icon="tabler:history-off"
-                  message={{
-                    title: 'No runs yet',
-                    description: 'Trigger fetch, abstract, recommend, or enhance to populate run history.'
-                  }}
-                />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+            <div className="space-y-2">
+              <label className="text-bg-500 block text-sm font-medium">Range start</label>
+              <DateInput
+                disabled={!hasRangeStage}
+                value={rangeStart ? dayjs(rangeStart).toDate() : null}
+                variant="plain"
+                onChange={value => {
+                  setRangeStart(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-bg-500 block text-sm font-medium">Range end</label>
+              <DateInput
+                disabled={!hasRangeStage}
+                value={rangeEnd ? dayjs(rangeEnd).toDate() : null}
+                variant="plain"
+                onChange={value => {
+                  setRangeEnd(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                }}
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                disabled={selectedStages.length === 0}
+                icon="tabler:player-play"
+                loading={triggerMutation.isPending}
+                onClick={() => {
+                  triggerMutation.mutate({
+                    stages: selectedStages as Array<'fetch' | 'abstract' | 'recommend' | 'enhance'>,
+                    rangeStart: hasRangeStage && rangeStart ? dayjs(rangeStart).startOf('day').toISOString() : undefined,
+                    rangeEnd: hasRangeStage && rangeEnd ? dayjs(rangeEnd).endOf('day').toISOString() : undefined
+                  })
+                }}
+              >
+                Run now
+              </Button>
+            </div>
+          </div>
+
+          <div className="component-bg-lighter space-y-2 rounded-xl p-4">
+            <p className="text-sm font-medium">Execution rule</p>
+            <p className="text-bg-500 text-sm">Fetch ignores the date range. Other stages use fetched time.</p>
+          </div>
+
+          <WithQuery query={activeRunsQuery}>
+            {(activeRuns: ActivePipelineRun[]) =>
+              activeRuns.length === 0 ? (
+                <div className="bg-bg-100 dark:bg-bg-900 rounded-lg p-4 text-sm">
+                  No active runs right now.
+                </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Run history</p>
-                      <h2 className="text-2xl font-semibold">Recent executions</h2>
-                    </div>
-                    <TagChip
-                      icon="tabler:history"
-                      label={`${runs.length} recent entries`}
-                      variant="outlined"
-                    />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Active runs</p>
+                  <div className="flex flex-wrap gap-2">
+                    {activeRuns.map(run => (
+                      <TagChip
+                        key={run.id}
+                        icon="tabler:clock-play"
+                        label={`${run.stage} (${run.scope})`}
+                        variant="filled"
+                      />
+                    ))}
                   </div>
-                  {runs.map(run => (
-                    <RunCard key={run.id} run={run} />
-                  ))}
                 </div>
               )
             }
           </WithQuery>
-        </div>
+        </Card>
+
+        <WithQuery query={runsQuery}>
+          {(runs: PipelineRun[]) =>
+            runs.length === 0 ? (
+              <EmptyStateScreen
+                icon="tabler:history-off"
+                message={{
+                  title: 'No runs yet',
+                  description: 'Trigger fetch, abstract, recommend, or enhance to populate run history.'
+                }}
+              />
+            ) : (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Run history</p>
+                    <h2 className="text-2xl font-semibold">Recent executions</h2>
+                  </div>
+                  <TagChip
+                    icon="tabler:history"
+                    label={`${runs.length} recent entries`}
+                    variant="outlined"
+                  />
+                </div>
+                {runs.map(run => (
+                  <RunCard key={run.id} run={run} />
+                ))}
+              </div>
+            )
+          }
+        </WithQuery>
       </div>
     </>
   )

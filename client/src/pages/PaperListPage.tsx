@@ -232,51 +232,48 @@ function PaperListPage() {
                 />
               </div>
 
-              <div className="border-bg-500/10 border-t pt-6">
-                <div className="grid gap-6 xl:grid-cols-2">
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Fetched time</p>
-                      <h3 className="text-lg font-semibold">Window</h3>
-                    </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <DateInput
-                    value={dateFrom ? dayjs(dateFrom).toDate() : null}
-                    variant="plain"
-                    onChange={value => {
-                      setDateFrom(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                    }}
-                  />
-                  <DateInput
-                    value={dateTo ? dayjs(dateTo).toDate() : null}
-                    variant="plain"
-                    onChange={value => {
-                      setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                    }}
-                  />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium">Favorites only</p>
-                    </div>
-                    <Switch value={favoritesOnly} onChange={setFavoritesOnly} />
-                  </div>
-                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium">With abstract</p>
-                    </div>
-                    <Switch value={hasAbstractOnly} onChange={setHasAbstractOnly} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Metadata</p>
-                  <h3 className="text-lg font-semibold">Source, journal, collections</h3>
-                </div>
+              <div className="border-bg-500/10 space-y-6 border-t pt-6">
                 <div className="space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Fetched time</p>
+                    <h3 className="text-lg font-semibold">Window</h3>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <DateInput
+                      value={dateFrom ? dayjs(dateFrom).toDate() : null}
+                      variant="plain"
+                      onChange={value => {
+                        setDateFrom(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                      }}
+                    />
+                    <DateInput
+                      value={dateTo ? dayjs(dateTo).toDate() : null}
+                      variant="plain"
+                      onChange={value => {
+                        setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                      }}
+                    />
+                    <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium">Favorites only</p>
+                      </div>
+                      <Switch value={favoritesOnly} onChange={setFavoritesOnly} />
+                    </div>
+                    <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium">With abstract</p>
+                      </div>
+                      <Switch value={hasAbstractOnly} onChange={setHasAbstractOnly} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Metadata</p>
+                    <h3 className="text-lg font-semibold">Source, journal, collections</h3>
+                  </div>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Sources</p>
                     <div className="flex flex-wrap gap-2">
@@ -330,7 +327,6 @@ function PaperListPage() {
                 </div>
                 </div>
               </div>
-            </div>
             </div>
           </Card>
         </div>

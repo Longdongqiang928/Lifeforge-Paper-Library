@@ -178,7 +178,7 @@ function ImportPage() {
       />
       <ModuleSubnav />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="space-y-6">
         <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-5 border shadow-sm transition-shadow hover:shadow-md">
           <div className="space-y-1">
             <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Import</p>
@@ -201,7 +201,7 @@ function ImportPage() {
             </div>
           )}
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
+          <div className="grid gap-4 md:grid-cols-2">
             <Card className="component-bg-lighter flex flex-col gap-4">
               <input
                 ref={fileInputRef}
@@ -253,7 +253,7 @@ function ImportPage() {
                 onChange={setSource}
               />
               <TextAreaInput
-                className="min-h-64"
+                className="min-h-32"
                 placeholder="Paste raw JSON or JSONL here"
                 value={content}
                 variant="plain"

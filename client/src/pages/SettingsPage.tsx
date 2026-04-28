@@ -128,7 +128,7 @@ function SettingsPage() {
       />
       <ModuleSubnav />
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="space-y-6">
         <WithQuery query={fetchSettingsQuery}>
           {fetchSettings => (
             <Card className="border-bg-500/10 space-y-5 overflow-hidden border bg-component-bg/60 backdrop-blur-md shadow-sm transition-shadow hover:shadow-md">
@@ -174,52 +174,44 @@ function SettingsPage() {
                 variant="plain"
                 onChange={setRssSources}
               />
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-                <Card className="component-bg-lighter space-y-4 p-4">
-                  <TextInput
-                    label="Fetch time"
-                    placeholder="08:00"
-                    value={fetchTime}
-                    variant="plain"
-                    onChange={setFetchTime}
-                  />
-                  </Card>
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--color-bg-500)]/15 p-4">
+              <Card className="component-bg-lighter space-y-4 p-4">
+                <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="font-medium">Enable fetch scheduler</p>
-                    
                   </div>
                   <Switch value={fetchEnabled} onChange={setFetchEnabled} />
                 </div>
-              </div>
+                <TextInput
+                  label="Fetch time"
+                  placeholder="08:00"
+                  value={fetchTime}
+                  variant="plain"
+                  onChange={setFetchTime}
+                />
+              </Card>
 
               <Card className="component-bg-lighter space-y-4 p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="font-medium">Auto abstract</p>
-                    
                   </div>
                   <Switch value={abstractEnabled} onChange={setAbstractEnabled} />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-3">
-                    <TextInput
-                      label="Abstract time"
-                      placeholder="10:00"
-                      value={abstractTime}
-                      variant="plain"
-                      onChange={setAbstractTime}
-                    />
-                    </div>
-                  <div className="space-y-3">
-                    <TextInput
-                      label="Abstract lookback days"
-                      placeholder="1"
-                      value={abstractLookbackDays}
-                      variant="plain"
-                      onChange={setAbstractLookbackDays}
-                    />
-                    </div>
+                  <TextInput
+                    label="Abstract time"
+                    placeholder="10:00"
+                    value={abstractTime}
+                    variant="plain"
+                    onChange={setAbstractTime}
+                  />
+                  <TextInput
+                    label="Abstract lookback days"
+                    placeholder="1"
+                    value={abstractLookbackDays}
+                    variant="plain"
+                    onChange={setAbstractLookbackDays}
+                  />
                 </div>
               </Card>
 
@@ -304,7 +296,7 @@ function SettingsPage() {
                 
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2">
                 <Card className="component-bg-lighter space-y-3 p-4">
                   <TextInput
                     label="Zotero user ID"
@@ -325,7 +317,7 @@ function SettingsPage() {
                   </Card>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2">
                 <Card className="component-bg-lighter space-y-3 p-4">
                   <TextInput
                     label="AI base URL"
@@ -346,7 +338,7 @@ function SettingsPage() {
                   </Card>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2">
                 <Card className="component-bg-lighter space-y-3 p-4">
                   <TextInput
                     label="AI model"
@@ -367,7 +359,7 @@ function SettingsPage() {
                   </Card>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2">
                 <Card className="component-bg-lighter space-y-3 p-4">
                   <TextInput
                     label="Output language"
@@ -393,7 +385,7 @@ function SettingsPage() {
                 
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-2">
+              <div className="space-y-4">
                 <Card className="component-bg-lighter space-y-4 p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>

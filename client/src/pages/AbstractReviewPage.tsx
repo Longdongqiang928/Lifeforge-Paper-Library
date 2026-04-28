@@ -164,79 +164,24 @@ function AbstractReviewPage() {
       />
       <ModuleSubnav />
 
-      <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.95fr)]">
-        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-4 border shadow-sm transition-shadow hover:shadow-md">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <TagChip
-                icon="tabler:edit"
-                label={`${data?.totalItems ?? 0} papers in current review set`}
-                variant="filled"
-              />
-              <TagChip
-                icon="tabler:external-link"
-                label="URLs open in a new tab"
-                variant="outlined"
-              />
-            </div>
-            <h2 className="text-3xl leading-tight font-semibold">Abstract review queue</h2>
-          </div>
-        </Card>
-
-        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-4 border shadow-sm transition-shadow hover:shadow-md">
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold">Filters</h3>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
+      <div className="mb-6 space-y-4">
+        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-6 border shadow-sm transition-shadow hover:shadow-md">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-2">
-              <label className="text-bg-500 block text-sm font-medium">Fetched from</label>
-              <DateInput
-                value={dateFrom ? dayjs(dateFrom).toDate() : null}
-                variant="plain"
-                onChange={value => {
-                  setDateFrom(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-bg-500 block text-sm font-medium">Fetched to</label>
-              <DateInput
-                value={dateTo ? dayjs(dateTo).toDate() : null}
-                variant="plain"
-                onChange={value => {
-                  setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                }}
-              />
-            </div>
-          </div>
-
-          <WithQuery query={filtersMetaQuery}>
-            {meta => (
-              <div className="space-y-3">
-                <p className="text-sm font-medium">Source</p>
-                <div className="flex flex-wrap gap-2">
-                  <TagChip
-                    icon="tabler:list"
-                    label="All sources"
-                    variant={!selectedSource ? 'filled' : 'outlined'}
-                    onClick={() => setSelectedSource('')}
-                  />
-                  {(meta as { sources: string[] }).sources.map(source => (
-                    <TagChip
-                      key={source}
-                      icon="tabler:rss"
-                      label={source}
-                      variant={selectedSource === source ? 'filled' : 'outlined'}
-                      onClick={() => setSelectedSource(source)}
-                    />
-                  ))}
-                </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <TagChip
+                  icon="tabler:edit"
+                  label={`${data?.totalItems ?? 0} papers in current review set`}
+                  variant="filled"
+                />
+                <TagChip
+                  icon="tabler:external-link"
+                  label="URLs open in a new tab"
+                  variant="outlined"
+                />
               </div>
-            )}
-          </WithQuery>
-
-          <div className="flex justify-end">
+              <h2 className="text-3xl leading-tight font-semibold">Abstract review queue</h2>
+            </div>
             <Button
               icon="tabler:refresh"
               variant="secondary"
@@ -248,6 +193,65 @@ function AbstractReviewPage() {
             >
               Reset filters
             </Button>
+          </div>
+
+          <div className="border-bg-500/10 grid gap-6 border-t pt-6 xl:grid-cols-2">
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Fetched time</p>
+                <h3 className="text-lg font-semibold">Window</h3>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-bg-500 block text-sm font-medium">Fetched from</label>
+                  <DateInput
+                    value={dateFrom ? dayjs(dateFrom).toDate() : null}
+                    variant="plain"
+                    onChange={value => {
+                      setDateFrom(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-bg-500 block text-sm font-medium">Fetched to</label>
+                  <DateInput
+                    value={dateTo ? dayjs(dateTo).toDate() : null}
+                    variant="plain"
+                    onChange={value => {
+                      setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Metadata</p>
+                <h3 className="text-lg font-semibold">Source</h3>
+              </div>
+              <WithQuery query={filtersMetaQuery}>
+                {meta => (
+                  <div className="flex flex-wrap gap-2">
+                    <TagChip
+                      icon="tabler:list"
+                      label="All sources"
+                      variant={!selectedSource ? 'filled' : 'outlined'}
+                      onClick={() => setSelectedSource('')}
+                    />
+                    {(meta as { sources: string[] }).sources.map(source => (
+                      <TagChip
+                        key={source}
+                        icon="tabler:rss"
+                        label={source}
+                        variant={selectedSource === source ? 'filled' : 'outlined'}
+                        onClick={() => setSelectedSource(source)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </WithQuery>
+            </div>
           </div>
         </Card>
       </div>
