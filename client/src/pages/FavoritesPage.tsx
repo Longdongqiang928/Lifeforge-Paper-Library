@@ -69,14 +69,11 @@ function FavoritesPage() {
             />
           ) : (
             <div className="space-y-6">
-              <div className="border-bg-500/10 from-component-bg to-component-bg-lighter rounded-2xl border bg-gradient-to-br p-6">
+              <div className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md rounded-2xl border shadow-sm transition-shadow hover:shadow-md p-6">
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div className="space-y-2">
                     <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Saved reading</p>
                     <h2 className="text-3xl leading-tight font-semibold">Curated folders for papers worth returning to</h2>
-                    <p className="text-bg-500 text-sm leading-7">
-                      Favorites stay grouped by folder, using the same reading cards as the main paper feed.
-                    </p>
                   </div>
                   <div className="bg-component-bg-lighter rounded-full px-4 py-2 text-sm font-medium">
                     {data.totalFavorites} saved papers

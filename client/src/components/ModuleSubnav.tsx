@@ -49,7 +49,7 @@ function ModuleSubnav() {
 
   return (
     <div className="sticky top-3 z-20 mb-6">
-      <div className="border-bg-500/12 component-bg shadow-custom overflow-x-auto rounded-2xl border px-2 py-2 backdrop-blur">
+      <div className="backdrop-blur-lg bg-component-bg/70 shadow-sm overflow-x-auto rounded-2xl border border-bg-500/10 px-2 py-2">
         <div className="flex min-w-max items-center gap-2">
           {NAV_ITEMS.map(item => {
             const active = isItemActive(location.pathname, item.path)
@@ -60,8 +60,8 @@ function ModuleSubnav() {
                 className={[
                   'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200',
                   active
-                    ? 'bg-component-bg-lighter text-primary shadow-sm'
-                    : 'text-bg-500 hover:bg-component-bg-lighter hover:text-primary'
+                    ? 'bg-primary text-bg-100 shadow-sm hover:scale-105 active:scale-95'
+                    : 'text-bg-500 hover:bg-component-bg-lighter hover:text-primary hover:scale-105 active:scale-95'
                 ].join(' ')}
                 to={`${MODULE_BASE_PATH}${item.path}`}
               >

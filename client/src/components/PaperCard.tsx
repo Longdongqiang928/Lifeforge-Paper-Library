@@ -39,9 +39,9 @@ function PaperCard({
 
   return (
     <Card
-      className={`border-bg-500/10 from-component-bg to-component-bg-lighter flex h-full flex-col gap-5 border bg-gradient-to-br ${
+      className={`border-bg-500/10 bg-component-bg/80 backdrop-blur-md flex h-full flex-col gap-5 border ${
         onOpenDetail
-          ? 'cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl'
+          ? 'cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary/40'
           : ''
       }`}
       role={onOpenDetail ? 'button' : undefined}
@@ -77,7 +77,7 @@ function PaperCard({
 
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-4">
-          <h2 className="text-2xl leading-8 font-semibold">{paper.translatedTitle || paper.title}</h2>
+          <h2 className="text-3xl tracking-tight leading-9 font-bold">{paper.translatedTitle || paper.title}</h2>
           {typeof paper.score === 'number' && (
             <div className="bg-component-bg-lighter text-primary rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap">
               {paper.score.toFixed(2)}

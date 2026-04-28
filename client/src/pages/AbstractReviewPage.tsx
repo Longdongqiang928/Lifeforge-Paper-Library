@@ -37,7 +37,7 @@ function ReviewCard({
   const isDirty = abstract !== item.abstract
 
   return (
-    <Card className="border-bg-500/10 from-component-bg to-component-bg-lighter space-y-4 border bg-gradient-to-br">
+    <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-4 border shadow-sm transition-shadow hover:shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -165,7 +165,7 @@ function AbstractReviewPage() {
       <ModuleSubnav />
 
       <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.95fr)]">
-        <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg space-y-4 border bg-gradient-to-br">
+        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-4 border shadow-sm transition-shadow hover:shadow-md">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <TagChip
@@ -180,14 +180,12 @@ function AbstractReviewPage() {
               />
             </div>
             <h2 className="text-3xl leading-tight font-semibold">Abstract review queue</h2>
-            <p className="text-bg-500 max-w-3xl text-sm leading-7">Verify extracted abstracts, clean broken captures, and jump to the source when needed.</p>
           </div>
         </Card>
 
-        <Card className="border-bg-500/10 space-y-4 border">
+        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-4 border shadow-sm transition-shadow hover:shadow-md">
           <div className="space-y-1">
             <h3 className="text-lg font-semibold">Filters</h3>
-            <p className="text-bg-500 text-sm">Narrow the queue by source and fetch date.</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

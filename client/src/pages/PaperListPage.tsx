@@ -205,7 +205,7 @@ function PaperListPage() {
         <ModuleSubnav />
 
         <div className="mb-6 space-y-4">
-          <Card className="border-bg-500/10 from-component-bg to-component-bg-lighter border bg-gradient-to-br">
+          <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md border shadow-sm transition-shadow hover:shadow-md">
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(17rem,0.8fr)]">
               <div className="space-y-5">
                 <div className="flex flex-wrap items-center gap-2">
@@ -215,10 +215,6 @@ function PaperListPage() {
                 </div>
                 <div className="space-y-2">
                   <h2 className="text-3xl leading-tight font-semibold">Today&apos;s scored reading list</h2>
-                  <p className="text-bg-500 max-w-3xl text-sm leading-7">
-                    Papers fetched today stay in focus first. Search and filters still let you widen
-                    the pool without losing the score-ranked reading flow.
-                  </p>
                 </div>
                 <SearchInput
                   debounceMs={250}
@@ -232,16 +228,13 @@ function PaperListPage() {
               <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
                 <Card className="component-bg-lighter border-bg-500/10 border p-4">
                   <p className="text-sm font-medium">Default window</p>
-                  <p className="text-bg-500 mt-1 text-sm">Fetched today</p>
                 </Card>
                 <Card className="component-bg-lighter border-bg-500/10 border p-4">
                   <p className="text-sm font-medium">Ranking mode</p>
-                  <p className="text-bg-500 mt-1 text-sm">Sorted by recommend score</p>
                 </Card>
                 <Card className="component-bg-lighter border-bg-500/10 flex items-center justify-between gap-3 border p-4">
                   <div>
                     <p className="text-sm font-medium">Reset view</p>
-                    <p className="text-bg-500 mt-1 text-sm">Return to today&apos;s clean feed.</p>
                   </div>
                   <Button icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
                     Reset
@@ -251,7 +244,7 @@ function PaperListPage() {
             </div>
           </Card>
 
-          <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg border bg-gradient-to-br">
+          <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md border shadow-sm transition-shadow hover:shadow-md">
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_16rem]">
               <div className="space-y-4">
                 <div className="space-y-1">
@@ -383,7 +376,6 @@ function PaperListPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium">Showing {data.items.length} of {data.totalItems} papers</p>
-                    <p className="text-bg-500 text-sm">Cards keep score, overlays, and saved state visible at a glance.</p>
                   </div>
                   {data.totalPages > 1 && (
                     <TagChip

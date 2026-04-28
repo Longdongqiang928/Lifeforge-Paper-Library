@@ -42,8 +42,7 @@ function asDetailNumber(value: unknown) {
 function StatCard({
   icon,
   label,
-  value,
-  description
+  value
 }: {
   icon: string
   label: string
@@ -54,7 +53,7 @@ function StatCard({
     <Card className="border-bg-500/10 component-bg-lighter space-y-2 border p-4">
       <TagChip icon={icon} label={label} variant="outlined" />
       <p className="text-2xl font-semibold">{value}</p>
-      <p className="text-bg-500 text-sm">{description}</p>
+      
     </Card>
   )
 }
@@ -215,7 +214,7 @@ function RunPage() {
       <ModuleSubnav />
 
       <div className="space-y-4">
-        <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg space-y-5 border bg-gradient-to-br">
+        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-5 border shadow-sm transition-shadow hover:shadow-md">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -232,27 +231,25 @@ function RunPage() {
               </div>
               <div className="space-y-2">
                 <h2 className="text-3xl leading-tight font-semibold">Pipeline orchestration</h2>
-                <p className="text-bg-500 max-w-3xl text-sm leading-7">
-                  Trigger fetch, abstract, recommend, and enhance with one consistent control surface.
-                </p>
+                
               </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
               <StatCard
-                description="Runs currently holding the pipeline lock."
+                description=""
                 icon="tabler:clock-play"
                 label="Active"
                 value={String(activeRunsQuery.data?.length ?? 0)}
               />
               <StatCard
-                description="Recent run records visible to your account."
+                description=""
                 icon="tabler:history"
                 label="History"
                 value={String(runsQuery.data?.length ?? 0)}
               />
               <StatCard
-                description="Only recommend and enhance respect the selected fetched-time window."
+                description=""
                 icon="tabler:calendar-search"
                 label="Range rule"
                 value={hasRangeStage ? 'Enabled' : 'Skipped'}
@@ -262,10 +259,10 @@ function RunPage() {
         </Card>
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
-          <Card className="border-bg-500/10 space-y-5 border">
+          <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-5 border shadow-sm transition-shadow hover:shadow-md">
             <div className="space-y-1">
               <h2 className="text-xl font-semibold">Run pipeline</h2>
-              <p className="text-bg-500 text-sm">Fetch always runs for today. Later stages use fetched-time range.</p>
+              
             </div>
 
             <div className="space-y-3">
@@ -324,9 +321,7 @@ function RunPage() {
 
             <div className="component-bg-lighter space-y-2 rounded-xl p-4">
               <p className="text-sm font-medium">Execution rule</p>
-              <p className="text-bg-500 text-sm leading-6">
-                Fetch ignores the date range. Abstract, recommend, and enhance use fetched time.
-              </p>
+              
             </div>
 
             <Button

@@ -21,7 +21,7 @@ import type { ImportBatch } from '@/utils/types'
 
 function ImportBatchCard({ batch }: { batch: ImportBatch }) {
   return (
-    <Card className="border-bg-500/10 from-component-bg to-component-bg-lighter space-y-4 border bg-gradient-to-br">
+    <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-4 border shadow-sm transition-shadow hover:shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold">
@@ -179,11 +179,11 @@ function ImportPage() {
       <ModuleSubnav />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <Card className="border-bg-500/10 space-y-5 border">
+        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-5 border shadow-sm transition-shadow hover:shadow-md">
           <div className="space-y-1">
             <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Import</p>
             <h2 className="text-2xl font-semibold">Bring external batches into the shared paper pool</h2>
-            <p className="text-bg-500 text-sm">Upload a file or paste raw JSON / JSONL directly.</p>
+            
           </div>
 
           {importNotice && (
@@ -284,14 +284,14 @@ function ImportPage() {
           </div>
         </Card>
 
-        <Card className="border-bg-500/10 space-y-4 overflow-hidden border">
+        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-4 overflow-hidden border shadow-sm transition-shadow hover:shadow-md">
           <div className="from-component-bg-lighter to-component-bg bg-gradient-to-br p-1">
             <div className="component-bg rounded-xl p-5">
               <div className="mb-3 flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Accepted content</p>
                   <h2 className="text-2xl font-semibold">Shared metadata plus your overlay fields</h2>
-                  <p className="text-bg-500 text-sm">The importer keeps the current three-field AI contract.</p>
+                  
                 </div>
                 <div className="component-bg-lighter rounded-full px-3 py-1 text-xs font-medium">
                   Current model
@@ -300,21 +300,15 @@ function ImportPage() {
               <div className="grid gap-3 md:grid-cols-3">
                 <Card className="component-bg-lighter space-y-1 p-4">
                   <p className="text-sm font-medium">Shared paper pool</p>
-                  <p className="text-bg-500 text-sm">
-                    Metadata enters the shared `papers` collection.
-                  </p>
+                  
                 </Card>
                 <Card className="component-bg-lighter space-y-1 p-4">
                   <p className="text-sm font-medium">Personal overlay</p>
-                  <p className="text-bg-500 text-sm">
-                    Score, matched collections, TL;DR, and translations attach to your user state.
-                  </p>
+                  
                 </Card>
                 <Card className="component-bg-lighter space-y-1 p-4">
                   <p className="text-sm font-medium">Duplicate skip</p>
-                  <p className="text-bg-500 text-sm">
-                    DOI, external id, and fingerprint are used to skip repeats.
-                  </p>
+                  
                 </Card>
               </div>
             </div>
@@ -322,16 +316,9 @@ function ImportPage() {
 
           <div className="space-y-1">
             <h2 className="text-xl font-semibold">Accepted fields</h2>
-            <p className="text-bg-500 text-sm">
-              The importer keeps only the new AI fields: translated title,
-              translated abstract, and TL;DR.
-            </p>
+            
           </div>
-          <ul className="text-bg-500 list-disc space-y-2 pl-5 text-sm leading-6">
-            <li>Recognized metadata includes title, authors, journal, source, date, DOI, URL, PDF URL, collections, keywords, and score.</li>
-            <li>Legacy AI sections like Motivation, Method, Result, and Conclusion are ignored as business fields, but preserved in raw payload.</li>
-            <li>Duplicate papers are skipped using DOI, external ID, or a stable fingerprint.</li>
-          </ul>
+          
           <div className="bg-bg-100 dark:bg-bg-900 rounded-lg p-4 text-sm">
             <p className="font-medium">What is preserved</p>
             <p className="text-bg-500 mt-1">
@@ -347,7 +334,7 @@ function ImportPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold">Recent imports</h2>
-            <p className="text-bg-500 text-sm">Track recent import batches and review warnings or failures.</p>
+            
           </div>
           <Button
             disabled={isImporting}
