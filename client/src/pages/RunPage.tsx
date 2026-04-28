@@ -23,6 +23,7 @@ import type { ActivePipelineRun, PipelineRun } from '@/utils/types'
 
 const STAGES = [
   { id: 'fetch', label: 'Fetch', icon: 'tabler:rss' },
+  { id: 'abstract', label: 'Abstract', icon: 'tabler:file-text' },
   { id: 'recommend', label: 'Recommend', icon: 'tabler:chart-dots-3' },
   { id: 'enhance', label: 'Enhance', icon: 'tabler:sparkles' }
 ] as const
@@ -256,8 +257,7 @@ function RunPage() {
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold">Orchestrate the paper pipeline</h2>
                 <p className="text-bg-500 max-w-3xl text-sm leading-6">
-                  Trigger fetch, recommend, and enhance manually when you want to validate a source
-                  map, re-rank a recent window, or test a new AI setup before turning on schedules.
+                  Trigger fetch, abstract, recommend, and enhance manually. Execution order: fetch → abstract → recommend → enhance.
                 </p>
               </div>
             </div>
@@ -290,7 +290,7 @@ function RunPage() {
             <div className="space-y-1">
               <h2 className="text-xl font-semibold">Run pipeline</h2>
               <p className="text-bg-500 text-sm">
-                Fetch always runs for today. Recommend and enhance use fetched-time range.
+                Fetch always runs for today. Abstract, recommend, and enhance use fetched-time range.
               </p>
             </div>
 
@@ -351,8 +351,8 @@ function RunPage() {
             <div className="component-bg-lighter space-y-3 rounded-xl p-4">
               <p className="text-sm font-medium">Execution notes</p>
               <p className="text-bg-500 text-sm leading-6">
-                `fetch` ignores the date range and only looks at today&apos;s feeds. `recommend`
-                and `enhance` work on papers by fetched time, not publication date.
+                `fetch` ignores the date range and only looks at today&apos;s feeds. `abstract`,
+                `recommend`, and `enhance` work on papers by fetched time, not publication date.
               </p>
             </div>
 
@@ -362,7 +362,7 @@ function RunPage() {
               loading={triggerMutation.isPending}
               onClick={() => {
                 triggerMutation.mutate({
-                  stages: selectedStages as Array<'fetch' | 'recommend' | 'enhance'>,
+                  stages: selectedStages as Array<'fetch' | 'abstract' | 'recommend' | 'enhance'>,
                   rangeStart: hasRangeStage && rangeStart ? dayjs(rangeStart).startOf('day').toISOString() : undefined,
                   rangeEnd: hasRangeStage && rangeEnd ? dayjs(rangeEnd).endOf('day').toISOString() : undefined
                 })
@@ -403,7 +403,7 @@ function RunPage() {
                   icon="tabler:history-off"
                   message={{
                     title: 'No runs yet',
-                    description: 'Trigger fetch, recommend, or enhance to populate run history.'
+                    description: 'Trigger fetch, abstract, recommend, or enhance to populate run history.'
                   }}
                 />
               ) : (

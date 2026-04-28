@@ -54,9 +54,12 @@ function SettingsPage() {
   const [enhanceThreshold, setEnhanceThreshold] = useState('3.6')
   const [recommendEnabled, setRecommendEnabled] = useState(false)
   const [recommendTime, setRecommendTime] = useState('09:00')
+  const [abstractEnabled, setAbstractEnabled] = useState(false)
+  const [abstractTime, setAbstractTime] = useState('10:00')
   const [enhanceEnabled, setEnhanceEnabled] = useState(false)
   const [enhanceTime, setEnhanceTime] = useState('09:30')
   const [recommendLookbackDays, setRecommendLookbackDays] = useState('7')
+  const [abstractLookbackDays, setAbstractLookbackDays] = useState('1')
   const [enhanceLookbackDays, setEnhanceLookbackDays] = useState('3')
 
   useEffect(() => {
@@ -78,9 +81,12 @@ function SettingsPage() {
     setEnhanceThreshold(String(personalSettingsQuery.data.enhanceThreshold))
     setRecommendEnabled(personalSettingsQuery.data.recommendEnabled)
     setRecommendTime(personalSettingsQuery.data.recommendTime)
+    setAbstractEnabled(personalSettingsQuery.data.abstractEnabled)
+    setAbstractTime(personalSettingsQuery.data.abstractTime)
     setEnhanceEnabled(personalSettingsQuery.data.enhanceEnabled)
     setEnhanceTime(personalSettingsQuery.data.enhanceTime)
     setRecommendLookbackDays(String(personalSettingsQuery.data.recommendLookbackDays))
+    setAbstractLookbackDays(String(personalSettingsQuery.data.abstractLookbackDays))
     setEnhanceLookbackDays(String(personalSettingsQuery.data.enhanceLookbackDays))
   }, [personalSettingsQuery.data])
 
@@ -308,9 +314,9 @@ function SettingsPage() {
                       </p>
                     </Card>
                     <Card className="component-bg-lighter space-y-1 p-4">
-                      <p className="text-sm font-medium">Two schedules</p>
+                      <p className="text-sm font-medium">Three schedules</p>
                       <p className="text-bg-500 text-sm">
-                        Recommend and enhance can run on their own windows and lookback ranges.
+                        Abstract, recommend, and enhance can run on their own windows and lookback ranges.
                       </p>
                     </Card>
                   </div>
@@ -435,11 +441,11 @@ function SettingsPage() {
               <div className="space-y-1">
                 <h3 className="text-lg font-semibold">Automatic schedules</h3>
                 <p className="text-bg-500 text-sm">
-                  These two jobs work on fetched-time windows, not publication dates.
+                  Pipeline execution order: fetch → abstract → recommend → enhance. These jobs work on fetched-time windows, not publication dates.
                 </p>
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-2">
+              <div className="grid gap-4 xl:grid-cols-3">
                 <Card className="component-bg-lighter space-y-4 p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -473,6 +479,44 @@ function SettingsPage() {
                       />
                       <FieldHint>
                         Number of recently fetched days included in each recommend run.
+                      </FieldHint>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="component-bg-lighter space-y-4 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-medium">Auto abstract</p>
+                      <p className="text-bg-500 text-sm">
+                        Fill missing abstracts via Nature, OpenAlex, and Tavily.
+                      </p>
+                    </div>
+                    <Switch value={abstractEnabled} onChange={setAbstractEnabled} />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-3">
+                      <TextInput
+                        label="Abstract time"
+                        placeholder="10:00"
+                        value={abstractTime}
+                        variant="plain"
+                        onChange={setAbstractTime}
+                      />
+                      <FieldHint>
+                        24-hour time for the daily abstract run. Usually after fetch.
+                      </FieldHint>
+                    </div>
+                    <div className="space-y-3">
+                      <TextInput
+                        label="Abstract lookback days"
+                        placeholder="1"
+                        value={abstractLookbackDays}
+                        variant="plain"
+                        onChange={setAbstractLookbackDays}
+                      />
+                      <FieldHint>
+                        Number of recently fetched days to check for missing abstracts.
                       </FieldHint>
                     </div>
                   </div>
@@ -532,9 +576,12 @@ function SettingsPage() {
                     enhanceThreshold: Number(enhanceThreshold) || 0,
                     recommendEnabled,
                     recommendTime,
+                    abstractEnabled,
+                    abstractTime,
                     enhanceEnabled,
                     enhanceTime,
                     recommendLookbackDays: Number(recommendLookbackDays) || 1,
+                    abstractLookbackDays: Number(abstractLookbackDays) || 1,
                     enhanceLookbackDays: Number(enhanceLookbackDays) || 1
                   })
                 }}

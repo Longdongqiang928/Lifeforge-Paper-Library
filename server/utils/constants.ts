@@ -9,6 +9,7 @@ export const ZOTERO_CACHE_TTL_HOURS = 24
 export const DEFAULT_ENHANCE_THRESHOLD = 3.6
 export const DEFAULT_RECOMMEND_LOOKBACK_DAYS = 7
 export const DEFAULT_ENHANCE_LOOKBACK_DAYS = 3
+export const DEFAULT_ABSTRACT_LOOKBACK_DAYS = 1
 export const BATCH_STATUS_LIMIT = 12
 export const IMPORT_TEXT_MAX_LENGTH = 6000
 export const EMBEDDING_BATCH_SIZE = 32
@@ -30,7 +31,7 @@ export const COLLECTION_NAMES = {
   zoteroEmbeddingCache: 'ldq_paperlib_embed_cache'
 } as const
 
-export const RUN_STAGE_IDS = ['fetch', 'recommend', 'enhance'] as const
+export const RUN_STAGE_IDS = ['fetch', 'abstract', 'recommend', 'enhance'] as const
 export type RunStageId = (typeof RUN_STAGE_IDS)[number]
 
 export const RUN_STATUS_IDS = ['running', 'completed', 'failed'] as const
@@ -63,8 +64,11 @@ export const DEFAULT_USER_SETTINGS = {
   enhanceThreshold: DEFAULT_ENHANCE_THRESHOLD,
   recommendEnabled: false,
   recommendTime: '09:00',
+  abstractEnabled: false,
+  abstractTime: '10:00',
   enhanceEnabled: false,
   enhanceTime: '09:30',
   recommendLookbackDays: DEFAULT_RECOMMEND_LOOKBACK_DAYS,
-  enhanceLookbackDays: DEFAULT_ENHANCE_LOOKBACK_DAYS
+  enhanceLookbackDays: DEFAULT_ENHANCE_LOOKBACK_DAYS,
+  abstractLookbackDays: DEFAULT_ABSTRACT_LOOKBACK_DAYS
 } as const

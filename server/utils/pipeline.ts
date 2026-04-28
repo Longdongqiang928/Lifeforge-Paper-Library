@@ -48,9 +48,12 @@ export interface PersonalSettingsView {
   enhanceThreshold: number
   recommendEnabled: boolean
   recommendTime: string
+  abstractEnabled: boolean
+  abstractTime: string
   enhanceEnabled: boolean
   enhanceTime: string
   recommendLookbackDays: number
+  abstractLookbackDays: number
   enhanceLookbackDays: number
   updatedAt?: string
 }
@@ -106,10 +109,14 @@ interface DecryptedUserSettings {
   recommendTime: string
   enhanceEnabled: boolean
   enhanceTime: string
+  abstractEnabled: boolean
+  abstractTime: string
   lastRecommendScheduleKey?: string
   lastEnhanceScheduleKey?: string
+  lastAbstractScheduleKey?: string
   recommendLookbackDays: number
   enhanceLookbackDays: number
+  abstractLookbackDays: number
 }
 
 interface RunStats {
@@ -663,9 +670,12 @@ async function getOrCreateUserSettingsRecord(pb: PocketBase, userId: string) {
     enhance_threshold: DEFAULT_USER_SETTINGS.enhanceThreshold,
     recommend_enabled: DEFAULT_USER_SETTINGS.recommendEnabled,
     recommend_time: DEFAULT_USER_SETTINGS.recommendTime,
+    abstract_enabled: DEFAULT_USER_SETTINGS.abstractEnabled,
+    abstract_time: DEFAULT_USER_SETTINGS.abstractTime,
     enhance_enabled: DEFAULT_USER_SETTINGS.enhanceEnabled,
     enhance_time: DEFAULT_USER_SETTINGS.enhanceTime,
     recommend_lookback_days: DEFAULT_USER_SETTINGS.recommendLookbackDays,
+    abstract_lookback_days: DEFAULT_USER_SETTINGS.abstractLookbackDays,
     enhance_lookback_days: DEFAULT_USER_SETTINGS.enhanceLookbackDays
   })
 }
@@ -716,14 +726,24 @@ async function getUserSettingsInternal(
         : DEFAULT_USER_SETTINGS.enhanceEnabled,
     enhanceTime:
       pickString(record.enhance_time) ?? DEFAULT_USER_SETTINGS.enhanceTime,
+    abstractEnabled:
+      typeof record.abstract_enabled === 'boolean'
+        ? record.abstract_enabled
+        : DEFAULT_USER_SETTINGS.abstractEnabled,
+    abstractTime:
+      pickString(record.abstract_time) ?? DEFAULT_USER_SETTINGS.abstractTime,
     lastRecommendScheduleKey: pickString(record.last_recommend_schedule_key),
     lastEnhanceScheduleKey: pickString(record.last_enhance_schedule_key),
+    lastAbstractScheduleKey: pickString(record.last_abstract_schedule_key),
     recommendLookbackDays:
       asNumber(record.recommend_lookback_days) ??
       DEFAULT_USER_SETTINGS.recommendLookbackDays,
     enhanceLookbackDays:
       asNumber(record.enhance_lookback_days) ??
-      DEFAULT_USER_SETTINGS.enhanceLookbackDays
+      DEFAULT_USER_SETTINGS.enhanceLookbackDays,
+    abstractLookbackDays:
+      asNumber(record.abstract_lookback_days) ??
+      DEFAULT_USER_SETTINGS.abstractLookbackDays
   }
 }
 
@@ -799,6 +819,12 @@ export async function getPersonalSettingsView(
         : DEFAULT_USER_SETTINGS.recommendEnabled,
     recommendTime:
       pickString(record.recommend_time) ?? DEFAULT_USER_SETTINGS.recommendTime,
+    abstractEnabled:
+      typeof record.abstract_enabled === 'boolean'
+        ? record.abstract_enabled
+        : DEFAULT_USER_SETTINGS.abstractEnabled,
+    abstractTime:
+      pickString(record.abstract_time) ?? DEFAULT_USER_SETTINGS.abstractTime,
     enhanceEnabled:
       typeof record.enhance_enabled === 'boolean'
         ? record.enhance_enabled
@@ -808,6 +834,9 @@ export async function getPersonalSettingsView(
     recommendLookbackDays:
       asNumber(record.recommend_lookback_days) ??
       DEFAULT_USER_SETTINGS.recommendLookbackDays,
+    abstractLookbackDays:
+      asNumber(record.abstract_lookback_days) ??
+      DEFAULT_USER_SETTINGS.abstractLookbackDays,
     enhanceLookbackDays:
       asNumber(record.enhance_lookback_days) ??
       DEFAULT_USER_SETTINGS.enhanceLookbackDays,
@@ -829,9 +858,12 @@ export async function updatePersonalSettingsView(
     enhanceThreshold: number
     recommendEnabled: boolean
     recommendTime: string
+    abstractEnabled: boolean
+    abstractTime: string
     enhanceEnabled: boolean
     enhanceTime: string
     recommendLookbackDays: number
+    abstractLookbackDays: number
     enhanceLookbackDays: number
   }
 ) {
@@ -856,9 +888,12 @@ export async function updatePersonalSettingsView(
       enhance_threshold: input.enhanceThreshold,
       recommend_enabled: input.recommendEnabled,
       recommend_time: input.recommendTime,
+      abstract_enabled: input.abstractEnabled,
+      abstract_time: input.abstractTime,
       enhance_enabled: input.enhanceEnabled,
       enhance_time: input.enhanceTime,
       recommend_lookback_days: input.recommendLookbackDays,
+      abstract_lookback_days: input.abstractLookbackDays,
       enhance_lookback_days: input.enhanceLookbackDays
     })
   )
@@ -938,6 +973,22 @@ async function prepareStageExecution(
     return
   }
 
+  if (stage === 'abstract') {
+    await recycleRunningStageRuns(pb, {
+      stage: 'abstract',
+      scope: 'global',
+      reason: 'Marked failed because a newer abstract run started'
+    })
+
+    await waitForStageToFinish(pb, {
+      stage: 'fetch',
+      scope: 'global',
+      waitingStage: 'abstract'
+    })
+
+    return
+  }
+
   if (stage === 'recommend') {
     await recycleRunningStageRuns(pb, {
       stage: 'recommend',
@@ -947,7 +998,7 @@ async function prepareStageExecution(
     })
 
     await waitForStageToFinish(pb, {
-      stage: 'fetch',
+      stage: 'abstract',
       scope: 'global',
       waitingStage: 'recommend'
     })
@@ -955,19 +1006,21 @@ async function prepareStageExecution(
     return
   }
 
-  await recycleRunningStageRuns(pb, {
-    stage: 'enhance',
-    scope: 'user',
-    userId: params.userId,
-    reason: 'Marked failed because a newer enhance run started'
-  })
+  if (stage === 'enhance') {
+    await recycleRunningStageRuns(pb, {
+      stage: 'enhance',
+      scope: 'user',
+      userId: params.userId,
+      reason: 'Marked failed because a newer enhance run started'
+    })
 
-  await waitForStageToFinish(pb, {
-    stage: 'recommend',
-    scope: 'user',
-    userId: params.userId,
-    waitingStage: 'enhance'
-  })
+    await waitForStageToFinish(pb, {
+      stage: 'recommend',
+      scope: 'user',
+      userId: params.userId,
+      waitingStage: 'enhance'
+    })
+  }
 }
 
 async function finishRun(
@@ -1307,6 +1360,132 @@ async function resolveTavilyAbstractBatch(
   }
 }
 
+function decodeOpenAlexAbstract(invertedIndex: Record<string, number[]>): string {
+  if (!invertedIndex) return ''
+
+  const wordPositions: Array<{ word: string; position: number }> = []
+  for (const [word, positions] of Object.entries(invertedIndex)) {
+    for (const pos of positions) {
+      wordPositions.push({ word, position: pos })
+    }
+  }
+
+  wordPositions.sort((a, b) => a.position - b.position)
+  return wordPositions.map(w => w.word).join(' ')
+}
+
+async function resolveOpenAlexAbstractBatch(papers: Array<RecordLike>) {
+  const papersWithAbs: Array<RecordLike> = []
+  const papersWithoutAbs: Array<RecordLike> = []
+  const paperFailed: Array<RecordLike> = []
+
+  // Filter papers that already have abstracts or have no DOI
+  const remainingPapers: Array<RecordLike> = []
+  for (const paper of papers) {
+    if (pickString(paper.abstract)) {
+      papersWithAbs.push(paper)
+      continue
+    }
+
+    const rawDoi = pickString(paper.doi)
+    const doi = rawDoi ? rawDoi.replace(/^https?:\/\/doi\.org\//, '') : undefined
+
+    if (!doi) {
+      papersWithoutAbs.push(paper)
+      continue
+    }
+
+    remainingPapers.push(paper)
+  }
+
+  if (remainingPapers.length === 0) {
+    return { papersWithAbs, papersWithoutAbs, paperFailed }
+  }
+
+  // Split into batches of up to 50 DOIs (conservative limit, OpenAlex allows 100)
+  const BATCH_SIZE = 50
+  for (let i = 0; i < remainingPapers.length; i += BATCH_SIZE) {
+    const batch = remainingPapers.slice(i, i + BATCH_SIZE)
+
+    // Build pipe-separated DOI list
+    const doiList = batch
+      .map(p => {
+        const raw = pickString(p.doi)
+        return raw ? raw.replace(/^https?:\/\/doi\.org\//, '') : null
+      })
+      .filter(Boolean)
+      .join('|')
+
+    if (!doiList) {
+      papersWithoutAbs.push(...batch)
+      continue
+    }
+
+    console.log(`[paper-library] OpenAlex fetching batch of ${batch.length} DOIs`)
+
+    try {
+      const url = `https://api.openalex.org/works?filter=doi:${encodeURIComponent(doiList)}&select=id,doi,abstract_inverted_index&per_page=100`
+      const response = await fetch(url, { headers: { Accept: 'application/json' } })
+
+      if (!response.ok) {
+        console.warn(`[paper-library] OpenAlex batch API error: ${response.status}`)
+        paperFailed.push(...batch)
+        continue
+      }
+
+      const data = await response.json()
+      const results = data.results ?? []
+
+      // Map result DOIs to their normalized form
+      const resultByDoi = new Map<string, typeof results[0]>()
+      for (const work of results) {
+        if (work.doi) {
+          const cleanDoi = work.doi.replace(/^https?:\/\/doi\.org\//, '')
+          resultByDoi.set(cleanDoi, work)
+          // Also try without any DOI prefix
+          const bareDoi = cleanDoi.startsWith('10.') ? cleanDoi : undefined
+          if (bareDoi && bareDoi !== cleanDoi) {
+            resultByDoi.set(bareDoi, work)
+          }
+        }
+      }
+
+      // Match each paper to its result
+      for (const paper of batch) {
+        const rawDoi = pickString(paper.doi)
+        const doi = rawDoi ? rawDoi.replace(/^https?:\/\/doi\.org\//, '') : undefined
+
+        if (!doi) {
+          papersWithoutAbs.push(paper)
+          continue
+        }
+
+        const work = resultByDoi.get(doi)
+
+        if (work) {
+          const abstract = decodeOpenAlexAbstract(work.abstract_inverted_index)
+
+          if (abstract) {
+            paper.abstract = abstract
+            papersWithAbs.push(paper)
+          } else {
+            papersWithoutAbs.push(paper)
+          }
+        } else {
+          papersWithoutAbs.push(paper)
+        }
+      }
+    } catch (error) {
+      console.warn(`[paper-library] OpenAlex batch fetch error:`, error)
+      paperFailed.push(...batch)
+    }
+  }
+
+  console.log(`[paper-library] OpenAlex results: ${papersWithAbs.length} with abstract, ${papersWithoutAbs.length} without, ${paperFailed.length} failed`)
+
+  return { papersWithAbs, papersWithoutAbs, paperFailed }
+}
+
 async function saveFetchedPaper(
   pb: PocketBase,
   normalizedPaper: ReturnType<typeof normalizeIncomingPaper>,
@@ -1357,17 +1536,35 @@ async function saveFetchedPaper(
   return 'inserted' as const
 }
 
-// Load fingerprints from existing papers in database
-async function loadFingerprintSnapshot(pb: PocketBase): Promise<Set<string>> {
+// Load fingerprints from the most recent successful fetch run
+async function getLastFetchRunFingerprints(pb: PocketBase): Promise<Set<string>> {
   try {
-    const papers = await pb.collection(COLLECTION_NAMES.papers).getFullList({
-      fields: 'fingerprint'
-    })
+    // Get the most recent successful fetch run
+    const lastRun = await pb.collection(COLLECTION_NAMES.pipelineRuns)
+      .getFirstListItem(
+        pb.filter('stage = "fetch" && status = "completed"', {}),
+        { sort: '-finished_at', requestKey: 'last-fetch-run' }
+      )
+      .catch(() => null)
+
+    if (!lastRun) {
+      console.log('[paper-library] no previous successful fetch run found')
+      return new Set()
+    }
+
+    // Get all papers from that run
+    const papers = await pb.collection(COLLECTION_NAMES.papers)
+      .getFullList({
+        filter: pb.filter('fetch_run_id = {:runId}', { runId: lastRun.id }),
+        fields: 'fingerprint'
+      })
+      .catch(() => [])
+
     const fingerprints = papers.map((p: RecordLike) => p.fingerprint).filter(Boolean)
-    console.log(`[paper-library] loaded ${fingerprints.length} fingerprints from database`)
+    console.log(`[paper-library] loaded ${fingerprints.length} fingerprints from last fetch run ${lastRun.id}`)
     return new Set(fingerprints)
   } catch (error) {
-    console.log('[paper-library] failed to load fingerprints from database:', error)
+    console.log('[paper-library] failed to load fingerprints from last fetch run:', error)
     return new Set()
   }
 }
@@ -1375,7 +1572,7 @@ async function loadFingerprintSnapshot(pb: PocketBase): Promise<Set<string>> {
 async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
   const settings = await getFetchSettingsInternal(pb)
   const rssSources = parseRSSSources(settings.rssSources)
-  const seenFingerprints = await loadFingerprintSnapshot(pb)
+  const seenFingerprints = await getLastFetchRunFingerprints(pb)
   const failedFeeds: Array<{
     source: string
     url: string
@@ -1419,59 +1616,6 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
           }
           seenFingerprints.add(paper.fingerprint)
           newPapers.push(paper)
-        }
-
-        if (sourceConfig.source === 'nature' && settings.natureApiKey) {
-          const natureCandidates = newPapers.filter(
-            paper => !pickString(paper.abstract) && pickString(paper.doi)
-          )
-
-          if (natureCandidates.length > 0) {
-            console.log(
-              `[paper-library] resolving Nature abstracts for ${natureCandidates.length} papers`
-            )
-
-            const resolvedNature = await resolveNatureAbstractBatch(
-              natureCandidates,
-              settings.natureApiKey,
-              sourceConfig.source
-            )
-
-            for (const failedPaper of resolvedNature.paperFailed) {
-              if (!pickString(failedPaper.abstract_status)) {
-                failedPaper.abstract_status = 'error'
-              }
-            }
-          }
-        } else if (sourceConfig.source === 'nature' && !settings.natureApiKey) {
-          console.log(
-            '[paper-library] skipping Nature API: no API key configured'
-          )
-        }
-
-        const tavilyCandidates = newPapers.filter(paper => !pickString(paper.abstract))
-
-        if (settings.tavilyApiKey && tavilyCandidates.length > 0) {
-          const resolvedTavily = await resolveTavilyAbstractBatch(
-            tavilyCandidates,
-            settings.tavilyApiKey,
-            sourceConfig.source
-          )
-
-          for (const paper of resolvedTavily.papersWithAbs) {
-            if (!pickString(paper.abstract)) continue
-            paper.abstract_status = 'ready'
-          }
-          for (const paper of resolvedTavily.papersWithoutAbs) {
-            if (!pickString(paper.abstract)) {
-              paper.abstract_status = 'missing'
-            }
-          }
-          for (const paper of resolvedTavily.paperFailed) {
-            if (!pickString(paper.abstract)) {
-              paper.abstract_status = 'error'
-            }
-          }
         }
 
         for (const paper of newPapers) {
@@ -1518,6 +1662,7 @@ async function runFetchStage(pb: PocketBase, runId: string): Promise<RunStats> {
       }
     }
   }
+
 
   return {
     processedTotal,
@@ -2349,6 +2494,128 @@ async function runEnhanceStage(
   }
 }
 
+async function runAbstractStage(
+  pb: PocketBase,
+  runId: string,
+  rangeStart?: string,
+  rangeEnd?: string
+): Promise<RunStats> {
+  throwIfRunCancelled(runId, 'abstract')
+
+  const fetchSettings = await getFetchSettingsInternal(pb)
+
+  const papers = await pb.collection(COLLECTION_NAMES.papers).getFullList({
+    sort: '-fetched_at',
+    filter: pb.filter('abstract_status = "missing"', {})
+  })
+
+  const scopedPapers = papers.filter((paper: RecordLike) => {
+    const fetchedAt = pickString(paper.fetched_at)
+
+    if (!fetchedAt) return false
+    if (rangeStart && dayjs(fetchedAt).isBefore(dayjs(rangeStart), 'day')) return false
+    if (rangeEnd && dayjs(fetchedAt).isAfter(dayjs(rangeEnd).endOf('day'))) return false
+
+    return true
+  })
+
+  let updatedCount = 0
+  let failedCount = 0
+  const skippedItems: Array<{ paperId: string; reason: string }> = []
+
+  for (const paper of scopedPapers) {
+    throwIfRunCancelled(runId, 'abstract')
+
+    const paperId = String(paper.id)
+    const title = pickString(paper.title) ?? 'Untitled paper'
+
+    try {
+      const existingAbstract = pickString(paper.abstract)
+      if (existingAbstract) {
+        skippedItems.push({ paperId, reason: 'already_has_abstract' })
+        continue
+      }
+
+      let abstract: string | null = null
+      let usedApi: string | null = null
+
+      // Try Nature API first if key exists
+      if (fetchSettings.natureApiKey) {
+        const natureResult = await resolveNatureAbstractBatch(
+          [{ ...paper, abstract: '' }],
+          fetchSettings.natureApiKey,
+          'unknown'
+        )
+        if (natureResult.papersWithAbs.length > 0 && pickString(natureResult.papersWithAbs[0].abstract)) {
+          abstract = pickString(natureResult.papersWithAbs[0].abstract)!
+          usedApi = 'nature'
+        }
+      }
+
+      // Try OpenAlex if no result from Nature
+      if (!abstract) {
+        const openAlexResult = await resolveOpenAlexAbstractBatch([{ ...paper, abstract: '' }])
+        if (openAlexResult.papersWithAbs.length > 0 && pickString(openAlexResult.papersWithAbs[0].abstract)) {
+          abstract = pickString(openAlexResult.papersWithAbs[0].abstract)!
+          usedApi = 'openalex'
+        }
+      }
+
+      // Try Tavily as last fallback
+      if (!abstract && fetchSettings.tavilyApiKey) {
+        const tavilyResult = await resolveTavilyAbstractBatch(
+          [{ ...paper, abstract: '' }],
+          fetchSettings.tavilyApiKey,
+          'unknown'
+        )
+        if (tavilyResult.papersWithAbs.length > 0 && pickString(tavilyResult.papersWithAbs[0].abstract)) {
+          abstract = pickString(tavilyResult.papersWithAbs[0].abstract)!
+          usedApi = 'tavily'
+        }
+      }
+
+      if (abstract) {
+        await pb.collection(COLLECTION_NAMES.papers).update(String(paper.id), {
+          abstract,
+          abstract_status: 'ready'
+        })
+        updatedCount += 1
+        console.log(`[paper-library] Abstract filled via ${usedApi} for ${paperId}: ${title}`)
+      } else {
+        skippedItems.push({ paperId, reason: 'no_abstract_from_any_api' })
+      }
+    } catch (error) {
+      if (isRunCancellationError(error)) {
+        throw error
+      }
+
+      failedCount += 1
+      const reason = getErrorMessage(error)
+
+      console.error(
+        `[paper-library] abstract completion failed for ${paperId} (${title}): ${reason}`
+      )
+    }
+  }
+
+  const skippedNoAbstract = skippedItems.filter(s => s.reason === 'already_has_abstract').length
+  const skippedNoDoi = skippedItems.filter(s => s.reason === 'no_doi').length
+  const skippedApiFailed = skippedItems.filter(s => s.reason === 'no_abstract_from_any_api').length
+
+  return {
+    processedTotal: scopedPapers.length,
+    insertedCount: 0,
+    updatedCount,
+    skippedCount: skippedItems.length,
+    failedCount,
+    details: {
+      skippedNoAbstract,
+      skippedNoDoi,
+      skippedApiFailed
+    }
+  }
+}
+
 async function executeStage(
   pb: PocketBase,
   stage: RunStageId,
@@ -2365,7 +2632,7 @@ async function executeStage(
 
   const run = await startRun(pb, {
     stage,
-    scope: stage === 'fetch' ? 'global' : 'user',
+    scope: (stage === 'fetch' || stage === 'abstract') ? 'global' : 'user',
     triggeredBy,
     userId: params.userId,
     rangeStart: params.rangeStart,
@@ -2386,7 +2653,7 @@ async function executeStage(
         params.rangeStart,
         params.rangeEnd
       )
-    } else {
+    } else if (stage === 'enhance') {
       const settings = await getUserSettingsInternal(pb, params.userId!)
       stats = await runEnhanceStage(
         pb,
@@ -2395,6 +2662,16 @@ async function executeStage(
         params.rangeStart,
         params.rangeEnd
       )
+    } else if (stage === 'abstract') {
+      stats = await runAbstractStage(
+        pb,
+        run.id,
+        params.rangeStart,
+        params.rangeEnd
+      )
+    } else {
+      const _exhaustive: never = stage
+      throw new Error(`Unknown stage: ${_exhaustive}`)
     }
 
     throwIfRunCancelled(String(run.id), stage)
@@ -2443,6 +2720,19 @@ export async function triggerStages(
   for (const stage of normalizedStages) {
     if (stage === 'fetch') {
       resultIds.push(await executeStage(pb, stage, triggeredBy, {}))
+      continue
+    }
+
+    if (stage === 'abstract') {
+      const settings = await getUserSettingsInternal(pb, userId)
+      const fallback = buildDefaultRange(settings.abstractLookbackDays)
+
+      resultIds.push(
+        await executeStage(pb, stage, triggeredBy, {
+          rangeStart: input.rangeStart ?? fallback.rangeStart,
+          rangeEnd: input.rangeEnd ?? fallback.rangeEnd
+        })
+      )
       continue
     }
 
@@ -2564,6 +2854,27 @@ export async function runScheduledStages(now = dayjs()) {
   }
 
   const userSettings = await pb.collection(COLLECTION_NAMES.userSettings).getFullList()
+
+  // Abstract schedule (global scope, uses first user's settings for timing/lookback)
+  const firstUserRecord = userSettings[0]
+  if (firstUserRecord) {
+    const firstUserSettings = await getUserSettingsInternal(pb, String(firstUserRecord.user))
+
+    if (firstUserSettings.abstractEnabled && hasReachedScheduledTime(firstUserSettings.abstractTime)) {
+      const scheduleKey = buildScheduleKey(now, firstUserSettings.abstractTime)
+
+      if (firstUserSettings.lastAbstractScheduleKey !== scheduleKey) {
+        await pb.collection(COLLECTION_NAMES.userSettings).update(firstUserSettings.id, {
+          last_abstract_schedule_key: scheduleKey
+        })
+        const range = buildDefaultRange(firstUserSettings.abstractLookbackDays)
+        await executeStage(pb, 'abstract', 'scheduler', {
+          rangeStart: range.rangeStart,
+          rangeEnd: range.rangeEnd
+        })
+      }
+    }
+  }
 
   for (const record of userSettings) {
     const userId = String(record.user)
