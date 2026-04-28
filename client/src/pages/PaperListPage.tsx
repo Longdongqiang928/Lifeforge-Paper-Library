@@ -206,15 +206,22 @@ function PaperListPage() {
 
         <div className="mb-6 space-y-4">
           <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md border shadow-sm transition-shadow hover:shadow-md">
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(17rem,0.8fr)]">
-              <div className="space-y-5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <TagChip icon="tabler:sparkles" label="Editorial view" variant="filled" />
-                  <TagChip icon="tabler:database" label={`${totalItems ?? 0} papers`} variant="outlined" />
-                  <TagChip icon="tabler:filter" label={`${activeFilterCount} filters`} variant="outlined" />
-                </div>
-                <div className="space-y-2">
-                  <h2 className="text-3xl leading-tight font-semibold">Today&apos;s scored reading list</h2>
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <TagChip icon="tabler:sparkles" label="Editorial view" variant="filled" />
+                      <TagChip icon="tabler:database" label={`${totalItems ?? 0} papers`} variant="outlined" />
+                      <TagChip icon="tabler:filter" label={`${activeFilterCount} filters`} variant="outlined" />
+                    </div>
+                    <h2 className="text-3xl leading-tight font-semibold">Today&apos;s scored reading list</h2>
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <Button icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
+                      Reset filters
+                    </Button>
+                  )}
                 </div>
                 <SearchInput
                   debounceMs={250}
@@ -225,32 +232,13 @@ function PaperListPage() {
                 />
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                <Card className="component-bg-lighter border-bg-500/10 border p-4">
-                  <p className="text-sm font-medium">Default window</p>
-                </Card>
-                <Card className="component-bg-lighter border-bg-500/10 border p-4">
-                  <p className="text-sm font-medium">Ranking mode</p>
-                </Card>
-                <Card className="component-bg-lighter border-bg-500/10 flex items-center justify-between gap-3 border p-4">
-                  <div>
-                    <p className="text-sm font-medium">Reset view</p>
-                  </div>
-                  <Button icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
-                    Reset
-                  </Button>
-                </Card>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md border shadow-sm transition-shadow hover:shadow-md">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_16rem]">
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Fetched time</p>
-                  <h3 className="text-lg font-semibold">Window</h3>
-                </div>
+              <div className="border-bg-500/10 border-t pt-6">
+                <div className="grid gap-6 xl:grid-cols-2">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Fetched time</p>
+                      <h3 className="text-lg font-semibold">Window</h3>
+                    </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <DateInput
                     value={dateFrom ? dayjs(dateFrom).toDate() : null}
@@ -340,23 +328,9 @@ function PaperListPage() {
                     </div>
                   </div>
                 </div>
+                </div>
               </div>
-
-              <div className="space-y-3">
-                <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Actions</p>
-                <Button as={Link} icon="tabler:file-import" to={`${MODULE_BASE_PATH}/import`} variant="secondary">
-                  Import
-                </Button>
-                <Button as={Link} icon="tabler:file-search" to={`${MODULE_BASE_PATH}/abstract-review`} variant="secondary">
-                  Review
-                </Button>
-                <Button as={Link} icon="tabler:star" to={`${MODULE_BASE_PATH}/favorites`} variant="secondary">
-                  Favorites
-                </Button>
-                <Button as={Link} icon="tabler:settings" to={`${MODULE_BASE_PATH}/settings`} variant="secondary">
-                  Settings
-                </Button>
-              </div>
+            </div>
             </div>
           </Card>
         </div>

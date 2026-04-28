@@ -60,8 +60,8 @@ function ModuleSubnav() {
                 className={[
                   'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200',
                   active
-                    ? 'bg-primary text-bg-100 shadow-sm hover:scale-105 active:scale-95'
-                    : 'text-bg-500 hover:bg-component-bg-lighter hover:text-primary hover:scale-105 active:scale-95'
+                    ? 'bg-primary/10 text-primary shadow-sm'
+                    : 'text-bg-500 hover:bg-component-bg-lighter hover:text-primary'
                 ].join(' ')}
                 to={`${MODULE_BASE_PATH}${item.path}`}
               >
