@@ -189,12 +189,12 @@ function ImportPage() {
           {importNotice && (
             <div
               className={[
-                'rounded-xl border px-4 py-3 text-sm',
+                'border-bg-500/15 component-bg-lighter rounded-xl border px-4 py-3 text-sm',
                 importNotice.tone === 'success'
-                  ? 'border-emerald-300/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                  ? 'text-primary'
                   : importNotice.tone === 'error'
-                    ? 'border-rose-300/60 bg-rose-500/10 text-rose-700 dark:text-rose-300'
-                    : 'border-sky-300/60 bg-sky-500/10 text-sky-700 dark:text-sky-300'
+                    ? ''
+                    : 'text-bg-500'
               ].join(' ')}
             >
               {importNotice.message}

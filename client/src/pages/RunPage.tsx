@@ -51,7 +51,7 @@ function StatCard({
   description: string
 }) {
   return (
-    <Card className="component-bg-lighter space-y-2 p-4">
+    <Card className="border-bg-500/10 component-bg-lighter space-y-2 border p-4">
       <TagChip icon={icon} label={label} variant="outlined" />
       <p className="text-2xl font-semibold">{value}</p>
       <p className="text-bg-500 text-sm">{description}</p>
