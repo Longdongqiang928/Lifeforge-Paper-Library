@@ -2,7 +2,7 @@ import { ClientError, forgeRouter } from '@lifeforge/server-utils'
 import z from 'zod'
 
 import forge from '../forge'
-import { COLLECTION_NAMES } from '../utils/constants'
+import { COLLECTION_NAMES, DEFAULT_FOLDER_NAME } from '../utils/constants'
 import {
   ensureAuthenticatedUser,
   ensureDefaultFavoriteFolder,
@@ -29,6 +29,7 @@ const listFolders = forge
     return folders.map((folder: Record<string, unknown>) => ({
       id: String(folder.id),
       name: String(folder.name),
+      isDefault: String(folder.name) === DEFAULT_FOLDER_NAME,
       sortOrder:
         typeof folder.sort_order === 'number' ? folder.sort_order : Number(folder.sort_order) || 0
     }))
@@ -84,7 +85,115 @@ const createFolder = forge
     return {
       id: folder.id,
       name: folder.name,
+      isDefault: folder.name === DEFAULT_FOLDER_NAME,
       sortOrder: folder.sort_order
+    }
+  })
+
+const renameFolder = forge
+  .mutation()
+  .description('Rename a favorite folder for the current user')
+  .input({
+    body: z.object({
+      folderId: z.string(),
+      name: z.string().min(1).max(60)
+    })
+  })
+  .callback(async ({ pb, body: { folderId, name } }) => {
+    const userId = ensureAuthenticatedUser(pb.instance)
+    const normalizedName = name.trim()
+
+    if (!normalizedName) {
+      throw new ClientError('Folder name is required', 400)
+    }
+
+    const folder = await pb.instance
+      .collection(COLLECTION_NAMES.favoriteFolders)
+      .getOne(folderId)
+      .catch(() => null)
+
+    if (!folder || String(folder.user) !== userId) {
+      throw new ClientError('Favorite folder not found', 404)
+    }
+
+    if (String(folder.name) === DEFAULT_FOLDER_NAME) {
+      throw new ClientError('Default folder cannot be renamed', 400)
+    }
+
+    const folders = await pb.instance.collection(COLLECTION_NAMES.favoriteFolders).getFullList({
+      filter: pb.instance.filter('user = {:user}', {
+        user: userId
+      })
+    })
+
+    if (
+      folders.some(
+        (candidate: Record<string, unknown>) =>
+          String(candidate.id) !== folderId &&
+          String(candidate.name).toLowerCase() === normalizedName.toLowerCase()
+      )
+    ) {
+      throw new ClientError('Folder already exists', 409)
+    }
+
+    const updated = await pb.instance.collection(COLLECTION_NAMES.favoriteFolders).update(folderId, {
+      name: normalizedName
+    })
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      isDefault: updated.name === DEFAULT_FOLDER_NAME,
+      sortOrder: updated.sort_order
+    }
+  })
+
+const deleteFolder = forge
+  .mutation()
+  .description('Delete a favorite folder and move contained papers into the default folder')
+  .input({
+    body: z.object({
+      folderId: z.string()
+    })
+  })
+  .callback(async ({ pb, body: { folderId } }) => {
+    const userId = ensureAuthenticatedUser(pb.instance)
+
+    const folder = await pb.instance
+      .collection(COLLECTION_NAMES.favoriteFolders)
+      .getOne(folderId)
+      .catch(() => null)
+
+    if (!folder || String(folder.user) !== userId) {
+      throw new ClientError('Favorite folder not found', 404)
+    }
+
+    if (String(folder.name) === DEFAULT_FOLDER_NAME) {
+      throw new ClientError('Default folder cannot be deleted', 400)
+    }
+
+    const defaultFolder = await ensureDefaultFavoriteFolder(pb.instance, userId)
+
+    const favorites = await pb.instance.collection(COLLECTION_NAMES.paperFavorites).getFullList({
+      filter: pb.instance.filter('user = {:user} && folder = {:folder}', {
+        user: userId,
+        folder: folderId
+      })
+    })
+
+    await Promise.all(
+      favorites.map((favorite: Record<string, unknown>) =>
+        pb.instance.collection(COLLECTION_NAMES.paperFavorites).update(String(favorite.id), {
+          folder: defaultFolder.id
+        })
+      )
+    )
+
+    await pb.instance.collection(COLLECTION_NAMES.favoriteFolders).delete(folderId)
+
+    return {
+      success: true,
+      movedCount: favorites.length
     }
   })
 
@@ -129,6 +238,7 @@ const list = forge
       grouped.set(String(folder.id), {
         id: String(folder.id),
         name: String(folder.name),
+        isDefault: String(folder.name) === DEFAULT_FOLDER_NAME,
         papers: []
       })
     }
@@ -270,6 +380,8 @@ export default forgeRouter({
   move,
   folders: forgeRouter({
     list: listFolders,
-    create: createFolder
+    create: createFolder,
+    rename: renameFolder,
+    delete: deleteFolder
   })
 })

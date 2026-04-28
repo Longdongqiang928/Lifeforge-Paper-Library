@@ -6,6 +6,8 @@ import type {
   AbstractReviewListResponse,
   ActivePipelineRun,
   CreateFavoriteFolderInput,
+  DeleteFavoriteFolderInput,
+  DeleteFavoriteFolderResponse,
   FavoriteFolderSummary,
   FavoriteFoldersResponse,
   FetchSettings,
@@ -20,6 +22,7 @@ import type {
   PaperListResponse,
   PersonalPipelineSettings,
   PipelineRun,
+  RenameFavoriteFolderInput,
   ToggleFavoriteInput,
   ToggleFavoriteResponse,
   TriggerPipelineInput,
@@ -115,6 +118,12 @@ const forgeAPI = {
         ),
         create: proxy.untyped<FavoriteFolderSummary, CreateFavoriteFolderInput>(
           withModuleRoute('papers/favorites/folders/create')
+        ),
+        rename: proxy.untyped<FavoriteFolderSummary, RenameFavoriteFolderInput>(
+          withModuleRoute('papers/favorites/folders/rename')
+        ),
+        delete: proxy.untyped<DeleteFavoriteFolderResponse, DeleteFavoriteFolderInput>(
+          withModuleRoute('papers/favorites/folders/delete')
         )
       }
     }

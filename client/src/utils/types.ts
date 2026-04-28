@@ -90,6 +90,7 @@ export interface UpdateAbstractReviewInput {
 export interface FavoriteFolder {
   id: string
   name: string
+  isDefault: boolean
   papers: PaperDetail[]
   count: number
 }
@@ -102,6 +103,7 @@ export interface FavoriteFoldersResponse {
 export interface FavoriteFolderSummary {
   id: string
   name: string
+  isDefault: boolean
   sortOrder: number
 }
 
@@ -156,6 +158,20 @@ export interface MoveFavoriteResponse {
 
 export interface CreateFavoriteFolderInput {
   name: string
+}
+
+export interface RenameFavoriteFolderInput {
+  folderId: string
+  name: string
+}
+
+export interface DeleteFavoriteFolderInput {
+  folderId: string
+}
+
+export interface DeleteFavoriteFolderResponse {
+  success: boolean
+  movedCount: number
 }
 
 export interface PipelineRun {

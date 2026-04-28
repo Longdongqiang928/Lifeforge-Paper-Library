@@ -3,9 +3,11 @@ import { Button, Card, EmptyStateScreen, ModuleHeader, WithQuery, useModalStore 
 import { toast } from 'react-toastify'
 
 import CreateFolderModal from '@/components/CreateFolderModal'
+import DeleteFolderModal from '@/components/DeleteFolderModal'
 import MoveFavoriteModal from '@/components/MoveFavoriteModal'
 import ModuleSubnav from '@/components/ModuleSubnav'
 import PaperCard from '@/components/PaperCard'
+import RenameFolderModal from '@/components/RenameFolderModal'
 import forgeAPI from '@/utils/forgeAPI'
 import {
   MODULE_BASE_PATH,
@@ -89,6 +91,32 @@ function FavoritesPage() {
                         <h2 className="text-2xl font-semibold">{folder.name}</h2>
                         <p className="text-bg-500 text-sm">{folder.count} saved papers</p>
                       </div>
+                      {!folder.isDefault ? (
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            icon="tabler:edit"
+                            variant="secondary"
+                            onClick={() => {
+                              open(RenameFolderModal, {
+                                folder
+                              })
+                            }}
+                          >
+                            Rename
+                          </Button>
+                          <Button
+                            icon="tabler:trash"
+                            variant="secondary"
+                            onClick={() => {
+                              open(DeleteFolderModal, {
+                                folder
+                              })
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                     {folder.papers.length === 0 ? (
                       <Card className="border-bg-500/10 bg-component-bg/50 rounded-2xl border border-dashed p-5">
