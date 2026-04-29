@@ -8,6 +8,7 @@ import {
   DEFAULT_FETCH_SETTINGS,
   DEFAULT_USER_SETTINGS,
   EMBEDDING_BATCH_SIZE,
+  FETCH_REQUEST_TIMEOUT_MS,
   FETCH_RETRY_DELAY_MS,
   FETCH_RETRY_LIMIT,
   RUN_STALE_TIMEOUT_MS,
@@ -142,6 +143,8 @@ function getErrorMessage(error: unknown) {
 
 let schedulerPBPromise: Promise<PocketBase> | null = null
 const cancelledRunIds = new Set<string>()
+const processStartedAt = dayjs()
+let startupRunsReconciled = false
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -302,6 +305,48 @@ async function recycleRunningStageRuns(
   for (const run of runs) {
     await markRunFailed(pb, run, params.reason)
   }
+}
+
+async function recoverStaleRunningRuns(pb: PocketBase) {
+  const runs = await pb.collection(COLLECTION_NAMES.pipelineRuns).getFullList({
+    filter: 'status = "running"',
+    sort: 'created'
+  })
+
+  for (const run of runs) {
+    if (!isRunStale(run)) {
+      continue
+    }
+
+    await markRunFailed(
+      pb,
+      run,
+      `Marked failed as stale after exceeding ${RUN_STALE_TIMEOUT_MS}ms`
+    )
+  }
+}
+
+async function reconcileOrphanedRunningRunsOnStartup(pb: PocketBase) {
+  if (startupRunsReconciled) {
+    return
+  }
+
+  const runs = await pb.collection(COLLECTION_NAMES.pipelineRuns).getFullList({
+    filter: 'status = "running"',
+    sort: 'created'
+  })
+
+  for (const run of runs) {
+    if (dayjs(getRunStartedAt(run)).isBefore(processStartedAt)) {
+      await markRunFailed(
+        pb,
+        run,
+        'Marked failed after server restart interrupted the run'
+      )
+    }
+  }
+
+  startupRunsReconciled = true
 }
 
 async function waitForStageToFinish(
@@ -610,7 +655,24 @@ function parseRSSItems(xml: string, source: string) {
 }
 
 async function fetchJSON(url: string, init?: RequestInit) {
-  const response = await fetch(url, init)
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), FETCH_REQUEST_TIMEOUT_MS)
+  let response: Response
+
+  try {
+    response = await fetch(url, {
+      ...init,
+      signal: controller.signal
+    })
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request timed out after ${FETCH_REQUEST_TIMEOUT_MS}ms`)
+    }
+
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
 
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status} ${response.statusText}`)
@@ -620,7 +682,24 @@ async function fetchJSON(url: string, init?: RequestInit) {
 }
 
 async function fetchText(url: string, init?: RequestInit) {
-  const response = await fetch(url, init)
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), FETCH_REQUEST_TIMEOUT_MS)
+  let response: Response
+
+  try {
+    response = await fetch(url, {
+      ...init,
+      signal: controller.signal
+    })
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request timed out after ${FETCH_REQUEST_TIMEOUT_MS}ms`)
+    }
+
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
 
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status} ${response.statusText}`)
@@ -1425,15 +1504,9 @@ async function resolveOpenAlexAbstractBatch(papers: Array<RecordLike>) {
 
     try {
       const url = `https://api.openalex.org/works?filter=doi:${encodeURIComponent(doiList)}&select=id,doi,abstract_inverted_index&per_page=100`
-      const response = await fetch(url, { headers: { Accept: 'application/json' } })
-
-      if (!response.ok) {
-        console.warn(`[paper-library] OpenAlex batch API error: ${response.status}`)
-        paperFailed.push(...batch)
-        continue
-      }
-
-      const data = await response.json()
+      const data = await fetchJSON(url, {
+        headers: { Accept: 'application/json' }
+      })
       const results = data.results ?? []
 
       // Map result DOIs to their normalized form
@@ -2521,92 +2594,127 @@ async function runAbstractStage(
 
   let updatedCount = 0
   let failedCount = 0
-  const skippedItems: Array<{ paperId: string; reason: string }> = []
+  let skippedNoAbstract = 0
+  let skippedNoDoi = 0
+  let skippedApiFailed = 0
 
-  for (const paper of scopedPapers) {
-    throwIfRunCancelled(runId, 'abstract')
+  const candidates = scopedPapers.filter((paper: RecordLike) => {
+    const existingAbstract = pickString(paper.abstract)
 
-    const paperId = String(paper.id)
-    const title = pickString(paper.title) ?? 'Untitled paper'
+    if (existingAbstract) {
+      skippedNoAbstract += 1
+      return false
+    }
 
-    try {
-      const existingAbstract = pickString(paper.abstract)
-      if (existingAbstract) {
-        skippedItems.push({ paperId, reason: 'already_has_abstract' })
-        continue
-      }
+    return true
+  })
 
-      let abstract: string | null = null
-      let usedApi: string | null = null
+  const resolvedPapers = new Map<string, { paper: RecordLike; usedApi: string }>()
+  let remaining = [...candidates]
 
-      // Try Nature API first if key exists
-      if (fetchSettings.natureApiKey) {
-        const natureResult = await resolveNatureAbstractBatch(
-          [{ ...paper, abstract: '' }],
-          fetchSettings.natureApiKey,
-          'unknown'
-        )
-        if (natureResult.papersWithAbs.length > 0 && pickString(natureResult.papersWithAbs[0].abstract)) {
-          abstract = pickString(natureResult.papersWithAbs[0].abstract)!
-          usedApi = 'nature'
-        }
-      }
+  throwIfRunCancelled(runId, 'abstract')
 
-      // Try OpenAlex if no result from Nature
-      if (!abstract) {
-        const openAlexResult = await resolveOpenAlexAbstractBatch([{ ...paper, abstract: '' }])
-        if (openAlexResult.papersWithAbs.length > 0 && pickString(openAlexResult.papersWithAbs[0].abstract)) {
-          abstract = pickString(openAlexResult.papersWithAbs[0].abstract)!
-          usedApi = 'openalex'
-        }
-      }
+  if (fetchSettings.natureApiKey) {
+    const natureCandidates = remaining.filter(
+      (paper: RecordLike) => pickString(paper.source) === 'nature'
+    )
 
-      // Try Tavily as last fallback
-      if (!abstract && fetchSettings.tavilyApiKey) {
-        const tavilyResult = await resolveTavilyAbstractBatch(
-          [{ ...paper, abstract: '' }],
-          fetchSettings.tavilyApiKey,
-          'unknown'
-        )
-        if (tavilyResult.papersWithAbs.length > 0 && pickString(tavilyResult.papersWithAbs[0].abstract)) {
-          abstract = pickString(tavilyResult.papersWithAbs[0].abstract)!
-          usedApi = 'tavily'
-        }
-      }
+    if (natureCandidates.length > 0) {
+      const natureResult = await resolveNatureAbstractBatch(
+        natureCandidates.map(paper => ({ ...paper, abstract: '' })),
+        fetchSettings.natureApiKey,
+        'nature'
+      )
 
-      if (abstract) {
-        await pb.collection(COLLECTION_NAMES.papers).update(String(paper.id), {
-          abstract,
-          abstract_status: 'ready'
+      for (const paper of natureResult.papersWithAbs) {
+        resolvedPapers.set(String(paper.id), {
+          paper,
+          usedApi: 'nature'
         })
-        updatedCount += 1
-        console.log(`[paper-library] Abstract filled via ${usedApi} for ${paperId}: ${title}`)
-      } else {
-        skippedItems.push({ paperId, reason: 'no_abstract_from_any_api' })
       }
+    }
+  }
+
+  remaining = remaining.filter(paper => !resolvedPapers.has(String(paper.id)))
+
+  throwIfRunCancelled(runId, 'abstract')
+
+  if (remaining.length > 0) {
+    const openAlexCandidates = remaining.filter((paper: RecordLike) => !!pickString(paper.doi))
+    skippedNoDoi += remaining.length - openAlexCandidates.length
+
+    if (openAlexCandidates.length > 0) {
+      const openAlexResult = await resolveOpenAlexAbstractBatch(
+        openAlexCandidates.map(paper => ({ ...paper, abstract: '' }))
+      )
+
+      for (const paper of openAlexResult.papersWithAbs) {
+        resolvedPapers.set(String(paper.id), {
+          paper,
+          usedApi: 'openalex'
+        })
+      }
+    }
+  }
+
+  remaining = candidates.filter(paper => !resolvedPapers.has(String(paper.id)))
+
+  throwIfRunCancelled(runId, 'abstract')
+
+  if (remaining.length > 0 && fetchSettings.tavilyApiKey) {
+    const groups = new Map<string, Array<RecordLike>>()
+
+    for (const paper of remaining) {
+      const source = pickString(paper.source) ?? 'generic'
+      const group = groups.get(source) ?? []
+      group.push({ ...paper, abstract: '' })
+      groups.set(source, group)
+    }
+
+    for (const [source, group] of groups) {
+      throwIfRunCancelled(runId, 'abstract')
+
+      const tavilyResult = await resolveTavilyAbstractBatch(
+        group,
+        fetchSettings.tavilyApiKey,
+        source
+      )
+
+      for (const paper of tavilyResult.papersWithAbs) {
+        resolvedPapers.set(String(paper.id), {
+          paper,
+          usedApi: 'tavily'
+        })
+      }
+    }
+  }
+
+  remaining = candidates.filter(paper => !resolvedPapers.has(String(paper.id)))
+  skippedApiFailed = remaining.length
+
+  for (const { paper, usedApi } of resolvedPapers.values()) {
+    try {
+      await pb.collection(COLLECTION_NAMES.papers).update(String(paper.id), {
+        abstract: pickString(paper.abstract) ?? '',
+        abstract_status: 'ready'
+      })
+      updatedCount += 1
+      console.log(
+        `[paper-library] Abstract filled via ${usedApi} for ${String(paper.id)}: ${pickString(paper.title) ?? 'Untitled paper'}`
+      )
     } catch (error) {
-      if (isRunCancellationError(error)) {
-        throw error
-      }
-
       failedCount += 1
-      const reason = getErrorMessage(error)
-
       console.error(
-        `[paper-library] abstract completion failed for ${paperId} (${title}): ${reason}`
+        `[paper-library] abstract persistence failed for ${String(paper.id)} (${pickString(paper.title) ?? 'Untitled paper'}): ${getErrorMessage(error)}`
       )
     }
   }
 
-  const skippedNoAbstract = skippedItems.filter(s => s.reason === 'already_has_abstract').length
-  const skippedNoDoi = skippedItems.filter(s => s.reason === 'no_doi').length
-  const skippedApiFailed = skippedItems.filter(s => s.reason === 'no_abstract_from_any_api').length
-
   return {
-    processedTotal: scopedPapers.length,
+    processedTotal: candidates.length,
     insertedCount: 0,
     updatedCount,
-    skippedCount: skippedItems.length,
+    skippedCount: skippedNoAbstract + skippedNoDoi + skippedApiFailed,
     failedCount,
     details: {
       skippedNoAbstract,
@@ -2816,6 +2924,8 @@ export async function getSchedulerPocketBase() {
 export async function runScheduledStages(now = dayjs()) {
   console.log('[paper-library] scheduler tick at', now.format('YYYY-MM-DD HH:mm'))
   const pb = await getSchedulerPocketBase()
+  await reconcileOrphanedRunningRunsOnStartup(pb)
+  await recoverStaleRunningRuns(pb)
   const currentMinutes = now.hour() * 60 + now.minute()
 
   const hasReachedScheduledTime = (time: string) => {
