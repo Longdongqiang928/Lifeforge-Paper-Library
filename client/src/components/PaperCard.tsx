@@ -79,7 +79,7 @@ function PaperCard({
         <div className="flex items-start justify-between gap-4">
           <h2 className="text-3xl tracking-tight leading-9 font-bold">{paper.translatedTitle || paper.title}</h2>
           {typeof paper.score === 'number' && (
-            <div className="bg-component-bg-lighter text-primary rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap">
+            <div className="bg-custom-500/15 text-custom-500 border-custom-500/20 rounded-full border px-3 py-1 text-sm font-semibold whitespace-nowrap">
               {paper.score.toFixed(2)}
             </div>
           )}
