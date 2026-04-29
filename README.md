@@ -1,5 +1,7 @@
 # Lifeforge Paper Library
 
+[中文说明](./README.zh-CN.md)
+
 `Paper Library` is a custom LifeForge module for building a shared research paper pool inside [LifeForge](https://github.com/Lifeforge-app/lifeforge), curating abstracts, ranking papers against a Zotero library, and generating lightweight AI reading aids.
 
 It lives under `apps/longdongqiang--paper-library` and is versioned in its own Git repository, separate from the main LifeForge repository.
