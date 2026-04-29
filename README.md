@@ -1,25 +1,80 @@
 # Lifeforge Paper Library
 
-`Paper Library` is a custom LifeForge module for browsing, importing, recommending, and AI-enhancing research papers inside LifeForge.
+`Paper Library` is a custom LifeForge module for building a shared research paper pool inside [LifeForge](https://github.com/Lifeforge-app/lifeforge), curating abstracts, ranking papers against a Zotero library, and generating lightweight AI reading aids.
 
-It is implemented as a standalone module under `apps/longdongqiang--paper-library` and is developed in its own local Git repository, separate from the main LifeForge repository.
+It lives under `apps/longdongqiang--paper-library` and is versioned in its own Git repository, separate from the main LifeForge repository.
+
+## What It Does
+
+`Paper Library` combines four workflows in one module:
+
+- Collect papers from configured RSS sources
+- Fill or repair missing abstracts
+- Recommend papers against a per-user Zotero library
+- Enhance high-relevance papers with:
+  - `TL;DR`
+  - `Translated Title`
+  - `Translated Abstract`
+
+At the UI level, the module provides:
+
+- A scored `Papers` landing page
+- In-place paper detail modal with previous / next navigation across pages
+- `Favorites` with folders, rename, delete, and move support
+- `Review` for manual abstract inspection, correction, and clearing
+- `Import` for JSON / JSONL ingestion
+- `Run` for manual pipeline triggering and run history
+- `Settings` for shared fetch / abstract settings and personal recommend / enhance settings
+
+## Key Features
+
+- Shared paper pool, per-user interpretation
+  - papers are stored once
+  - recommendation scores, enhancement results, and favorites remain user-specific
+- Abstract-first pipeline
+  - abstract extraction is its own stage, separate from RSS fetch
+  - missing abstracts can be reviewed and corrected manually
+- Folder-based favorites
+  - save papers into a chosen folder from the list page
+  - rename, delete, and move folders without losing saved papers
+- Import without a file-based intermediate pipeline
+  - JSON / JSONL goes straight into PocketBase
+  - imported recommend / enhance results are marked explicitly as imported
+- Scheduler built inside the module
+  - no host-framework task system changes required
+- UI aligned with LifeForge
+  - uses the host theme tokens, cards, buttons, and modal system
+
+## Why This Module Is Useful
+
+- It keeps paper collection, abstract repair, ranking, and lightweight AI enhancement in one place instead of splitting them across scripts and viewers.
+- It avoids reprocessing unchanged work where possible through per-stage input hashes.
+- It supports both automated and manual workflows:
+  - scheduled fetch / abstract / recommend / enhance
+  - manual review and manual reruns when you want tighter control
+- It is practical for real reading workflows:
+  - score-first paper browsing
+  - favorites folders
+  - direct link-out to source pages
+  - manual abstract correction before downstream recommendation and enhancement
 
 ## Current Scope
 
 This module currently provides:
 
 - Paper list and detail pages
-- In-place paper detail modal from the list page, with next/previous navigation across pages
-- Favorites and folders
+- In-place paper detail modal from the list page, with next / previous navigation across pages
+- Favorites with folders
 - JSON / JSONL import
 - Abstract review page for manual abstract inspection and correction
-- Three-stage pipeline:
-  - `fetch`: fetch RSS feeds and save papers directly into PocketBase
+- Four-stage pipeline:
+  - `fetch`: fetch RSS feeds and save new papers directly into PocketBase
+  - `abstract`: resolve missing abstracts through configured providers and manual review follow-up
   - `recommend`: rank papers against a Zotero library
   - `enhance`: generate `TL;DR`, `Translated Title`, and `Translated Abstract`
 - Shared paper pool + per-user overlay data model
 - Manual run page and automatic scheduled runs
-- Settings page for RSS, Zotero, and AI configuration
+- Settings page for RSS, abstract, Zotero, and AI configuration
 
 ## Module Structure
 
@@ -73,10 +128,11 @@ The module uses a split model:
 The module now uses four separate state layers:
 
 - Scheduler settings state
-  - `fetch_enabled`, `recommend_enabled`, `enhance_enabled`
-  - `fetch_time`, `recommend_time`, `enhance_time`
+  - `fetch_enabled`, `abstract_enabled`, `recommend_enabled`, `enhance_enabled`
+  - `fetch_time`, `abstract_time`, `recommend_time`, `enhance_time`
   - scheduler dedupe keys:
     - `last_fetch_schedule_key`
+    - `last_abstract_schedule_key`
     - `last_recommend_schedule_key`
     - `last_enhance_schedule_key`
 - Paper content readiness state
@@ -106,11 +162,27 @@ The module now uses four separate state layers:
 
 - Reads RSS sources from shared module settings
 - Fetches today's feed content
-- De-duplicates by fingerprint
-- Tries to resolve missing abstracts through external services when configured
+- Parses RSS into paper records
+- De-duplicates before persistence
+- Skips existing papers instead of overwriting them
 - Writes directly to `ldq_paperlib_papers`
 - Marks paper abstract readiness through `abstract_status`
+  - `ready` when a valid abstract already exists in the fetched record
+  - `missing` when the paper still needs abstract resolution
+  - `error` when extraction logic explicitly fails
 - Feed failures are recorded as failed feeds without stopping the whole fetch run
+
+### Abstract
+
+- Runs independently after fetch
+- Only processes papers with `abstract_status = missing`
+- Current provider chain is:
+  - `Nature API`
+  - `OpenAlex`
+  - `Tavily`
+- Uses batched provider calls and request timeouts
+- Updates `papers.abstract` and `papers.abstract_status`
+- Keeps per-run skip / failure reasons in run details rather than mutating user overlay stage state
 
 ### Recommend
 
@@ -118,9 +190,10 @@ The module now uses four separate state layers:
 - Builds / refreshes Zotero cache in PocketBase
 - Computes similarity between fetched papers and Zotero collections
 - Writes scores and matched collections into `ldq_paperlib_user_states`
+- Can create a user overlay row on demand if one does not already exist
 - Only processes papers where `abstract_status = ready`
-- Skip reasons such as `no_abstract` and `unchanged` are tracked in the current run details, not as long-lived user-state statuses
 - Uses `recommend_input_hash` so already completed unchanged papers can be skipped cleanly
+- Skip reasons such as `no_abstract` and `unchanged` are tracked in current run details, not as long-lived user-state statuses
 
 ### Enhance
 
@@ -135,7 +208,7 @@ The module now uses four separate state layers:
   - `recommend` data exists
   - score passes the threshold
 - Uses `enhance_input_hash` so already completed unchanged papers are skipped instead of re-running the model
-- Skip reasons such as `no_state`, `no_abstract`, `below_threshold`, and `unchanged` are tracked in the current run details, not as long-lived user-state statuses
+- Skip reasons such as `no_state`, `no_abstract`, `below_threshold`, and `unchanged` are tracked in current run details, not as long-lived user-state statuses
 
 ## Scheduling Rules
 
@@ -144,8 +217,10 @@ The scheduler is implemented inside the module server and does not require chang
 Current coordination rules:
 
 - A new `fetch` run marks older running `fetch` runs as `failed`, then starts a new `fetch`
+- A new `abstract` run marks older running `abstract` runs as `failed`
+- If a `fetch` is running, `abstract` waits for `fetch` to finish
 - A new `recommend` run marks older running `recommend` runs as `failed`
-- If a `fetch` is running, `recommend` waits for `fetch` to finish
+- If an `abstract` is running, `recommend` waits for `abstract` to finish
 - A new `enhance` run marks older running `enhance` runs as `failed`
 - If a `recommend` is running, `enhance` waits for `recommend` to finish
 - Stale running jobs are automatically recycled after the configured timeout
@@ -169,6 +244,7 @@ Import can also seed user overlay state:
 - imported TL;DR / translations mark `enhance_status = completed`
 - imported overlay rows use `recommend_last_reason = imported` / `enhance_last_reason = imported`
 - imported overlay defaults now align with the current stage-state model
+- duplicate papers are skipped instead of overwritten
 
 Long text handling:
 
@@ -227,6 +303,11 @@ git push
 - Enhance output still depends on model output stability
 - Run detail cards show the main skip counters, but stage-state internals are richer than the current UI exposes
 - The module currently assumes a single running LifeForge server instance
+- Some upstream providers can still be rate-limited or unstable:
+  - `Nature API`
+  - `Tavily`
+  - source-specific RSS feeds
+- The module UI is aligned with the host modal and card system, but paper detail still has richer navigation behavior than smaller utility modals
 
 ## Repository
 
