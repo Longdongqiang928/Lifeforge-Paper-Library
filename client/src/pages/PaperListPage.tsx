@@ -10,7 +10,8 @@ import {
   SearchInput,
   Switch,
   TagChip,
-  WithQuery
+  WithQuery,
+  useModalStore
 } from 'lifeforge-ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
@@ -19,6 +20,7 @@ import { Link, useSearchParams } from 'shared'
 import PaperCard from '@/components/PaperCard'
 import PaperDetailModal from '@/components/PaperDetailModal'
 import ModuleSubnav from '@/components/ModuleSubnav'
+import SaveFavoriteModal from '@/components/SaveFavoriteModal'
 import forgeAPI from '@/utils/forgeAPI'
 import {
   MODULE_BASE_PATH,
@@ -32,6 +34,7 @@ const DEFAULT_FETCH_DATE = dayjs().format('YYYY-MM-DD')
 const DEFAULT_SORT = 'score_desc' as const
 
 function PaperListPage() {
+  const { open } = useModalStore()
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [dateFrom, setDateFrom] = useState(DEFAULT_FETCH_DATE)
@@ -361,6 +364,7 @@ function PaperListPage() {
                     <PaperCard
                       key={paper.id}
                       favoriteLoading={
+                        paper.isFavorite &&
                         toggleFavoriteMutation.isPending &&
                         toggleFavoriteMutation.variables?.paperId === paper.id
                       }
@@ -369,9 +373,17 @@ function PaperListPage() {
                         openPaperDetail(paper.id)
                       }}
                       onToggleFavorite={() => {
-                        toggleFavoriteMutation.mutate({
+                        if (paper.isFavorite) {
+                          toggleFavoriteMutation.mutate({
+                            paperId: paper.id,
+                            folderId: paper.favoriteFolderId ?? undefined
+                          })
+                          return
+                        }
+
+                        open(SaveFavoriteModal, {
                           paperId: paper.id,
-                          folderId: paper.favoriteFolderId
+                          paperTitle: paper.translatedTitle || paper.title
                         })
                       }}
                     />
