@@ -320,7 +320,7 @@ function RunPage() {
                   })
                 }}
               >
-                Run now
+                <span>Run now</span>
               </Button>
             </div>
           </div>

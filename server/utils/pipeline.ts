@@ -5,9 +5,11 @@ import { decrypt2, encrypt2 } from '@functions/auth/encryption'
 
 import {
   COLLECTION_NAMES,
+  EMBEDDING_REQUEST_TIMEOUT_MS,
   DEFAULT_FETCH_SETTINGS,
   DEFAULT_USER_SETTINGS,
   EMBEDDING_BATCH_SIZE,
+  EMBEDDING_RETRY_LIMIT,
   FETCH_REQUEST_TIMEOUT_MS,
   FETCH_RETRY_DELAY_MS,
   FETCH_RETRY_LIMIT,
@@ -118,6 +120,24 @@ interface DecryptedUserSettings {
   lastEnhanceScheduleKey?: string
   recommendLookbackDays: number
   enhanceLookbackDays: number
+}
+
+function getLegacyAbstractUserSettingsCompat(record: RecordLike) {
+  const abstractLookbackDays = asNumber(record.abstract_lookback_days)
+
+  return {
+    abstract_enabled:
+      typeof record.abstract_enabled === 'boolean'
+        ? record.abstract_enabled
+        : DEFAULT_FETCH_SETTINGS.abstractEnabled,
+    abstract_time:
+      pickString(record.abstract_time) ?? DEFAULT_FETCH_SETTINGS.abstractTime,
+    abstract_lookback_days:
+      abstractLookbackDays && abstractLookbackDays > 0
+        ? abstractLookbackDays
+        : DEFAULT_FETCH_SETTINGS.abstractLookbackDays,
+    last_abstract_schedule_key: pickString(record.last_abstract_schedule_key) ?? ''
+  }
 }
 
 interface RunStats {
@@ -654,9 +674,9 @@ function parseRSSItems(xml: string, source: string) {
     .filter((item): item is NonNullable<typeof item> => !!item)
 }
 
-async function fetchJSON(url: string, init?: RequestInit) {
+async function fetchJSON(url: string, init?: RequestInit, timeoutMs = FETCH_REQUEST_TIMEOUT_MS) {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), FETCH_REQUEST_TIMEOUT_MS)
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
   let response: Response
 
   try {
@@ -666,7 +686,7 @@ async function fetchJSON(url: string, init?: RequestInit) {
     })
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error(`Request timed out after ${FETCH_REQUEST_TIMEOUT_MS}ms`)
+      throw new Error(`Request timed out after ${timeoutMs}ms`)
     }
 
     throw error
@@ -754,6 +774,9 @@ async function getOrCreateUserSettingsRecord(pb: PocketBase, userId: string) {
     recommend_time: DEFAULT_USER_SETTINGS.recommendTime,
     enhance_enabled: DEFAULT_USER_SETTINGS.enhanceEnabled,
     enhance_time: DEFAULT_USER_SETTINGS.enhanceTime,
+    abstract_enabled: DEFAULT_FETCH_SETTINGS.abstractEnabled,
+    abstract_time: DEFAULT_FETCH_SETTINGS.abstractTime,
+    abstract_lookback_days: DEFAULT_FETCH_SETTINGS.abstractLookbackDays,
     recommend_lookback_days: DEFAULT_USER_SETTINGS.recommendLookbackDays,
     enhance_lookback_days: DEFAULT_USER_SETTINGS.enhanceLookbackDays
   })
@@ -950,6 +973,7 @@ export async function updatePersonalSettingsView(
   }
 ) {
   const record = await getOrCreateUserSettingsRecord(pb, userId)
+  const legacyCompat = getLegacyAbstractUserSettingsCompat(record)
 
   await pb.collection(COLLECTION_NAMES.userSettings).update(
     record.id,
@@ -972,6 +996,7 @@ export async function updatePersonalSettingsView(
       recommend_time: input.recommendTime,
       enhance_enabled: input.enhanceEnabled,
       enhance_time: input.enhanceTime,
+      ...legacyCompat,
       recommend_lookback_days: input.recommendLookbackDays,
       enhance_lookback_days: input.enhanceLookbackDays
     })
@@ -1924,23 +1949,39 @@ async function requestEmbeddings(
   model: string,
   input: string[]
 ) {
-  const response = (await fetchJSON(`${baseUrl.replace(/\/$/, '')}/embeddings`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model,
-      input
-    })
-  })) as {
-    data?: Array<{
-      embedding: number[]
-    }>
+  const batches = chunkArray(input, EMBEDDING_BATCH_SIZE)
+  const allEmbeddings: number[][] = []
+
+  for (const [index, batch] of batches.entries()) {
+    const response = (await runWithRetry(
+      () =>
+        fetchJSON(
+          `${baseUrl.replace(/\/$/, '')}/embeddings`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model,
+              input: batch
+            })
+          },
+          EMBEDDING_REQUEST_TIMEOUT_MS
+        ),
+      `request embeddings batch ${index + 1}/${batches.length}`,
+      EMBEDDING_RETRY_LIMIT
+    )) as {
+      data?: Array<{
+        embedding: number[]
+      }>
+    }
+
+    allEmbeddings.push(...(response.data?.map(item => item.embedding) ?? []))
   }
 
-  return response.data?.map(item => item.embedding) ?? []
+  return allEmbeddings
 }
 
 function getCacheEntryKey(entry: RecordLike) {
@@ -2983,12 +3024,14 @@ export async function runScheduledStages(now = dayjs()) {
   for (const record of userSettings) {
     const userId = String(record.user)
     const settings = await getUserSettingsInternal(pb, userId)
+    const legacyCompat = getLegacyAbstractUserSettingsCompat(record)
 
     if (settings.recommendEnabled && hasReachedScheduledTime(settings.recommendTime)) {
       const scheduleKey = buildScheduleKey(now, settings.recommendTime)
 
       if (settings.lastRecommendScheduleKey !== scheduleKey) {
         await pb.collection(COLLECTION_NAMES.userSettings).update(settings.id, {
+          ...legacyCompat,
           last_recommend_schedule_key: scheduleKey
         })
         const range = buildDefaultRange(settings.recommendLookbackDays)
@@ -3005,6 +3048,7 @@ export async function runScheduledStages(now = dayjs()) {
 
       if (settings.lastEnhanceScheduleKey !== scheduleKey) {
         await pb.collection(COLLECTION_NAMES.userSettings).update(settings.id, {
+          ...legacyCompat,
           last_enhance_schedule_key: scheduleKey
         })
         const range = buildDefaultRange(settings.enhanceLookbackDays)

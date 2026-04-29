@@ -219,7 +219,7 @@ function PaperListPage() {
                   </div>
                   {activeFilterCount > 0 && (
                     <Button icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
-                      Reset filters
+                      <span>Reset filters</span>
                     </Button>
                   )}
                 </div>

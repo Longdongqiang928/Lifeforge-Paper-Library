@@ -72,14 +72,14 @@ function ReviewCard({
             icon="tabler:device-floppy"
             onClick={() => onSave({ id: item.id, abstract })}
           >
-            Save abstract
+            <span>Save abstract</span>
           </Button>
           <Button
             icon="tabler:eraser"
             variant="secondary"
             onClick={() => onSave({ id: item.id, abstract: '' })}
           >
-            Clear abstract
+            <span>Clear abstract</span>
           </Button>
         </div>
       </div>
@@ -185,14 +185,14 @@ function AbstractReviewPage() {
             <Button
               icon="tabler:refresh"
               variant="secondary"
-              onClick={() => {
-                setDateFrom('')
-                setDateTo('')
-                setSelectedSource('')
-              }}
-            >
-              Reset filters
-            </Button>
+            onClick={() => {
+              setDateFrom('')
+              setDateTo('')
+              setSelectedSource('')
+            }}
+          >
+            <span>Reset filters</span>
+          </Button>
           </div>
 
           <div className="border-bg-500/10 grid gap-6 border-t pt-6 xl:grid-cols-2">
