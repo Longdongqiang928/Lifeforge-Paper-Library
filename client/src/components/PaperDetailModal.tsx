@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, TagChip, WithQuery } from 'lifeforge-ui'
+import { Button, Card, ModalHeader, ModalWrapper, TagChip, WithQuery } from 'lifeforge-ui'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
-import { useMainSidebarState } from 'shared'
 
 import forgeAPI from '@/utils/forgeAPI'
 import { MODULE_ROUTE_KEY } from '@/utils/module'
@@ -53,7 +52,6 @@ function PaperDetailModal({
   onNext,
   onClose
 }: PaperDetailModalProps) {
-  const { sidebarExpanded } = useMainSidebarState()
   const queryClient = useQueryClient()
   const [displayPaperId, setDisplayPaperId] = useState(activePaperId)
   const [motionState, setMotionState] = useState<MotionState>('idle')
@@ -153,25 +151,13 @@ function PaperDetailModal({
   )
 
   return (
-    <div
-      className="fixed inset-y-0 right-0 z-[10020] flex items-center justify-center bg-black/40 p-4 backdrop-blur-md sm:p-6 lg:py-8 lg:pr-8"
-      style={
-        {
-          left: sidebarExpanded ? 'clamp(18rem, 20vw, 24rem)' : '5.4rem'
-        } as React.CSSProperties
-      }
-      onClick={event => {
-        if (event.target === event.currentTarget) {
-          onClose()
-        }
-      }}
+    <ModalWrapper
+      isOpen={true}
+      className="border-bg-500/15 bg-component-bg/95 overflow-hidden border shadow-2xl backdrop-blur-md"
+      maxWidth="64rem"
+      zIndex={10020}
     >
-      <div
-        className="relative flex w-full items-center justify-center"
-        style={{
-          maxWidth: 'min(72rem, calc(100vw - 5rem))'
-        }}
-      >
+      <div className="relative flex w-full items-center justify-center">
         <div className="pointer-events-none absolute top-1/2 left-0 z-50 hidden -translate-x-[60%] -translate-y-1/2 items-center lg:flex">
           <Button
             className="pointer-events-auto shadow-xl"
@@ -200,81 +186,91 @@ function PaperDetailModal({
           />
         </div>
 
-        <Card
-          className="from-component-bg to-component-bg-lighter border-bg-500/15 relative z-10 flex h-[calc(100vh-2rem)] w-full flex-col overflow-hidden border bg-gradient-to-br shadow-2xl sm:h-[calc(100vh-3rem)] lg:h-[calc(100vh-4rem)]"
+        <div
+          className="relative z-10 flex h-[calc(100vh-12rem)] w-full flex-col overflow-hidden"
           style={{
-            maxHeight: '60rem'
+            maxHeight: '58rem'
           }}
         >
-          <div className="border-bg-500/10 component-bg flex items-center justify-between gap-4 border-b px-5 py-4 backdrop-blur sm:px-6 lg:px-12">
-            <div className="flex items-center gap-2">
-              <TagChip
-                icon="tabler:layout-sidebar-right-collapse"
-                label="Reading panel"
-                variant="filled"
-              />
-              {typeof currentPosition === 'number' && typeof totalItems === 'number' && (
-                <TagChip
-                  icon="tabler:list-numbers"
-                  label={`${currentPosition} / ${totalItems}`}
-                  variant="outlined"
-                />
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                className="lg:hidden"
-                disabled={!hasPrev}
-                icon="tabler:chevron-left"
-                variant="secondary"
-                onClick={() => {
-                  if (!hasPrev) return
-                  pendingDirectionRef.current = 'previous'
-                  onPrevious()
-                }}
-              />
-              <Button
-                className="lg:hidden"
-                disabled={!hasNext}
-                icon="tabler:chevron-right"
-                variant="secondary"
-                onClick={() => {
-                  if (!hasNext) return
-                  pendingDirectionRef.current = 'next'
-                  onNext()
-                }}
-              />
-              <Button icon="tabler:x" variant="secondary" onClick={onClose}>
-                Close
-              </Button>
-            </div>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6 lg:px-12">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
             <div
               className={`transition-all duration-300 ease-out ${getMotionClass(motionState)}`}
             >
               <WithQuery query={paperQuery}>
                 {paper => (
-                  <PaperDetailContent
-                    compact
-                    favoriteLoading={toggleFavoriteMutation.isPending}
-                    paper={paper}
-                    onToggleFavorite={() => {
-                      toggleFavoriteMutation.mutate({
-                        paperId: paper.id,
-                        folderId: paper.favoriteFolderId
-                      })
-                    }}
-                  />
+                  <div className="space-y-4">
+                    <div className="space-y-4">
+                      <ModalHeader
+                        icon="tabler:file-description"
+                        title="Paper details"
+                        onClose={onClose}
+                      />
+
+                      <Card className="space-y-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <TagChip
+                            icon="tabler:layout-sidebar-right-collapse"
+                            label="Reading panel"
+                            variant="filled"
+                          />
+                          {typeof currentPosition === 'number' && typeof totalItems === 'number' && (
+                            <TagChip
+                              icon="tabler:list-numbers"
+                              label={`${currentPosition} / ${totalItems}`}
+                              variant="outlined"
+                            />
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 lg:hidden">
+                          <Button
+                            disabled={!hasPrev}
+                            icon="tabler:chevron-left"
+                            variant="secondary"
+                            onClick={() => {
+                              if (!hasPrev) return
+                              pendingDirectionRef.current = 'previous'
+                              onPrevious()
+                            }}
+                          >
+                            Previous
+                          </Button>
+                          <Button
+                            disabled={!hasNext}
+                            icon="tabler:chevron-right"
+                            iconPosition="end"
+                            variant="secondary"
+                            onClick={() => {
+                              if (!hasNext) return
+                              pendingDirectionRef.current = 'next'
+                              onNext()
+                            }}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </Card>
+                    </div>
+
+                    <PaperDetailContent
+                      compact
+                      favoriteLoading={toggleFavoriteMutation.isPending}
+                      paper={paper}
+                      onToggleFavorite={() => {
+                        toggleFavoriteMutation.mutate({
+                          paperId: paper.id,
+                          folderId: paper.favoriteFolderId
+                        })
+                      }}
+                    />
+                  </div>
                 )}
               </WithQuery>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
-    </div>
+    </ModalWrapper>
   )
 }
 

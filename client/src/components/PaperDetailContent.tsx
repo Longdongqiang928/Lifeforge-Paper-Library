@@ -17,8 +17,8 @@ function PaperDetailContent({
   compact = false
 }: PaperDetailContentProps) {
   return (
-    <div className={`space-y-5 ${compact ? 'min-h-[22rem]' : ''}`}>
-      <Card className="border-bg-500/10 space-y-5 border">
+    <div className={`space-y-4 ${compact ? 'min-h-[22rem]' : ''}`}>
+      <Card className="space-y-5">
         <div className="space-y-4">
           <h1 className={compact ? 'text-3xl leading-10 font-semibold' : 'text-4xl leading-[1.15] font-semibold'}>
             {paper.translatedTitle || paper.title}
@@ -31,7 +31,7 @@ function PaperDetailContent({
           <p className="text-bg-500 leading-7">{formatAuthors(paper.authors)}</p>
         </div>
 
-        <div className="border-bg-500/10 bg-component-bg-lighter grid gap-3 rounded-2xl border p-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="bg-component-bg-lighter grid gap-3 rounded-2xl p-4 sm:grid-cols-2 xl:grid-cols-3">
           {paper.fetchedAt && (
             <TagChip
               icon="tabler:database-import"
@@ -101,28 +101,28 @@ function PaperDetailContent({
       </Card>
 
       {paper.tldr && (
-        <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg space-y-3 border bg-gradient-to-br">
+        <Card className="space-y-3">
           <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">TL;DR</p>
           <p className="text-base leading-8">{paper.tldr}</p>
         </Card>
       )}
 
       {paper.translatedTitle && (
-        <Card className="border-bg-500/10 space-y-3 border">
+        <Card className="space-y-3">
           <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Translated title</p>
           <p className="leading-8">{paper.translatedTitle}</p>
         </Card>
       )}
 
       {paper.translatedAbstract && (
-        <Card className="border-bg-500/10 space-y-3 border">
+        <Card className="space-y-3">
           <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Translated abstract</p>
           <p className="text-bg-500 leading-8">{paper.translatedAbstract}</p>
         </Card>
       )}
 
       {paper.abstract && (
-        <Card className="border-bg-500/10 space-y-3 border">
+        <Card className="space-y-3">
           <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Original abstract</p>
           <p className="text-bg-500 leading-8">{paper.abstract}</p>
         </Card>
