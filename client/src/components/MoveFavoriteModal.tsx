@@ -42,7 +42,7 @@ function MoveFavoriteModal({
     <div className="min-w-[min(36rem,90vw)] space-y-4">
       <ModalHeader
         icon="tabler:arrows-exchange"
-        title="Move favorite"
+        title={<span>Move favorite</span>}
         onClose={onClose}
       />
       {availableFolders.length === 0 ? (
@@ -73,7 +73,7 @@ function MoveFavoriteModal({
                   })
                 }}
               >
-                Move
+                <span>Move</span>
               </Button>
             </Card>
           ))}

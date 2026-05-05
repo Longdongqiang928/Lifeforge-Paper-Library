@@ -38,7 +38,7 @@ function DeleteFolderModal({
 
   return (
     <div className="min-w-[min(34rem,90vw)] space-y-4">
-      <ModalHeader icon="tabler:folder-x" title="Delete folder" onClose={onClose} />
+      <ModalHeader icon="tabler:folder-x" title={<span>Delete folder</span>} onClose={onClose} />
       <Card className="space-y-2">
         <p className="font-medium">{data.folder.name}</p>
         <p className="text-bg-500 text-sm">
@@ -48,7 +48,7 @@ function DeleteFolderModal({
       </Card>
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          <span>Cancel</span>
         </Button>
         <Button
           icon="tabler:trash"
@@ -59,7 +59,7 @@ function DeleteFolderModal({
             })
           }}
         >
-          Delete
+          <span>Delete</span>
         </Button>
       </div>
     </div>

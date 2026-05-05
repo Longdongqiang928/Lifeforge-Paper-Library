@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, EmptyStateScreen, ModuleHeader, WithQuery, useModalStore } from 'lifeforge-ui'
+import { Button, Card, EmptyStateScreen, WithQuery, useModalStore } from 'lifeforge-ui'
 import { toast } from 'react-toastify'
 
 import CreateFolderModal from '@/components/CreateFolderModal'
@@ -7,6 +7,7 @@ import DeleteFolderModal from '@/components/DeleteFolderModal'
 import MoveFavoriteModal from '@/components/MoveFavoriteModal'
 import ModuleSubnav from '@/components/ModuleSubnav'
 import PaperCard from '@/components/PaperCard'
+import PaperLibraryHeader from '@/components/PaperLibraryHeader'
 import RenameFolderModal from '@/components/RenameFolderModal'
 import forgeAPI from '@/utils/forgeAPI'
 import {
@@ -41,7 +42,7 @@ function FavoritesPage() {
 
   return (
     <>
-      <ModuleHeader
+      <PaperLibraryHeader
         actionButton={
           <Button
             icon="tabler:folder-plus"
@@ -49,12 +50,11 @@ function FavoritesPage() {
               open(CreateFolderModal, {})
             }}
           >
-            New folder
+            <span>New folder</span>
           </Button>
         }
         icon="tabler:star"
-        namespace={MODULE_NAMESPACE}
-        title="favoritesPage"
+        pageKey="favoritesPage"
         totalItems={favoritesQuery.data?.totalFavorites}
       />
       <ModuleSubnav />

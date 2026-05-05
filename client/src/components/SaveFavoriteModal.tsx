@@ -62,7 +62,7 @@ function SaveFavoriteModal({
     <div className="min-w-[min(42rem,92vw)] space-y-4">
       <ModalHeader
         icon="tabler:star"
-        title="Save to favorites"
+        title={<span>Save to favorites</span>}
         onClose={onClose}
       />
 
@@ -97,7 +97,7 @@ function SaveFavoriteModal({
                       })
                     }}
                   >
-                    Save here
+                    <span>Save here</span>
                   </Button>
                 </Card>
               ))}
@@ -128,7 +128,7 @@ function SaveFavoriteModal({
                     })
                   }}
                 >
-                  Create and save
+                  <span>Create and save</span>
                 </Button>
               </div>
             </Card>

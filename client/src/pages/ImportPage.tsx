@@ -3,7 +3,6 @@ import {
   Button,
   Card,
   EmptyStateScreen,
-  ModuleHeader,
   TextAreaInput,
   TextInput,
   WithQuery
@@ -12,6 +11,7 @@ import { useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
 import ModuleSubnav from '@/components/ModuleSubnav'
+import PaperLibraryHeader from '@/components/PaperLibraryHeader'
 import forgeAPI from '@/utils/forgeAPI'
 import {
   MODULE_NAMESPACE,
@@ -171,11 +171,7 @@ function ImportPage() {
 
   return (
     <>
-      <ModuleHeader
-        icon="tabler:file-import"
-        namespace={MODULE_NAMESPACE}
-        title="importPage"
-      />
+      <PaperLibraryHeader icon="tabler:file-import" pageKey="importPage" />
       <ModuleSubnav />
 
       <div className="space-y-6">

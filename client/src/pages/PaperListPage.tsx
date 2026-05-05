@@ -5,7 +5,6 @@ import {
   Card,
   DateInput,
   EmptyStateScreen,
-  ModuleHeader,
   Pagination,
   SearchInput,
   Switch,
@@ -19,6 +18,7 @@ import { Link, useSearchParams } from 'shared'
 
 import PaperCard from '@/components/PaperCard'
 import PaperDetailModal from '@/components/PaperDetailModal'
+import PaperLibraryHeader from '@/components/PaperLibraryHeader'
 import ModuleSubnav from '@/components/ModuleSubnav'
 import SaveFavoriteModal from '@/components/SaveFavoriteModal'
 import forgeAPI from '@/utils/forgeAPI'
@@ -194,15 +194,14 @@ function PaperListPage() {
           activePaperId ? 'pointer-events-none select-none blur-[4px] saturate-75' : ''
         }`}
       >
-        <ModuleHeader
+        <PaperLibraryHeader
           actionButton={
             <Button as={Link} icon="tabler:player-play" to={`${MODULE_BASE_PATH}/run`}>
-              Run pipeline
+              <span>Run pipeline</span>
             </Button>
           }
           icon="tabler:books"
-          namespace={MODULE_NAMESPACE}
-          title="papersPage"
+          pageKey="papersPage"
           totalItems={totalItems}
         />
         <ModuleSubnav />

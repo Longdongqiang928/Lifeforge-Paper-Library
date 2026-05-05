@@ -36,7 +36,7 @@ function RenameFolderModal({
 
   return (
     <div className="min-w-[min(32rem,90vw)] space-y-4">
-      <ModalHeader icon="tabler:edit" title="Rename folder" onClose={onClose} />
+      <ModalHeader icon="tabler:edit" title={<span>Rename folder</span>} onClose={onClose} />
       <TextInput
         autoFocus
         className="w-full"
@@ -48,7 +48,7 @@ function RenameFolderModal({
       />
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          <span>Cancel</span>
         </Button>
         <Button
           disabled={!name.trim() || name.trim() === data.folder.name}
@@ -61,7 +61,7 @@ function RenameFolderModal({
             })
           }}
         >
-          Save
+          <span>Save</span>
         </Button>
       </div>
     </div>

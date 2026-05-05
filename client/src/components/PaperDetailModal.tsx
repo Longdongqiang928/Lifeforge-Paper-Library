@@ -202,7 +202,7 @@ function PaperDetailModal({
                     <div className="space-y-4">
                       <ModalHeader
                         icon="tabler:file-description"
-                        title="Paper details"
+                        title={<span>Paper details</span>}
                         onClose={onClose}
                       />
 

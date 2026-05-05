@@ -35,7 +35,7 @@ function CreateFolderModal({
       <ModalHeader
         icon="tabler:folder-plus"
         namespace={MODULE_NAMESPACE}
-        title="Create folder"
+        title={<span>Create folder</span>}
         onClose={onClose}
       />
       <TextInput
@@ -49,7 +49,7 @@ function CreateFolderModal({
       />
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          <span>Cancel</span>
         </Button>
         <Button
           disabled={!name.trim()}
@@ -61,7 +61,7 @@ function CreateFolderModal({
             })
           }}
         >
-          Create
+          <span>Create</span>
         </Button>
       </div>
     </div>

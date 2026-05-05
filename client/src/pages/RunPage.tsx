@@ -5,7 +5,6 @@ import {
   Card,
   DateInput,
   EmptyStateScreen,
-  ModuleHeader,
   TagChip,
   WithQuery
 } from 'lifeforge-ui'
@@ -13,9 +12,9 @@ import { useState } from 'react'
 import { toast } from 'react-toastify'
 
 import ModuleSubnav from '@/components/ModuleSubnav'
+import PaperLibraryHeader from '@/components/PaperLibraryHeader'
 import forgeAPI from '@/utils/forgeAPI'
 import {
-  MODULE_NAMESPACE,
   MODULE_ROUTE_KEY
 } from '@/utils/module'
 import type { ActivePipelineRun, PipelineRun } from '@/utils/types'
@@ -206,11 +205,7 @@ function RunPage() {
 
   return (
     <>
-      <ModuleHeader
-        icon="tabler:player-play"
-        namespace={MODULE_NAMESPACE}
-        title="runPage"
-      />
+      <PaperLibraryHeader icon="tabler:player-play" pageKey="runPage" />
       <ModuleSubnav />
 
       <div className="space-y-4">
