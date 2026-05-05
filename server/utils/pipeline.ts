@@ -733,22 +733,37 @@ function looksLikeRSSDocument(content: string) {
 }
 
 async function getOrCreateFetchSettingsRecord(pb: PocketBase) {
-  const existing = await pb
-    .collection(COLLECTION_NAMES.fetchSettings)
-    .getFirstListItem('config_key = "global"')
-    .catch(() => null)
+  const findExisting = async () => {
+    const records = await pb.collection(COLLECTION_NAMES.fetchSettings).getFullList({
+      filter: 'config_key = "global"',
+      sort: 'created',
+      requestKey: null
+    })
+
+    return records[0] ?? null
+  }
+
+  const existing = await findExisting()
 
   if (existing) return existing
 
-  return pb.collection(COLLECTION_NAMES.fetchSettings).create({
-    config_key: 'global',
-    rss_sources: DEFAULT_FETCH_SETTINGS.rssSources,
-    fetch_enabled: DEFAULT_FETCH_SETTINGS.fetchEnabled,
-    fetch_time: DEFAULT_FETCH_SETTINGS.fetchTime,
-    abstract_enabled: DEFAULT_FETCH_SETTINGS.abstractEnabled,
-    abstract_time: DEFAULT_FETCH_SETTINGS.abstractTime,
-    abstract_lookback_days: DEFAULT_FETCH_SETTINGS.abstractLookbackDays
-  })
+  try {
+    return await pb.collection(COLLECTION_NAMES.fetchSettings).create({
+      config_key: 'global',
+      rss_sources: DEFAULT_FETCH_SETTINGS.rssSources,
+      fetch_enabled: DEFAULT_FETCH_SETTINGS.fetchEnabled,
+      fetch_time: DEFAULT_FETCH_SETTINGS.fetchTime,
+      abstract_enabled: DEFAULT_FETCH_SETTINGS.abstractEnabled,
+      abstract_time: DEFAULT_FETCH_SETTINGS.abstractTime,
+      abstract_lookback_days: DEFAULT_FETCH_SETTINGS.abstractLookbackDays
+    })
+  } catch (error) {
+    const createdByAnotherTick = await findExisting()
+
+    if (createdByAnotherTick) return createdByAnotherTick
+
+    throw error
+  }
 }
 
 async function getOrCreateUserSettingsRecord(pb: PocketBase, userId: string) {

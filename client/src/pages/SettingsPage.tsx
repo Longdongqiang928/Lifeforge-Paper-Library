@@ -253,7 +253,7 @@ function SettingsPage() {
                   })
                 }}
               >
-                Save fetch settings
+                <span>Save fetch settings</span>
               </Button>
             </Card>
           )}
@@ -469,7 +469,7 @@ function SettingsPage() {
                   })
                 }}
               >
-                Save personal settings
+                <span>Save personal settings</span>
               </Button>
             </Card>
           )}
