@@ -2970,7 +2970,21 @@ export async function listActiveRuns(pb: PocketBase, userId: string) {
 }
 
 export async function getSchedulerPocketBase() {
-  if (!schedulerPBPromise) {
+  const needsReconnect = async () => {
+    if (!schedulerPBPromise) {
+      return true
+    }
+
+    try {
+      const pb = await schedulerPBPromise
+
+      return !pb?.authStore?.isValid || !pb?.authStore?.isSuperuser
+    } catch {
+      return true
+    }
+  }
+
+  if (await needsReconnect()) {
     schedulerPBPromise = connectToPocketBase(validateEnvironmentVariables())
   }
 
