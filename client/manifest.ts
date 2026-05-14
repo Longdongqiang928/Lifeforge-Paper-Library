@@ -28,5 +28,8 @@ export default {
       path: 'settings'
     }
   ],
+  widgets: [
+    () => import('@/widgets/PipelineStatusWidget')
+  ],
   clearQueryOnUnmount: true
 } satisfies ModuleConfig
