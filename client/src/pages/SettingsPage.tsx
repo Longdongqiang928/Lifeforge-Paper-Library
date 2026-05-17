@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
   Card,
+  ModuleHeader,
   Switch,
   TextAreaInput,
   TextInput,
@@ -10,8 +11,6 @@ import {
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 
-import ModuleSubnav from '@/components/ModuleSubnav'
-import PaperLibraryHeader from '@/components/PaperLibraryHeader'
 import forgeAPI from '@/utils/forgeAPI'
 import {
   MODULE_ROUTE_KEY
@@ -120,8 +119,7 @@ function SettingsPage() {
 
   return (
     <>
-      <PaperLibraryHeader icon="tabler:settings" pageKey="settingsPage" />
-      <ModuleSubnav />
+      <ModuleHeader icon="tabler:settings" title="Settings" />
 
       <div className="space-y-6">
         <WithQuery query={fetchSettingsQuery}>

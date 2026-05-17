@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   EmptyStateScreen,
+  ModuleHeader,
   TextAreaInput,
   TextInput,
   WithQuery
@@ -10,8 +11,6 @@ import {
 import { useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
-import ModuleSubnav from '@/components/ModuleSubnav'
-import PaperLibraryHeader from '@/components/PaperLibraryHeader'
 import forgeAPI from '@/utils/forgeAPI'
 import {
   MODULE_NAMESPACE,
@@ -171,8 +170,7 @@ function ImportPage() {
 
   return (
     <>
-      <PaperLibraryHeader icon="tabler:file-import" pageKey="importPage" />
-      <ModuleSubnav />
+      <ModuleHeader icon="tabler:file-import" title="Import" />
 
       <div className="space-y-6">
         <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-5 border shadow-sm transition-shadow hover:shadow-md">

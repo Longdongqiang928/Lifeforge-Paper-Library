@@ -1,10 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, EmptyStateScreen, WithQuery } from 'lifeforge-ui'
+import { Button, Card, EmptyStateScreen, ModuleHeader, WithQuery } from 'lifeforge-ui'
 import { toast } from 'react-toastify'
 import { Link, useParams } from 'shared'
 
-import ModuleSubnav from '@/components/ModuleSubnav'
-import PaperLibraryHeader from '@/components/PaperLibraryHeader'
 import PaperDetailContent from '@/components/PaperDetailContent'
 import forgeAPI from '@/utils/forgeAPI'
 import {
@@ -58,7 +56,7 @@ function PaperDetailPage() {
     <WithQuery query={paperQuery}>
       {paper => (
         <>
-          <PaperLibraryHeader
+          <ModuleHeader
             actionButton={
               <Button
                 as={Link}
@@ -66,13 +64,12 @@ function PaperDetailPage() {
                 to={MODULE_BASE_PATH}
                 variant="secondary"
               >
-                <span>Back</span>
+                Back
               </Button>
             }
             icon="tabler:file-description"
-            pageKey="paperDetailPage"
+            title="Paper Detail"
           />
-          <ModuleSubnav />
 
           <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg mb-6 border bg-gradient-to-br">
             <div className="space-y-2">

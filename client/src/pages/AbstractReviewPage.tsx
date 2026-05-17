@@ -5,6 +5,7 @@ import {
   Card,
   DateInput,
   EmptyStateScreen,
+  ModuleHeader,
   Pagination,
   TagChip,
   TextAreaInput,
@@ -13,8 +14,6 @@ import {
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 
-import ModuleSubnav from '@/components/ModuleSubnav'
-import PaperLibraryHeader from '@/components/PaperLibraryHeader'
 import forgeAPI from '@/utils/forgeAPI'
 import { MODULE_NAMESPACE, MODULE_ROUTE_KEY } from '@/utils/module'
 import type { AbstractReviewItem, AbstractReviewListResponse } from '@/utils/types'
@@ -156,8 +155,7 @@ function AbstractReviewPage() {
 
   return (
     <>
-      <PaperLibraryHeader icon="tabler:file-search" pageKey="abstractReviewPage" totalItems={data?.totalItems} />
-      <ModuleSubnav />
+      <ModuleHeader icon="tabler:file-search" title="Review" totalItems={data?.totalItems} />
 
       <div className="mb-6 space-y-4">
         <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-6 border shadow-sm transition-shadow hover:shadow-md">
