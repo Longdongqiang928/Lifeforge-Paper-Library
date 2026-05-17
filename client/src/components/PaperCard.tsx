@@ -1,8 +1,17 @@
+import { Icon } from '@iconify/react'
 import { Button, Card, TagChip } from 'lifeforge-ui'
 import { Link } from 'shared'
 
 import { formatAuthors, formatPaperDate } from '@/utils/papers'
 import type { PaperListItem } from '@/utils/types'
+
+const SOURCE_COLORS: Record<string, string> = {
+  arxiv: 'bg-red-500',
+  nature: 'bg-emerald-500',
+  science: 'bg-blue-500',
+  optica: 'bg-violet-500',
+  aps: 'bg-amber-500'
+}
 
 interface PaperCardProps {
   paper: PaperListItem
@@ -28,9 +37,11 @@ function PaperCard({
         ? `Recommend ${paper.recommendStatus}`
         : null
 
+  const stripColor = SOURCE_COLORS[paper.source || ''] || 'bg-custom-500'
+  const isInteractive = !!onOpenDetail
+
   const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!onOpenDetail) return
-
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       onOpenDetail()
@@ -39,29 +50,43 @@ function PaperCard({
 
   return (
     <Card
-      className={`border-bg-500/10 bg-component-bg/80 backdrop-blur-md flex h-full flex-col gap-5 border ${
-        onOpenDetail
-          ? 'cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary/40'
+      className={`group relative flex flex-col gap-4 overflow-hidden p-5 ${
+        isInteractive
+          ? 'cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-custom-500/40'
           : ''
       }`}
-      role={onOpenDetail ? 'button' : undefined}
-      tabIndex={onOpenDetail ? 0 : undefined}
+      role={isInteractive ? 'button' : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
       onClick={onOpenDetail}
       onKeyDown={handleCardKeyDown}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {paper.source && <TagChip icon="tabler:rss" label={paper.source} variant="filled" />}
-            {paper.journal && <TagChip icon="tabler:book" label={paper.journal} variant="outlined" />}
-            {statusLabel && (
-              <TagChip icon="tabler:sparkles" label={statusLabel} variant="outlined" />
-            )}
-          </div>
-          <div className="text-bg-500 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-            <span>Fetched {formatPaperDate(paper.fetchedAt)}</span>
-            <span>Published {formatPaperDate(paper.publishedAt)}</span>
-          </div>
+      {/* Colored top accent bar */}
+      <div className={`absolute top-0 left-0 h-1 w-full ${stripColor}`} />
+
+      {/* Header row: source tags + favorite */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {paper.source && (
+            <TagChip
+              icon="tabler:rss"
+              label={paper.source}
+              variant="filled"
+            />
+          )}
+          {paper.journal && (
+            <TagChip
+              icon="tabler:book"
+              label={paper.journal}
+              variant="outlined"
+            />
+          )}
+          {statusLabel && (
+            <TagChip
+              icon="tabler:sparkles"
+              label={statusLabel}
+              variant="outlined"
+            />
+          )}
         </div>
         <Button
           className="p-2!"
@@ -75,25 +100,50 @@ function PaperCard({
         />
       </div>
 
-      <div className="space-y-3">
+      {/* Title + Score */}
+      <div className="space-y-2">
         <div className="flex items-start justify-between gap-4">
-          <h2 className="text-3xl tracking-tight leading-9 font-bold">{paper.translatedTitle || paper.title}</h2>
+          <h2 className="text-2xl leading-8 font-bold tracking-tight">
+            {paper.translatedTitle || paper.title}
+          </h2>
           {typeof paper.score === 'number' && (
-            <div className="bg-custom-500/15 text-custom-500 border-custom-500/20 rounded-full border px-3 py-1 text-sm font-semibold whitespace-nowrap">
+            <div className="bg-custom-500/10 text-custom-500 border-custom-500/20 flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-sm font-semibold">
+              <Icon className="size-3.5" icon="tabler:chart-dots-3" />
               {paper.score.toFixed(2)}
             </div>
           )}
         </div>
         {paper.translatedTitle && paper.translatedTitle !== paper.title && (
-          <p className="text-bg-500 text-sm">{paper.title}</p>
+          <p className="text-bg-500 text-sm italic">{paper.title}</p>
         )}
-        <p className="text-bg-500 text-sm leading-6">{formatAuthors(paper.authors)}</p>
+        <p className="text-bg-500 text-sm">{formatAuthors(paper.authors)}</p>
       </div>
 
-      <p className="text-bg-500 line-clamp-5 flex-1 text-sm leading-7">
-        {paper.tldr || 'No TL;DR available for this paper yet.'}
-      </p>
+      {/* Metadata row */}
+      <div className="text-bg-500 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        <span className="inline-flex items-center gap-1">
+          <Icon className="size-3" icon="tabler:calendar-download" />
+          {formatPaperDate(paper.fetchedAt)}
+        </span>
+        <Icon className="size-1 shrink-0" icon="tabler:circle-filled" />
+        <span className="inline-flex items-center gap-1">
+          <Icon className="size-3" icon="tabler:calendar-event" />
+          {formatPaperDate(paper.publishedAt)}
+        </span>
+      </div>
 
+      {/* TL;DR */}
+      <div className="from-component-bg-lighter/50 to-transparent rounded-lg bg-gradient-to-br p-4">
+        <div className="mb-1.5 flex items-center gap-1.5">
+          <Icon className="text-custom-500 size-4" icon="tabler:bulb" />
+          <p className="text-xs font-semibold tracking-[0.12em] uppercase text-bg-500">TL;DR</p>
+        </div>
+        <p className="text-bg-500 line-clamp-5 text-sm leading-7">
+          {paper.tldr || 'No TL;DR available for this paper yet.'}
+        </p>
+      </div>
+
+      {/* Tags footer */}
       {(paper.matchedCollections.length > 0 || paper.keywords.length > 0) && (
         <div className="border-bg-500/10 flex flex-wrap gap-2 border-t pt-4">
           {paper.matchedCollections.slice(0, 3).map(collection => (
@@ -115,10 +165,12 @@ function PaperCard({
         </div>
       )}
 
+      {/* Action buttons */}
       <div className="border-bg-500/10 flex flex-wrap items-center gap-2 border-t pt-4">
-        {onOpenDetail ? (
+        {isInteractive ? (
           <Button
             icon="tabler:arrow-right"
+            variant="secondary"
             onClick={event => {
               event.stopPropagation()
               onOpenDetail()
@@ -127,16 +179,12 @@ function PaperCard({
             Open
           </Button>
         ) : detailTo ? (
-          <Button as={Link} icon="tabler:arrow-right" to={detailTo}>
+          <Button as={Link} icon="tabler:arrow-right" variant="secondary" to={detailTo}>
             Open
           </Button>
         ) : null}
         {secondaryAction ? (
-          <div
-            onClick={event => {
-              event.stopPropagation()
-            }}
-          >
+          <div onClick={event => { event.stopPropagation() }}>
             {secondaryAction}
           </div>
         ) : null}
