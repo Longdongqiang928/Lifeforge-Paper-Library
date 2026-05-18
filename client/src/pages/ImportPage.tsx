@@ -8,6 +8,7 @@ import {
   TextInput,
   WithQuery
 } from 'lifeforge-ui'
+import { Icon } from '@iconify/react'
 import { useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
@@ -18,53 +19,10 @@ import {
 } from '@/utils/module'
 import type { ImportBatch } from '@/utils/types'
 
-function ImportBatchCard({ batch }: { batch: ImportBatch }) {
-  return (
-    <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-4 border shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-semibold">
-            {batch.filename || batch.source || batch.type.toUpperCase()}
-          </h3>
-          <p className="text-bg-500 text-sm">{new Date(batch.created).toLocaleString()}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <span className="bg-component-bg-lighter rounded-full px-3 py-1 text-sm">
-            {batch.status}
-          </span>
-          <span className="bg-component-bg-lighter rounded-full px-3 py-1 text-sm">
-            {batch.type.toUpperCase()}
-          </span>
-        </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-4">
-        <div>
-          <p className="text-bg-500 text-xs uppercase">Inserted</p>
-          <p className="text-lg font-semibold">{batch.inserted}</p>
-        </div>
-        <div>
-          <p className="text-bg-500 text-xs uppercase">Skipped</p>
-          <p className="text-lg font-semibold">{batch.skipped}</p>
-        </div>
-        <div>
-          <p className="text-bg-500 text-xs uppercase">Failed</p>
-          <p className="text-lg font-semibold">{batch.failed}</p>
-        </div>
-        <div>
-          <p className="text-bg-500 text-xs uppercase">Total</p>
-          <p className="text-lg font-semibold">{batch.inserted + batch.skipped + batch.failed}</p>
-        </div>
-      </div>
-      {batch.errorLog && (
-        <div className="bg-bg-100 dark:bg-bg-900 rounded-lg p-3">
-          <p className="text-bg-500 mb-2 text-xs uppercase">Error log</p>
-          <pre className="overflow-x-auto text-xs whitespace-pre-wrap">
-            {batch.errorLog}
-          </pre>
-        </div>
-      )}
-    </Card>
-  )
+const STATUS_COLORS: Record<string, string> = {
+  completed: 'bg-emerald-500/20 text-emerald-500',
+  processing: 'bg-amber-500/20 text-amber-500',
+  failed: 'bg-red-500/20 text-red-500'
 }
 
 function ImportPage() {
@@ -172,196 +130,219 @@ function ImportPage() {
     <>
       <ModuleHeader icon="tabler:file-import" title="Import" />
 
-      <div className="space-y-6">
-        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-5 border shadow-sm transition-shadow hover:shadow-md">
-          <div className="space-y-1">
-            <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Import</p>
-            <h2 className="text-2xl font-semibold">Bring external batches into the shared paper pool</h2>
-            
-          </div>
-
-          {importNotice && (
+      <div className="space-y-8">
+        {/* Import Tools - Two Column Grid */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Drop Zone */}
+          <Card className="from-component-bg-lighter/50 to-component-bg flex flex-col gap-4 bg-gradient-to-br p-6">
+            <h3 className="text-lg font-semibold">Choose File</h3>
+            <input
+              ref={fileInputRef}
+              accept=".json,.jsonl,application/json"
+              className="hidden"
+              type="file"
+              onChange={event => {
+                setSelectedFile(event.currentTarget.files?.[0] ?? null)
+              }}
+            />
             <div
-              className={[
-                'border-bg-500/15 component-bg-lighter rounded-xl border px-4 py-3 text-sm',
-                importNotice.tone === 'success'
-                  ? 'text-primary'
-                  : importNotice.tone === 'error'
-                    ? ''
-                    : 'text-bg-500'
-              ].join(' ')}
+              className="border-bg-500/20 flex flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-10 text-center transition-colors hover:border-custom-500/40 hover:bg-custom-500/5"
+              onClick={() => {
+                fileInputRef.current?.click()
+              }}
+              onDragOver={event => {
+                event.preventDefault()
+              }}
+              onDrop={event => {
+                event.preventDefault()
+                const file = event.dataTransfer.files?.[0]
+                if (file) {
+                  setSelectedFile(file)
+                }
+              }}
             >
-              {importNotice.message}
-            </div>
-          )}
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="component-bg-lighter flex flex-col gap-4">
-              <input
-                ref={fileInputRef}
-                accept=".json,.jsonl,application/json"
-                className="hidden"
-                type="file"
-                onChange={event => {
-                  setSelectedFile(event.currentTarget.files?.[0] ?? null)
-                }}
-              />
+              <div className="bg-custom-500/20 border-custom-500/30 flex size-14 items-center justify-center rounded-xl border">
+                <Icon className="text-custom-500 size-7" icon="tabler:cloud-upload" />
+              </div>
               <div>
-                <h3 className="font-medium">Selected file</h3>
-                <p className="text-bg-500 mt-1 text-sm">
-                  {selectedFile?.name || 'No file selected yet'}
-                </p>
+                <p className="font-medium">Drag-and-drop</p>
+                <p className="text-bg-500 mt-1 text-sm">JSON or JSONL files</p>
               </div>
-              <div className="flex flex-wrap gap-2">
+            </div>
+            {selectedFile && (
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{selectedFile.name}</p>
+                  <p className="text-bg-500 text-xs">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                </div>
                 <Button
-                  icon="tabler:upload"
-                  onClick={() => {
-                    fileInputRef.current?.click()
-                  }}
-                >
-                  Choose file
-                </Button>
-                {selectedFile && (
-                  <Button
-                    icon="tabler:trash"
-                    variant="secondary"
-                    onClick={() => {
-                      setSelectedFile(null)
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = ''
-                      }
-                    }}
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
-            </Card>
-
-            <Card className="component-bg-lighter space-y-4">
-              <TextInput
-                label="Source label"
-                placeholder="nature, arxiv, pnas..."
-                value={source}
-                variant="plain"
-                onChange={setSource}
-              />
-              <TextAreaInput
-                className="min-h-32"
-                placeholder="Paste raw JSON or JSONL here"
-                value={content}
-                variant="plain"
-                onChange={setContent}
-              />
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  icon="tabler:braces"
-                  loading={jsonImportMutation.isPending}
-                  onClick={() => {
-                    runImport('json')
-                  }}
-                >
-                  Import JSON
-                </Button>
-                <Button
-                  icon="tabler:file-code"
-                  loading={jsonlImportMutation.isPending}
+                  icon="tabler:trash"
                   variant="secondary"
                   onClick={() => {
-                    runImport('jsonl')
+                    setSelectedFile(null)
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = ''
+                    }
                   }}
                 >
-                  Import JSONL
+                  Clear
                 </Button>
               </div>
-            </Card>
-          </div>
-        </Card>
+            )}
+          </Card>
 
-        <Card className="border-bg-500/10 bg-component-bg/60 backdrop-blur-md space-y-4 overflow-hidden border shadow-sm transition-shadow hover:shadow-md">
-          <div className="from-component-bg-lighter to-component-bg bg-gradient-to-br p-1">
-            <div className="component-bg rounded-xl p-5">
-              <div className="mb-3 flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Accepted content</p>
-                  <h2 className="text-2xl font-semibold">Shared metadata plus your overlay fields</h2>
-                  
-                </div>
-                <div className="component-bg-lighter rounded-full px-3 py-1 text-xs font-medium">
-                  Current model
-                </div>
+          {/* Paste Text */}
+          <Card className="flex flex-col gap-4 p-6">
+            <h3 className="text-lg font-semibold">Paste Text</h3>
+            <TextAreaInput
+              className="min-h-36 flex-1"
+              placeholder="Paste raw JSON or JSONL content here..."
+              value={content}
+              variant="plain"
+              onChange={setContent}
+            />
+            <div className="flex items-end gap-3">
+              <div className="flex-1">
+                <TextInput
+                  label="Source label"
+                  placeholder="nature, arxiv, pnas..."
+                  value={source}
+                  variant="plain"
+                  onChange={setSource}
+                />
               </div>
-              <div className="grid gap-3 md:grid-cols-3">
-                <Card className="component-bg-lighter space-y-1 p-4">
-                  <p className="text-sm font-medium">Shared paper pool</p>
-                  
-                </Card>
-                <Card className="component-bg-lighter space-y-1 p-4">
-                  <p className="text-sm font-medium">Personal overlay</p>
-                  
-                </Card>
-                <Card className="component-bg-lighter space-y-1 p-4">
-                  <p className="text-sm font-medium">Duplicate skip</p>
-                  
-                </Card>
-              </div>
+              <Button
+                disabled={isImporting || (!selectedFile && !content.trim())}
+                icon="tabler:file-import"
+                loading={jsonImportMutation.isPending}
+                onClick={() => runImport('json')}
+              >
+                Import JSON
+              </Button>
+              <Button
+                disabled={isImporting || (!selectedFile && !content.trim())}
+                icon="tabler:file-code"
+                loading={jsonlImportMutation.isPending}
+                variant="secondary"
+                onClick={() => runImport('jsonl')}
+              >
+                JSONL
+              </Button>
             </div>
-          </div>
-
-          <div className="space-y-1">
-            <h2 className="text-xl font-semibold">Accepted fields</h2>
-            
-          </div>
-          
-          <div className="bg-bg-100 dark:bg-bg-900 rounded-lg p-4 text-sm">
-            <p className="font-medium">What is preserved</p>
-            <p className="text-bg-500 mt-1">
-              Imported `score`, `collections`, `TL;DR`, translated title, and translated abstract
-              are attached to your personal overlay so the list and detail views can use them
-              immediately.
-            </p>
-          </div>
-        </Card>
-      </div>
-
-      <section className="mt-8 space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold">Recent imports</h2>
-            
-          </div>
-          <Button
-            disabled={isImporting}
-            icon="tabler:refresh"
-            variant="secondary"
-            onClick={() => {
-              batchesQuery.refetch()
-            }}
-          >
-            Refresh
-          </Button>
+          </Card>
         </div>
 
-        <WithQuery query={batchesQuery}>
-          {batches =>
-            batches.length === 0 ? (
-              <EmptyStateScreen
-                icon="tabler:history-off"
-                message={{
-                  id: 'batches',
-                  namespace: MODULE_NAMESPACE
-                }}
-              />
-            ) : (
-              <div className="space-y-4">
-                {batches.map(batch => (
-                  <ImportBatchCard key={batch.id} batch={batch} />
-                ))}
-              </div>
-            )
-          }
-        </WithQuery>
-      </section>
+        {/* Import Notice */}
+        {importNotice && (
+          <div
+            className={`border rounded-xl px-5 py-3 text-sm ${
+              importNotice.tone === 'success'
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
+                : importNotice.tone === 'error'
+                  ? 'border-red-500/30 bg-red-500/10 text-red-600'
+                  : 'border-custom-500/30 bg-custom-500/10 text-custom-600'
+            }`}
+          >
+            {importNotice.message}
+          </div>
+        )}
+
+        {/* Recent Imports */}
+        <section>
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold">Recent Imports</h2>
+              <p className="text-bg-500 mt-1 text-sm">Import history and batch status</p>
+            </div>
+            <Button
+              disabled={isImporting}
+              icon="tabler:refresh"
+              variant="secondary"
+              onClick={() => { void batchesQuery.refetch() }}
+            >
+              Refresh
+            </Button>
+          </div>
+
+          <WithQuery query={batchesQuery}>
+            {(batches: ImportBatch[]) =>
+              batches.length === 0 ? (
+                <EmptyStateScreen
+                  icon="tabler:history-off"
+                  message={{
+                    id: 'batches',
+                    namespace: MODULE_NAMESPACE
+                  }}
+                />
+              ) : (
+                <Card className="overflow-hidden p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-bg-500/10">
+                          <th className="text-bg-500 px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase">
+                            Filename
+                          </th>
+                          <th className="text-bg-500 px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase">
+                            Date
+                          </th>
+                          <th className="text-bg-500 px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase">
+                            Source
+                          </th>
+                          <th className="text-bg-500 px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase">
+                            Status
+                          </th>
+                          <th className="text-bg-500 px-6 py-3 text-right text-xs font-semibold tracking-[0.12em] uppercase">
+                            Results
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-bg-500/5">
+                        {batches.map((batch: ImportBatch) => (
+                          <tr key={batch.id} className="hover:bg-component-bg-lighter/50 transition-colors">
+                            <td className="px-6 py-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <Icon className="text-bg-400 size-4 shrink-0" icon="tabler:file-text" />
+                                <span className="truncate text-sm font-medium">
+                                  {batch.filename || batch.source || batch.type.toUpperCase()}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="text-bg-500 px-6 py-3.5 text-sm whitespace-nowrap">
+                              {new Date(batch.created).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-3.5 whitespace-nowrap">
+                              <span className="text-sm">{batch.source || batch.type.toUpperCase()}</span>
+                            </td>
+                            <td className="px-6 py-3.5 whitespace-nowrap">
+                              <span
+                                className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                  STATUS_COLORS[batch.status] || 'bg-custom-500/20 text-custom-500'
+                                }`}
+                              >
+                                {batch.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-3.5 text-right">
+                              <div className="inline-flex items-center gap-3 text-xs">
+                                <span className="text-emerald-500 font-medium">{batch.inserted} inserted</span>
+                                <span className="text-bg-400">|</span>
+                                <span className="text-amber-500 font-medium">{batch.skipped} skipped</span>
+                                <span className="text-bg-400">|</span>
+                                <span className="text-red-500 font-medium">{batch.failed} failed</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )
+            }
+          </WithQuery>
+        </section>
+      </div>
     </>
   )
 }

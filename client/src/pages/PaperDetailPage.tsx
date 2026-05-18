@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, EmptyStateScreen, ModuleHeader, WithQuery } from 'lifeforge-ui'
+import { Button, EmptyStateScreen, ModuleHeader, WithQuery } from 'lifeforge-ui'
+import { Icon } from '@iconify/react'
 import { toast } from 'react-toastify'
 import { Link, useParams } from 'shared'
 
@@ -71,13 +72,17 @@ function PaperDetailPage() {
             title="Paper Detail"
           />
 
-          <Card className="border-bg-500/10 from-component-bg-lighter to-component-bg mb-6 border bg-gradient-to-br">
-            <div className="space-y-2">
-              <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Standalone detail</p>
-              <h2 className="text-3xl leading-tight font-semibold">Reading view</h2>
-              <p className="text-bg-500 text-sm leading-7">This fallback route keeps the same content hierarchy as the modal reading panel.</p>
+          <div className="from-custom-500/5 via-component-bg-lighter/30 to-component-bg mb-6 rounded-xl border bg-gradient-to-br p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="bg-custom-500/20 border-custom-500/30 flex size-10 shrink-0 items-center justify-center rounded-xl border">
+                <Icon className="text-custom-500 size-5" icon="tabler:book-open" />
+              </div>
+              <div>
+                <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Reading view</p>
+                <p className="text-sm">Standalone detail page with full metadata and abstract</p>
+              </div>
             </div>
-          </Card>
+          </div>
 
           <PaperDetailContent
             favoriteLoading={toggleFavoriteMutation.isPending}

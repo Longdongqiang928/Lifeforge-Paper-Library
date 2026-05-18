@@ -1,38 +1,69 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import {
   Button,
   Card,
+  DateInput,
   ModuleHeader,
   Switch,
+  TagChip,
   TextAreaInput,
   TextInput,
   WithQuery
 } from 'lifeforge-ui'
-import { useEffect, useState } from 'react'
+import { Icon } from '@iconify/react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
 import forgeAPI from '@/utils/forgeAPI'
-import {
-  MODULE_ROUTE_KEY
-} from '@/utils/module'
+import { MODULE_ROUTE_KEY } from '@/utils/module'
+import type { ActivePipelineRun, PipelineRun } from '@/utils/types'
 
+const STAGES = [
+  { id: 'fetch', label: 'Fetch', icon: 'tabler:rss' },
+  { id: 'abstract', label: 'Abstract', icon: 'tabler:file-text' },
+  { id: 'recommend', label: 'Recommend', icon: 'tabler:chart-dots-3' },
+  { id: 'enhance', label: 'Enhance', icon: 'tabler:sparkles' }
+] as const
 
+const SECTIONS = [
+  { id: 'pipeline', label: 'Pipeline stages', icon: 'tabler:stack-2' },
+  { id: 'shared', label: 'Shared configuration', icon: 'tabler:users' },
+  { id: 'personal', label: 'Personal configuration', icon: 'tabler:user' },
+  { id: 'executions', label: 'Recent executions', icon: 'tabler:history' }
+] as const
+
+function StatusBadge({ status }: { status: string }) {
+  const scheme: Record<string, string> = {
+    completed: 'bg-emerald-500/20 text-emerald-500',
+    running: 'bg-blue-500/20 text-blue-500',
+    failed: 'bg-red-500/20 text-red-500'
+  }
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+        scheme[status] || 'bg-custom-500/20 text-custom-500'
+      }`}
+    >
+      {status}
+    </span>
+  )
+}
 
 function SettingsPage() {
   const queryClient = useQueryClient()
+  const [activeSection, setActiveSection] = useState('pipeline')
 
-  const fetchSettingsQuery = useQuery(
-    forgeAPI.pipeline.settings.fetch.get.queryOptions({
-      queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'settings', 'fetch']
-    })
-  )
+  // Pipeline trigger state
+  const [selectedStages, setSelectedStages] = useState<string[]>(['fetch'])
+  const [rangeStart, setRangeStart] = useState('')
+  const [rangeEnd, setRangeEnd] = useState('')
 
-  const personalSettingsQuery = useQuery(
-    forgeAPI.pipeline.settings.personal.get.queryOptions({
-      queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'settings', 'personal']
-    })
-  )
-
+  // Shared settings state
+  const sharedRef = useRef<HTMLDivElement>(null)
+  const personalRef = useRef<HTMLDivElement>(null)
+  const executionsRef = useRef<HTMLDivElement>(null)
   const [rssSources, setRssSources] = useState('')
   const [fetchEnabled, setFetchEnabled] = useState(false)
   const [fetchTime, setFetchTime] = useState('08:00')
@@ -42,6 +73,7 @@ function SettingsPage() {
   const [natureApiKey, setNatureApiKey] = useState('')
   const [tavilyApiKey, setTavilyApiKey] = useState('')
 
+  // Personal settings state
   const [zoteroUserId, setZoteroUserId] = useState('')
   const [zoteroApiKey, setZoteroApiKey] = useState('')
   const [aiBaseUrl, setAiBaseUrl] = useState('')
@@ -57,9 +89,76 @@ function SettingsPage() {
   const [recommendLookbackDays, setRecommendLookbackDays] = useState('7')
   const [enhanceLookbackDays, setEnhanceLookbackDays] = useState('3')
 
+  // Queries
+  const fetchSettingsQuery = useQuery(
+    forgeAPI.pipeline.settings.fetch.get.queryOptions({
+      queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'settings', 'fetch']
+    })
+  )
+
+  const personalSettingsQuery = useQuery(
+    forgeAPI.pipeline.settings.personal.get.queryOptions({
+      queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'settings', 'personal']
+    })
+  )
+
+  const runsQuery = useQuery(
+    forgeAPI.pipeline.runs.list.queryOptions({
+      queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'runs']
+    })
+  )
+
+  const activeRunsQuery = useQuery(
+    forgeAPI.pipeline.runs.active.queryOptions({
+      queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'runs', 'active']
+    })
+  )
+
+  // Mutations
+  const triggerMutation = useMutation(
+    forgeAPI.pipeline.runs.trigger.mutationOptions({
+      onSuccess: () => {
+        toast.success('Pipeline started')
+        queryClient.invalidateQueries({ queryKey: [MODULE_ROUTE_KEY, 'pipeline'] })
+        queryClient.invalidateQueries({ queryKey: [MODULE_ROUTE_KEY, 'papers'] })
+      },
+      onError: error => {
+        toast.error(error instanceof Error ? error.message : 'Failed to start pipeline')
+      }
+    })
+  )
+
+  const fetchMutation = useMutation(
+    forgeAPI.pipeline.settings.fetch.update.mutationOptions({
+      onSuccess: () => {
+        toast.success('Fetch settings saved')
+        setNatureApiKey('')
+        setTavilyApiKey('')
+        queryClient.invalidateQueries({ queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'settings', 'fetch'] })
+      },
+      onError: error => {
+        toast.error(error instanceof Error ? error.message : 'Failed to save fetch settings')
+      }
+    })
+  )
+
+  const personalMutation = useMutation(
+    forgeAPI.pipeline.settings.personal.update.mutationOptions({
+      onSuccess: () => {
+        toast.success('Personal settings saved')
+        setZoteroApiKey('')
+        setAiApiKey('')
+        queryClient.invalidateQueries({ queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'settings', 'personal'] })
+      },
+      onError: error => {
+        toast.error(error instanceof Error ? error.message : 'Failed to save personal settings')
+      }
+    })
+  )
+
+  // Sync from server
   useEffect(() => {
     if (!fetchSettingsQuery.data) return
-
     setRssSources(fetchSettingsQuery.data.rssSources)
     setFetchEnabled(fetchSettingsQuery.data.fetchEnabled)
     setFetchTime(fetchSettingsQuery.data.fetchTime)
@@ -70,7 +169,6 @@ function SettingsPage() {
 
   useEffect(() => {
     if (!personalSettingsQuery.data) return
-
     setZoteroUserId(personalSettingsQuery.data.zoteroUserId)
     setAiBaseUrl(personalSettingsQuery.data.aiBaseUrl)
     setAiModel(personalSettingsQuery.data.aiModel)
@@ -85,388 +183,576 @@ function SettingsPage() {
     setEnhanceLookbackDays(String(personalSettingsQuery.data.enhanceLookbackDays))
   }, [personalSettingsQuery.data])
 
-  const fetchMutation = useMutation(
-    forgeAPI.pipeline.settings.fetch.update.mutationOptions({
-      onSuccess: () => {
-        toast.success('Fetch settings saved')
-        setNatureApiKey('')
-        setTavilyApiKey('')
-        queryClient.invalidateQueries({
-          queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'settings', 'fetch']
-        })
-      },
-      onError: error => {
-        toast.error(error instanceof Error ? error.message : 'Failed to save fetch settings')
-      }
-    })
-  )
+  const scrollToSection = (sectionId: string) => {
+    setActiveSection(sectionId)
+    const refMap: Record<string, React.RefObject<HTMLDivElement | null>> = {
+      shared: sharedRef,
+      personal: personalRef,
+      executions: executionsRef
+    }
+    const ref = refMap[sectionId]
+    if (ref?.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
-  const personalMutation = useMutation(
-    forgeAPI.pipeline.settings.personal.update.mutationOptions({
-      onSuccess: () => {
-        toast.success('Personal settings saved')
-        setZoteroApiKey('')
-        setAiApiKey('')
-        queryClient.invalidateQueries({
-          queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'settings', 'personal']
-        })
-      },
-      onError: error => {
-        toast.error(error instanceof Error ? error.message : 'Failed to save personal settings')
-      }
-    })
-  )
+  const hasRangeStage = selectedStages.some(stage => stage !== 'fetch')
+  const selectedStageLabels = selectedStages
+    .map(stage => STAGES.find(item => item.id === stage)?.label)
+    .filter(Boolean)
+    .join(', ')
 
   return (
     <>
       <ModuleHeader icon="tabler:settings" title="Settings" />
 
-      <div className="space-y-6">
-        <WithQuery query={fetchSettingsQuery}>
-          {fetchSettings => (
-            <Card className="border-bg-500/10 space-y-5 overflow-hidden border bg-component-bg/60 backdrop-blur-md shadow-sm transition-shadow hover:shadow-md">
-              <div className="from-component-bg-lighter to-component-bg bg-gradient-to-br p-1">
-                <div className="component-bg rounded-xl p-5">
-                  <div className="mb-3 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Shared configuration</p>
-                      <h2 className="text-2xl font-semibold">Fetch and abstract</h2>
-                      
-                    </div>
-                    <div className="component-bg-lighter rounded-full px-3 py-1 text-xs font-medium">
-                      Admin scope
-                    </div>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <Card className="component-bg-lighter space-y-1 p-4">
-                      <p className="text-sm font-medium">RSS source map</p>
-                      
-                    </Card>
-                    <Card className="component-bg-lighter space-y-1 p-4">
-                      <p className="text-sm font-medium">Abstract backfill</p>
-                      
-                    </Card>
-                    <Card className="component-bg-lighter space-y-1 p-4">
-                      <p className="text-sm font-medium">Daily schedule</p>
-                      
-                    </Card>
-                  </div>
-                </div>
-              </div>
+      <div className="flex min-h-0 w-full flex-1 gap-6">
+        {/* Settings Sidebar */}
+        <aside className="w-52 shrink-0 space-y-1">
+          {SECTIONS.map(section => (
+            <button
+              key={section.id}
+              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                activeSection === section.id
+                  ? 'bg-custom-500/20 text-custom-500'
+                  : 'text-bg-500 hover:bg-component-bg-lighter hover:text-bg'
+              }`}
+              onClick={() => scrollToSection(section.id)}
+            >
+              <Icon className="size-4 shrink-0" icon={section.icon} />
+              {section.label}
+            </button>
+          ))}
+        </aside>
 
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold">Source definition</h3>
-                
+        {/* Main Content */}
+        <div className="flex min-w-0 flex-1 flex-col gap-8">
+          {/* === Pipeline Stages: Configuration + Manual Trigger === */}
+          <Card className="from-component-bg-lighter/50 to-component-bg space-y-6 border bg-gradient-to-br p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Select stages and launch</p>
+                <h2 className="text-2xl font-semibold">Pipeline orchestration</h2>
               </div>
-
-              <TextAreaInput
-                className="min-h-48"
-                label="RSS sources"
-                placeholder="arxiv:physics+quant-ph+cond-mat,nature:nature+nphoton+nphys,science:science+sciadv"
-                value={rssSources}
-                variant="plain"
-                onChange={setRssSources}
-              />
-              <Card className="component-bg-lighter space-y-4 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-medium">Enable fetch scheduler</p>
-                  </div>
-                  <Switch value={fetchEnabled} onChange={setFetchEnabled} />
-                </div>
-                <TextInput
-                  label="Fetch time"
-                  placeholder="08:00"
-                  value={fetchTime}
-                  variant="plain"
-                  onChange={setFetchTime}
+              <div className="flex items-center gap-2">
+                <TagChip
+                  icon="tabler:stack-2"
+                  label={selectedStageLabels || 'No stage'}
+                  variant="filled"
                 />
-              </Card>
+                <TagChip
+                  icon="tabler:calendar-time"
+                  label={hasRangeStage ? 'Range enabled' : 'Fetch only'}
+                  variant="outlined"
+                />
+              </div>
+            </div>
 
-              <Card className="component-bg-lighter space-y-4 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-medium">Auto abstract</p>
-                  </div>
-                  <Switch value={abstractEnabled} onChange={setAbstractEnabled} />
+            {/* Manual trigger */}
+            <div className="border-bg-500/10 space-y-5 border-t pt-5">
+              <div>
+                <p className="mb-2 text-sm font-medium">Stages to run</p>
+                <div className="flex flex-wrap gap-2">
+                  {STAGES.map(stage => {
+                    const selected = selectedStages.includes(stage.id)
+                    return (
+                      <TagChip
+                        key={stage.id}
+                        icon={stage.icon}
+                        label={stage.label}
+                        variant={selected ? 'filled' : 'outlined'}
+                        onClick={() => {
+                          setSelectedStages(current =>
+                            current.includes(stage.id)
+                              ? current.filter(item => item !== stage.id)
+                              : [...current, stage.id]
+                          )
+                        }}
+                      />
+                    )
+                  })}
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <TextInput
-                    label="Abstract time"
-                    placeholder="10:00"
-                    value={abstractTime}
-                    variant="plain"
-                    onChange={setAbstractTime}
-                  />
-                  <TextInput
-                    label="Abstract lookback days"
-                    placeholder="1"
-                    value={abstractLookbackDays}
-                    variant="plain"
-                    onChange={setAbstractLookbackDays}
-                  />
-                </div>
-              </Card>
-
-              <div className="grid gap-4 lg:grid-cols-2">
-                <Card className="component-bg-lighter space-y-3 p-4">
-                  <TextInput
-                    label={`Nature API key${fetchSettings.hasNatureApiKey ? ' (configured)' : ''}`}
-                    placeholder="Paste a Springer Nature API key"
-                    value={natureApiKey}
-                    variant="plain"
-                    onChange={setNatureApiKey}
-                  />
-                  </Card>
-
-                <Card className="component-bg-lighter space-y-3 p-4">
-                  <TextInput
-                    label={`Tavily API key${fetchSettings.hasTavilyApiKey ? ' (configured)' : ''}`}
-                    placeholder="Paste a Tavily API key"
-                    value={tavilyApiKey}
-                    variant="plain"
-                    onChange={setTavilyApiKey}
-                  />
-                  </Card>
               </div>
 
-              <Button
-                icon="tabler:device-floppy"
-                loading={fetchMutation.isPending}
-                onClick={() => {
-                  fetchMutation.mutate({
-                    rssSources,
-                    fetchEnabled,
-                    fetchTime,
-                    abstractEnabled,
-                    abstractTime,
-                    abstractLookbackDays: Number(abstractLookbackDays) || 1,
-                    natureApiKey: natureApiKey.trim() ? natureApiKey : undefined,
-                    tavilyApiKey: tavilyApiKey.trim() ? tavilyApiKey : undefined
-                  })
-                }}
-              >
-                <span>Save fetch settings</span>
-              </Button>
-            </Card>
-          )}
-        </WithQuery>
+              <div className="flex flex-wrap items-end gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-bg-500 block text-xs font-medium">Range start</label>
+                  <DateInput
+                    disabled={!hasRangeStage}
+                    value={rangeStart ? dayjs(rangeStart).toDate() : null}
+                    variant="plain"
+                    onChange={value => {
+                      setRangeStart(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                    }}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-bg-500 block text-xs font-medium">Range end</label>
+                  <DateInput
+                    disabled={!hasRangeStage}
+                    value={rangeEnd ? dayjs(rangeEnd).toDate() : null}
+                    variant="plain"
+                    onChange={value => {
+                      setRangeEnd(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                    }}
+                  />
+                </div>
+                <Button
+                  disabled={selectedStages.length === 0}
+                  icon="tabler:player-play"
+                  loading={triggerMutation.isPending}
+                  onClick={() => {
+                    triggerMutation.mutate({
+                      stages: selectedStages as Array<'fetch' | 'abstract' | 'recommend' | 'enhance'>,
+                      rangeStart: hasRangeStage && rangeStart ? dayjs(rangeStart).startOf('day').toISOString() : undefined,
+                      rangeEnd: hasRangeStage && rangeEnd ? dayjs(rangeEnd).endOf('day').toISOString() : undefined
+                    })
+                  }}
+                >
+                  Run now
+                </Button>
+              </div>
 
-        <WithQuery query={personalSettingsQuery}>
-          {personalSettings => (
-            <Card className="border-bg-500/10 space-y-5 overflow-hidden border bg-component-bg/60 backdrop-blur-md shadow-sm transition-shadow hover:shadow-md">
-              <div className="from-component-bg-lighter to-component-bg bg-gradient-to-br p-1">
-                <div className="component-bg rounded-xl p-5">
-                  <div className="mb-3 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Personal configuration</p>
-                      <h2 className="text-2xl font-semibold">Zotero, models, and schedules</h2>
-                      
+              <div className="bg-component-bg-lighter space-y-2 rounded-xl border p-4">
+                <p className="text-xs font-medium">Execution rule</p>
+                <p className="text-bg-500 text-xs">Fetch ignores the date range. Other stages use fetched time window.</p>
+              </div>
+
+              {/* Active runs */}
+              <WithQuery query={activeRunsQuery}>
+                {(activeRuns: ActivePipelineRun[]) =>
+                  activeRuns.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Active runs</p>
+                      <div className="flex flex-wrap gap-2">
+                        {activeRuns.map(run => (
+                          <TagChip
+                            key={run.id}
+                            icon="tabler:clock-play"
+                            label={`${run.stage} (${run.scope})`}
+                            variant="filled"
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className="component-bg-lighter rounded-full px-3 py-1 text-xs font-medium">
-                      User scope
-                    </div>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <Card className="component-bg-lighter space-y-1 p-4">
-                      <p className="text-sm font-medium">Zotero relevance</p>
-                      
-                    </Card>
-                    <Card className="component-bg-lighter space-y-1 p-4">
-                      <p className="text-sm font-medium">AI enhancement</p>
-                      
-                    </Card>
-                    <Card className="component-bg-lighter space-y-1 p-4">
-                      <p className="text-sm font-medium">Personal schedules</p>
-                      
-                    </Card>
-                  </div>
-                </div>
-              </div>
+                  ) : (
+                    <p className="text-bg-400 text-xs">No active runs</p>
+                  )
+                }
+              </WithQuery>
 
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold">Zotero and AI credentials</h3>
-                
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card className="component-bg-lighter space-y-3 p-4">
-                  <TextInput
-                    label="Zotero user ID"
-                    placeholder="1234567"
-                    value={zoteroUserId}
-                    variant="plain"
-                    onChange={setZoteroUserId}
-                  />
-                  </Card>
-                <Card className="component-bg-lighter space-y-3 p-4">
-                  <TextInput
-                    label={`Zotero API key${personalSettings.hasZoteroApiKey ? ' (configured)' : ''}`}
-                    placeholder="Paste a Zotero web API key"
-                    value={zoteroApiKey}
-                    variant="plain"
-                    onChange={setZoteroApiKey}
-                  />
-                  </Card>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card className="component-bg-lighter space-y-3 p-4">
-                  <TextInput
-                    label="AI base URL"
-                    placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1"
-                    value={aiBaseUrl}
-                    variant="plain"
-                    onChange={setAiBaseUrl}
-                  />
-                  </Card>
-                <Card className="component-bg-lighter space-y-3 p-4">
-                  <TextInput
-                    label={`AI API key${personalSettings.hasAiApiKey ? ' (configured)' : ''}`}
-                    placeholder="Paste an API key for the AI provider"
-                    value={aiApiKey}
-                    variant="plain"
-                    onChange={setAiApiKey}
-                  />
-                  </Card>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card className="component-bg-lighter space-y-3 p-4">
-                  <TextInput
-                    label="AI model"
-                    placeholder="qwen3-30b-a3b-instruct-2507"
-                    value={aiModel}
-                    variant="plain"
-                    onChange={setAiModel}
-                  />
-                  </Card>
-                <Card className="component-bg-lighter space-y-3 p-4">
-                  <TextInput
-                    label="Embedding model"
-                    placeholder="qwen3-embedding-8b-f16"
-                    value={embeddingModel}
-                    variant="plain"
-                    onChange={setEmbeddingModel}
-                  />
-                  </Card>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card className="component-bg-lighter space-y-3 p-4">
-                  <TextInput
-                    label="Output language"
-                    placeholder="Chinese"
-                    value={outputLanguage}
-                    variant="plain"
-                    onChange={setOutputLanguage}
-                  />
-                  </Card>
-                <Card className="component-bg-lighter space-y-3 p-4">
-                  <TextInput
-                    label="Enhance threshold"
-                    placeholder="3.6"
-                    value={enhanceThreshold}
-                    variant="plain"
-                    onChange={setEnhanceThreshold}
-                  />
-                  </Card>
-              </div>
-
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold">Automatic schedules</h3>
-                
-              </div>
-
-              <div className="space-y-4">
-                <Card className="component-bg-lighter space-y-4 p-4">
-                  <div className="flex items-center justify-between gap-4">
+              {/* Schedules */}
+              <div className="border-bg-500/10 space-y-4 border-t pt-5">
+                <p className="text-sm font-medium">Automatic schedules</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {/* Fetch schedule */}
+                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
                     <div>
-                      <p className="font-medium">Auto recommend</p>
-                      
+                      <p className="text-sm font-medium">Fetch</p>
+                      <p className="text-bg-500 text-xs">RSS harvesting</p>
                     </div>
-                    <Switch value={recommendEnabled} onChange={setRecommendEnabled} />
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-3">
+                    <div className="flex items-center gap-3">
                       <TextInput
-                        label="Recommend time"
+                        className="w-20"
+                        placeholder="08:00"
+                        value={fetchTime}
+                        variant="plain"
+                        onChange={setFetchTime}
+                      />
+                      <Switch value={fetchEnabled} onChange={setFetchEnabled} />
+                    </div>
+                  </div>
+
+                  {/* Abstract schedule */}
+                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium">Abstract</p>
+                      <p className="text-bg-500 text-xs">Backfill missing</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <TextInput
+                        className="w-20"
+                        placeholder="10:00"
+                        value={abstractTime}
+                        variant="plain"
+                        onChange={setAbstractTime}
+                      />
+                      <Switch value={abstractEnabled} onChange={setAbstractEnabled} />
+                    </div>
+                  </div>
+
+                  {/* Recommend schedule */}
+                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium">Recommend</p>
+                      <p className="text-bg-500 text-xs">Similarity scoring</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <TextInput
+                        className="w-20"
                         placeholder="09:00"
                         value={recommendTime}
                         variant="plain"
                         onChange={setRecommendTime}
                       />
-                      </div>
-                    <div className="space-y-3">
-                      <TextInput
-                        label="Recommend lookback days"
-                        placeholder="7"
-                        value={recommendLookbackDays}
-                        variant="plain"
-                        onChange={setRecommendLookbackDays}
-                      />
-                      </div>
-                  </div>
-                </Card>
-
-                <Card className="component-bg-lighter space-y-4 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-medium">Auto enhance</p>
-                      
+                      <Switch value={recommendEnabled} onChange={setRecommendEnabled} />
                     </div>
-                    <Switch value={enhanceEnabled} onChange={setEnhanceEnabled} />
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-3">
+
+                  {/* Enhance schedule */}
+                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium">Enhance</p>
+                      <p className="text-bg-500 text-xs">AI TL;DR + translation</p>
+                    </div>
+                    <div className="flex items-center gap-3">
                       <TextInput
-                        label="Enhance time"
+                        className="w-20"
                         placeholder="09:30"
                         value={enhanceTime}
                         variant="plain"
                         onChange={setEnhanceTime}
                       />
-                      </div>
-                    <div className="space-y-3">
-                      <TextInput
-                        label="Enhance lookback days"
-                        placeholder="3"
-                        value={enhanceLookbackDays}
-                        variant="plain"
-                        onChange={setEnhanceLookbackDays}
-                      />
-                      </div>
+                      <Switch value={enhanceEnabled} onChange={setEnhanceEnabled} />
+                    </div>
                   </div>
-                </Card>
+                </div>
               </div>
 
-              <Button
-                icon="tabler:device-floppy"
-                loading={personalMutation.isPending}
-                onClick={() => {
-                  personalMutation.mutate({
-                    zoteroUserId,
-                    zoteroApiKey: zoteroApiKey.trim() ? zoteroApiKey : undefined,
-                    aiBaseUrl,
-                    aiApiKey: aiApiKey.trim() ? aiApiKey : undefined,
-                    aiModel,
-                    embeddingModel,
-                    outputLanguage,
-                    enhanceThreshold: Number(enhanceThreshold) || 0,
-                    recommendEnabled,
-                    recommendTime,
-                    enhanceEnabled,
-                    enhanceTime,
-                    recommendLookbackDays: Number(recommendLookbackDays) || 1,
-                    enhanceLookbackDays: Number(enhanceLookbackDays) || 1
-                  })
-                }}
-              >
-                <span>Save personal settings</span>
-              </Button>
+              <div className="flex justify-end">
+                <Button
+                  icon="tabler:device-floppy"
+                  loading={fetchMutation.isPending || personalMutation.isPending}
+                  onClick={() => {
+                    fetchMutation.mutate({
+                      rssSources,
+                      fetchEnabled,
+                      fetchTime,
+                      abstractEnabled,
+                      abstractTime,
+                      abstractLookbackDays: Number(abstractLookbackDays) || 1
+                    })
+                    personalMutation.mutate({
+                      zoteroUserId,
+                      aiBaseUrl,
+                      aiModel,
+                      embeddingModel,
+                      outputLanguage,
+                      enhanceThreshold: Number(enhanceThreshold) || 0,
+                      recommendEnabled,
+                      recommendTime,
+                      enhanceEnabled,
+                      enhanceTime,
+                      recommendLookbackDays: Number(recommendLookbackDays) || 1,
+                      enhanceLookbackDays: Number(enhanceLookbackDays) || 1
+                    })
+                  }}
+                >
+                  Save schedules
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* === Shared Configuration === */}
+          <div ref={sharedRef}>
+            <WithQuery query={fetchSettingsQuery}>
+              {fetchSettings => (
+                <Card className="from-component-bg-lighter/50 to-component-bg space-y-6 border bg-gradient-to-br p-6 shadow-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Shared configuration</p>
+                      <h2 className="text-2xl font-semibold">Fetch sources and API keys</h2>
+                    </div>
+                    <div className="bg-custom-500/20 rounded-full px-3 py-1 text-xs font-medium">
+                      Admin scope
+                    </div>
+                  </div>
+
+                  <div className="border-bg-500/10 space-y-5 border-t pt-5">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">RSS sources</p>
+                      <TextAreaInput
+                        className="min-h-36"
+                        placeholder="arxiv:physics+quant-ph+cond-mat,nature:nature+nphoton+nphys,science:science+sciadv"
+                        value={rssSources}
+                        variant="plain"
+                        onChange={setRssSources}
+                      />
+                      <p className="text-bg-400 text-xs">
+                        Format: source:cat1+cat2, source:cat1. Available: arxiv, nature, science, optica, aps.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4 border-bg-500/10 border-t pt-5 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Nature API key</p>
+                        <TextInput
+                          placeholder={fetchSettings.hasNatureApiKey ? 'Already configured' : 'Springer Nature API key'}
+                          value={natureApiKey}
+                          variant="plain"
+                          onChange={setNatureApiKey}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Tavily API key</p>
+                        <TextInput
+                          placeholder={fetchSettings.hasTavilyApiKey ? 'Already configured' : 'Tavily API key'}
+                          value={tavilyApiKey}
+                          variant="plain"
+                          onChange={setTavilyApiKey}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Abstract lookback days</p>
+                        <TextInput
+                          placeholder="1"
+                          value={abstractLookbackDays}
+                          variant="plain"
+                          onChange={setAbstractLookbackDays}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button
+                        icon="tabler:device-floppy"
+                        loading={fetchMutation.isPending}
+                        onClick={() => {
+                          fetchMutation.mutate({
+                            rssSources,
+                            fetchEnabled,
+                            fetchTime,
+                            abstractEnabled,
+                            abstractTime,
+                            abstractLookbackDays: Number(abstractLookbackDays) || 1,
+                            natureApiKey: natureApiKey.trim() ? natureApiKey : undefined,
+                            tavilyApiKey: tavilyApiKey.trim() ? tavilyApiKey : undefined
+                          })
+                        }}
+                      >
+                        Save shared settings
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              )}
+            </WithQuery>
+          </div>
+
+          {/* === Personal Configuration === */}
+          <div ref={personalRef}>
+            <WithQuery query={personalSettingsQuery}>
+              {personalSettings => (
+                <Card className="from-component-bg-lighter/50 to-component-bg space-y-6 border bg-gradient-to-br p-6 shadow-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Personal configuration</p>
+                      <h2 className="text-2xl font-semibold">Zotero and AI models</h2>
+                    </div>
+                    <div className="bg-custom-500/20 rounded-full px-3 py-1 text-xs font-medium">
+                      User scope
+                    </div>
+                  </div>
+
+                  <div className="border-bg-500/10 space-y-5 border-t pt-5">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Zotero user ID</p>
+                        <TextInput
+                          placeholder="1234567"
+                          value={zoteroUserId}
+                          variant="plain"
+                          onChange={setZoteroUserId}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Zotero API key</p>
+                        <TextInput
+                          placeholder={personalSettings.hasZoteroApiKey ? 'Already configured' : 'Zotero web API key'}
+                          value={zoteroApiKey}
+                          variant="plain"
+                          onChange={setZoteroApiKey}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 border-bg-500/10 border-t pt-5 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">AI base URL</p>
+                        <TextInput
+                          placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1"
+                          value={aiBaseUrl}
+                          variant="plain"
+                          onChange={setAiBaseUrl}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">AI API key</p>
+                        <TextInput
+                          placeholder={personalSettings.hasAiApiKey ? 'Already configured' : 'API key'}
+                          value={aiApiKey}
+                          variant="plain"
+                          onChange={setAiApiKey}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 border-bg-500/10 border-t pt-5 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Chat model</p>
+                        <TextInput
+                          placeholder="qwen3-30b-a3b-instruct-2507"
+                          value={aiModel}
+                          variant="plain"
+                          onChange={setAiModel}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Embedding model</p>
+                        <TextInput
+                          placeholder="qwen3-embedding-8b-f16"
+                          value={embeddingModel}
+                          variant="plain"
+                          onChange={setEmbeddingModel}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 border-bg-500/10 border-t pt-5 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Output language</p>
+                        <TextInput
+                          placeholder="Chinese"
+                          value={outputLanguage}
+                          variant="plain"
+                          onChange={setOutputLanguage}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Enhance threshold</p>
+                        <TextInput
+                          placeholder="3.6"
+                          value={enhanceThreshold}
+                          variant="plain"
+                          onChange={setEnhanceThreshold}
+                        />
+                        <p className="text-bg-400 text-xs">Papers scoring above this get AI-enhanced</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button
+                        icon="tabler:device-floppy"
+                        loading={personalMutation.isPending}
+                        onClick={() => {
+                          personalMutation.mutate({
+                            zoteroUserId,
+                            zoteroApiKey: zoteroApiKey.trim() ? zoteroApiKey : undefined,
+                            aiBaseUrl,
+                            aiApiKey: aiApiKey.trim() ? aiApiKey : undefined,
+                            aiModel,
+                            embeddingModel,
+                            outputLanguage,
+                            enhanceThreshold: Number(enhanceThreshold) || 0,
+                            recommendEnabled,
+                            recommendTime,
+                            enhanceEnabled,
+                            enhanceTime,
+                            recommendLookbackDays: Number(recommendLookbackDays) || 1,
+                            enhanceLookbackDays: Number(enhanceLookbackDays) || 1
+                          })
+                        }}
+                      >
+                        Save personal settings
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              )}
+            </WithQuery>
+          </div>
+
+          {/* === Recent Executions === */}
+          <div ref={executionsRef}>
+            <Card className="from-component-bg-lighter/50 to-component-bg space-y-4 border bg-gradient-to-br p-6 shadow-sm">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Run history</p>
+                  <h2 className="text-2xl font-semibold">Recent executions</h2>
+                </div>
+                <Button
+                  icon="tabler:refresh"
+                  variant="secondary"
+                  onClick={() => { void runsQuery.refetch() }}
+                >
+                  Refresh
+                </Button>
+              </div>
+
+              <WithQuery query={runsQuery}>
+                {(data: PipelineRun[]) =>
+                  data.length === 0 ? (
+                    <div className="border-bg-500/10 text-bg-500 rounded-lg border border-dashed p-8 text-center text-sm">
+                      No pipeline runs yet. Use the trigger above to start one.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-bg-500/10">
+                            <th className="text-bg-500 px-4 py-2.5 text-left text-xs font-semibold tracking-[0.12em] uppercase">
+                              Time
+                            </th>
+                            <th className="text-bg-500 px-4 py-2.5 text-left text-xs font-semibold tracking-[0.12em] uppercase">
+                              Stage
+                            </th>
+                            <th className="text-bg-500 px-4 py-2.5 text-left text-xs font-semibold tracking-[0.12em] uppercase">
+                              Status
+                            </th>
+                            <th className="text-bg-500 px-4 py-2.5 text-right text-xs font-semibold tracking-[0.12em] uppercase">
+                              Result
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-bg-500/5">
+                          {data.slice(0, 15).map(run => (
+                            <tr key={run.id} className="hover:bg-component-bg-lighter/50 transition-colors">
+                              <td className="px-4 py-2.5 text-sm whitespace-nowrap">
+                                {dayjs(run.created).format('YY/MM-DD h:mm A')}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className="inline-flex items-center gap-1.5 text-sm font-medium capitalize">
+                                  {run.stage}
+                                  <span className="text-bg-400 text-xs font-normal">({run.scope})</span>
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <StatusBadge status={run.status} />
+                              </td>
+                              <td className="px-4 py-2.5 text-right">
+                                <div className="inline-flex items-center gap-2 text-xs">
+                                  <span className="text-emerald-500 font-medium">{run.insertedCount} in</span>
+                                  <span className="text-bg-400">|</span>
+                                  <span className="font-medium">{run.skippedCount} skip</span>
+                                  <span className="text-bg-400">|</span>
+                                  <span className="text-red-500 font-medium">{run.failedCount} fail</span>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                }
+              </WithQuery>
             </Card>
-          )}
-        </WithQuery>
+          </div>
+        </div>
       </div>
     </>
   )

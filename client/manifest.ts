@@ -16,7 +16,6 @@ export default {
     { label: 'Favorites', icon: 'tabler:star', path: 'favorites' },
     { label: 'Review', icon: 'tabler:file-search', path: 'abstract-review' },
     { label: 'Import', icon: 'tabler:file-import', path: 'import' },
-    { label: 'Run', icon: 'tabler:player-play', path: 'run' },
     { label: 'Settings', icon: 'tabler:settings', path: 'settings' }
   ],
   widgets: [
