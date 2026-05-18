@@ -5,13 +5,14 @@ import {
   Card,
   DateInput,
   ModuleHeader,
+  SidebarItem,
+  SidebarWrapper,
   Switch,
   TagChip,
   TextAreaInput,
   TextInput,
   WithQuery
 } from 'lifeforge-ui'
-import { Icon } from '@iconify/react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
@@ -24,13 +25,6 @@ const STAGES = [
   { id: 'abstract', label: 'Abstract', icon: 'tabler:file-text' },
   { id: 'recommend', label: 'Recommend', icon: 'tabler:chart-dots-3' },
   { id: 'enhance', label: 'Enhance', icon: 'tabler:sparkles' }
-] as const
-
-const SECTIONS = [
-  { id: 'pipeline', label: 'Pipeline stages', icon: 'tabler:stack-2' },
-  { id: 'shared', label: 'Shared configuration', icon: 'tabler:users' },
-  { id: 'personal', label: 'Personal configuration', icon: 'tabler:user' },
-  { id: 'executions', label: 'Recent executions', icon: 'tabler:history' }
 ] as const
 
 function StatusBadge({ status }: { status: string }) {
@@ -206,27 +200,39 @@ function SettingsPage() {
     <>
       <ModuleHeader icon="tabler:settings" title="Settings" />
 
-      <div className="flex min-h-0 w-full flex-1 gap-6">
-        {/* Settings Sidebar */}
-        <aside className="w-52 shrink-0 space-y-1">
-          {SECTIONS.map(section => (
-            <button
-              key={section.id}
-              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                activeSection === section.id
-                  ? 'bg-custom-500/20 text-custom-500'
-                  : 'text-bg-500 hover:bg-component-bg-lighter hover:text-bg'
-              }`}
-              onClick={() => scrollToSection(section.id)}
-            >
-              <Icon className="size-4 shrink-0" icon={section.icon} />
-              {section.label}
-            </button>
-          ))}
-        </aside>
+      <div className="flex size-full min-h-0 flex-1">
+        <SidebarWrapper>
+          <SidebarItem
+            active={activeSection === 'pipeline'}
+            icon="tabler:stack-2"
+            label="Pipeline"
+            namespace={false}
+            onClick={() => scrollToSection('pipeline')}
+          />
+          <SidebarItem
+            active={activeSection === 'shared'}
+            icon="tabler:users"
+            label="Shared config"
+            namespace={false}
+            onClick={() => scrollToSection('shared')}
+          />
+          <SidebarItem
+            active={activeSection === 'personal'}
+            icon="tabler:user"
+            label="Personal config"
+            namespace={false}
+            onClick={() => scrollToSection('personal')}
+          />
+          <SidebarItem
+            active={activeSection === 'executions'}
+            icon="tabler:history"
+            label="Recent executions"
+            namespace={false}
+            onClick={() => scrollToSection('executions')}
+          />
+        </SidebarWrapper>
 
-        {/* Main Content */}
-        <div className="flex min-w-0 flex-1 flex-col gap-8">
+        <div className="relative z-10 flex h-full flex-1 flex-col gap-8 xl:ml-8">
           {/* === Pipeline Stages: Configuration + Manual Trigger === */}
           <Card className="from-component-bg-lighter/50 to-component-bg space-y-6 border bg-gradient-to-br p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
@@ -248,8 +254,8 @@ function SettingsPage() {
               </div>
             </div>
 
-            {/* Manual trigger */}
             <div className="border-bg-500/10 space-y-5 border-t pt-5">
+              {/* Stage selection */}
               <div>
                 <p className="mb-2 text-sm font-medium">Stages to run</p>
                 <div className="flex flex-wrap gap-2">
@@ -345,77 +351,29 @@ function SettingsPage() {
               <div className="border-bg-500/10 space-y-4 border-t pt-5">
                 <p className="text-sm font-medium">Automatic schedules</p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {/* Fetch schedule */}
-                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium">Fetch</p>
-                      <p className="text-bg-500 text-xs">RSS harvesting</p>
+                  {([
+                    { id: 'fetch', label: 'Fetch', desc: 'RSS harvesting', time: fetchTime, enabled: fetchEnabled, setTime: setFetchTime, setEnabled: setFetchEnabled },
+                    { id: 'abstract', label: 'Abstract', desc: 'Backfill missing', time: abstractTime, enabled: abstractEnabled, setTime: setAbstractTime, setEnabled: setAbstractEnabled },
+                    { id: 'recommend', label: 'Recommend', desc: 'Similarity scoring', time: recommendTime, enabled: recommendEnabled, setTime: setRecommendTime, setEnabled: setRecommendEnabled },
+                    { id: 'enhance', label: 'Enhance', desc: 'AI TL;DR + translation', time: enhanceTime, enabled: enhanceEnabled, setTime: setEnhanceTime, setEnabled: setEnhanceEnabled }
+                  ] as const).map(s => (
+                    <div key={s.id} className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium">{s.label}</p>
+                        <p className="text-bg-500 text-xs">{s.desc}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <TextInput
+                          className="w-20"
+                          placeholder="08:00"
+                          value={s.time}
+                          variant="plain"
+                          onChange={s.setTime}
+                        />
+                        <Switch value={s.enabled} onChange={s.setEnabled} />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <TextInput
-                        className="w-20"
-                        placeholder="08:00"
-                        value={fetchTime}
-                        variant="plain"
-                        onChange={setFetchTime}
-                      />
-                      <Switch value={fetchEnabled} onChange={setFetchEnabled} />
-                    </div>
-                  </div>
-
-                  {/* Abstract schedule */}
-                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium">Abstract</p>
-                      <p className="text-bg-500 text-xs">Backfill missing</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <TextInput
-                        className="w-20"
-                        placeholder="10:00"
-                        value={abstractTime}
-                        variant="plain"
-                        onChange={setAbstractTime}
-                      />
-                      <Switch value={abstractEnabled} onChange={setAbstractEnabled} />
-                    </div>
-                  </div>
-
-                  {/* Recommend schedule */}
-                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium">Recommend</p>
-                      <p className="text-bg-500 text-xs">Similarity scoring</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <TextInput
-                        className="w-20"
-                        placeholder="09:00"
-                        value={recommendTime}
-                        variant="plain"
-                        onChange={setRecommendTime}
-                      />
-                      <Switch value={recommendEnabled} onChange={setRecommendEnabled} />
-                    </div>
-                  </div>
-
-                  {/* Enhance schedule */}
-                  <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium">Enhance</p>
-                      <p className="text-bg-500 text-xs">AI TL;DR + translation</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <TextInput
-                        className="w-20"
-                        placeholder="09:30"
-                        value={enhanceTime}
-                        variant="plain"
-                        onChange={setEnhanceTime}
-                      />
-                      <Switch value={enhanceEnabled} onChange={setEnhanceEnabled} />
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 

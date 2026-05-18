@@ -2,11 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import {
   Button,
-  Card,
   DateInput,
   EmptyStateScreen,
   ModuleHeader,
   Pagination,
+  SidebarDivider,
+  SidebarItem,
+  SidebarTitle,
+  SidebarWrapper,
   TagChip,
   TextAreaInput,
   WithQuery
@@ -39,17 +42,15 @@ function ReviewCard({
   const isDirty = abstract !== item.abstract
 
   return (
-    <Card className="group flex gap-4 overflow-hidden p-0 transition-shadow hover:shadow-md">
+    <div className="group flex gap-4 overflow-hidden rounded-xl border bg-component-bg shadow-sm transition-shadow hover:shadow-md">
       {/* Left color strip */}
       <div className="bg-emerald-500 w-1 shrink-0 rounded-l-[11px]" />
 
       <div className="flex min-w-0 flex-1 items-start gap-4 py-4 pr-5">
-        {/* File icon */}
         <div className="bg-emerald-500/20 border-emerald-500/30 flex size-10 shrink-0 items-center justify-center rounded-lg border">
           <Icon className="text-emerald-500 size-5" icon="tabler:file-text" />
         </div>
 
-        {/* Content */}
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 space-y-1">
@@ -81,7 +82,6 @@ function ReviewCard({
             </div>
           </div>
 
-          {/* Abstract section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <button
@@ -113,7 +113,7 @@ function ReviewCard({
                 </Button>
               </div>
             </div>
-            {isEditing && (
+            {isEditing ? (
               <TextAreaInput
                 className="min-h-40"
                 placeholder="Review or edit the extracted abstract here"
@@ -121,8 +121,7 @@ function ReviewCard({
                 variant="plain"
                 onChange={value => setAbstract(normalizeAbstract(value))}
               />
-            )}
-            {!isEditing && (
+            ) : (
               <p className="text-bg-500 line-clamp-3 text-sm leading-relaxed">
                 {abstract || 'No abstract available.'}
               </p>
@@ -130,7 +129,7 @@ function ReviewCard({
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   )
 }
 
@@ -186,7 +185,14 @@ function AbstractReviewPage() {
   )
 
   const data = reviewQuery.data as AbstractReviewListResponse | undefined
-  const activeFilterCount = [dateFrom, dateTo, selectedSource].filter(Boolean).length
+  const sources = (filtersMetaQuery.data?.sources ?? []) as string[]
+  const hasFilters = !!(dateFrom || dateTo || selectedSource)
+
+  const resetFilters = () => {
+    setDateFrom('')
+    setDateTo('')
+    setSelectedSource('')
+  }
 
   return (
     <>
@@ -201,15 +207,37 @@ function AbstractReviewPage() {
         totalItems={data?.totalItems}
       />
 
-      <div className="flex min-h-0 w-full flex-1 gap-6">
-        {/* Filter Sidebar */}
-        <aside className="w-56 shrink-0 space-y-5">
-          <div className="space-y-2">
-            <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">
-              Date Filter
-              <span className="ml-1 font-normal tracking-normal">(fetched)</span>
-            </p>
-            <div className="space-y-2">
+      <div className="flex size-full min-h-0 flex-1">
+        <SidebarWrapper>
+          <SidebarItem
+            active={!selectedSource}
+            icon="tabler:list"
+            label="All sources"
+            namespace={MODULE_NAMESPACE}
+            number={data?.totalItems}
+            onClick={() => setSelectedSource('')}
+          />
+          <SidebarDivider />
+          <SidebarTitle label="Sources" namespace={MODULE_NAMESPACE} />
+          {sources.map(source => (
+            <SidebarItem
+              key={source}
+              active={selectedSource === source}
+              icon="tabler:rss"
+              label={source}
+              onCancelButtonClick={() => setSelectedSource('')}
+              onClick={() => setSelectedSource(source)}
+            />
+          ))}
+        </SidebarWrapper>
+
+        <div className="relative z-10 flex h-full flex-1 flex-col xl:ml-8">
+          {/* Controls bar */}
+          <div className="mb-4 space-y-3">
+            <h2 className="text-lg font-semibold">
+              All Papers{data?.totalItems != null ? ` (${data.totalItems})` : ''}
+            </h2>
+            <div className="flex flex-wrap items-center gap-3">
               <DateInput
                 value={dateFrom ? dayjs(dateFrom).toDate() : null}
                 variant="plain"
@@ -224,55 +252,12 @@ function AbstractReviewPage() {
                   setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
                 }}
               />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Sources</p>
-            <WithQuery query={filtersMetaQuery}>
-              {meta => (
-                <div className="flex flex-wrap gap-1.5">
-                  <TagChip
-                    icon="tabler:list"
-                    label="All"
-                    variant={!selectedSource ? 'filled' : 'outlined'}
-                    onClick={() => setSelectedSource('')}
-                  />
-                  {(meta as { sources: string[] }).sources.map(source => (
-                    <TagChip
-                      key={source}
-                      icon="tabler:rss"
-                      label={source}
-                      variant={selectedSource === source ? 'filled' : 'outlined'}
-                      onClick={() => setSelectedSource(source)}
-                    />
-                  ))}
-                </div>
+              {hasFilters && (
+                <Button icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
+                  Reset
+                </Button>
               )}
-            </WithQuery>
-          </div>
-
-          {activeFilterCount > 0 && (
-            <Button
-              icon="tabler:refresh"
-              variant="secondary"
-              onClick={() => {
-                setDateFrom('')
-                setDateTo('')
-                setSelectedSource('')
-              }}
-            >
-              Reset filters
-            </Button>
-          )}
-        </aside>
-
-        {/* Main Content */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold">
-              All Papers{data?.totalItems != null ? ` (${data.totalItems})` : ''}
-            </h2>
+            </div>
           </div>
 
           <WithQuery query={reviewQuery}>

@@ -7,8 +7,11 @@ import {
   ModuleHeader,
   Pagination,
   SearchInput,
+  SidebarDivider,
+  SidebarItem,
+  SidebarTitle,
+  SidebarWrapper,
   Switch,
-  TagChip,
   WithQuery,
   useModalStore
 } from 'lifeforge-ui'
@@ -112,16 +115,8 @@ function PaperListPage() {
     activePaperIndex >= 0
       ? (page - 1) * listQueryInput.perPage + activePaperIndex + 1
       : undefined
-  const activeFilterCount = [
-    query.trim(),
-    dateFrom,
-    dateTo,
-    selectedSources.length,
-    selectedJournals.length,
-    selectedCollections.length,
-    favoritesOnly ? 1 : 0,
-    hasAbstractOnly ? 1 : 0
-  ].filter(Boolean).length
+
+  const hasAnyFilter = selectedSources.length > 0 || selectedJournals.length > 0 || selectedCollections.length > 0
 
   const resetFilters = () => {
     setQuery('')
@@ -185,6 +180,10 @@ function PaperListPage() {
     openPaperDetail(direction === 'next' ? visiblePaperIds[0]! : visiblePaperIds[visiblePaperIds.length - 1]!)
   }, [activePaperId, page, visiblePaperIds])
 
+  const sources = filtersMetaQuery.data?.sources ?? []
+  const journals = filtersMetaQuery.data?.journals ?? []
+  const collections = filtersMetaQuery.data?.collections ?? []
+
   return (
     <>
       <div
@@ -203,16 +202,99 @@ function PaperListPage() {
           totalItems={totalItems}
         />
 
-        <div className="flex min-h-0 w-full flex-1 gap-6">
-          {/* Filter Sidebar */}
-          <aside className="w-56 shrink-0 space-y-5">
-            {/* Date Filter */}
-            <div className="space-y-2">
-              <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">
-                Date Filter
-                <span className="ml-1 font-normal tracking-normal">(fetched)</span>
-              </p>
-              <div className="space-y-2">
+        <div className="flex size-full min-h-0 flex-1">
+          <SidebarWrapper>
+            <SidebarItem
+              active={!hasAnyFilter}
+              icon="tabler:list"
+              label="All Papers"
+              namespace={MODULE_NAMESPACE}
+              number={totalItems}
+              onClick={resetFilters}
+            />
+            <SidebarItem
+              active={favoritesOnly}
+              icon="tabler:star-filled"
+              label="Favorites only"
+              namespace={MODULE_NAMESPACE}
+              onClick={() => setFavoritesOnly(!favoritesOnly)}
+            />
+            <SidebarDivider />
+            <SidebarTitle label="Sources" namespace={MODULE_NAMESPACE} />
+            {sources.map(source => (
+              <SidebarItem
+                key={source}
+                active={selectedSources.includes(source)}
+                icon="tabler:rss"
+                label={source}
+                onCancelButtonClick={() =>
+                  setSelectedSources(prev => prev.filter(s => s !== source))
+                }
+                onClick={() =>
+                  setSelectedSources(prev => toggleStringInList(prev, source))
+                }
+              />
+            ))}
+            <SidebarDivider />
+            <SidebarTitle label="Journals" namespace={MODULE_NAMESPACE} />
+            {journals.map(journal => (
+              <SidebarItem
+                key={journal}
+                active={selectedJournals.includes(journal)}
+                icon="tabler:book"
+                label={journal}
+                onCancelButtonClick={() =>
+                  setSelectedJournals(prev => prev.filter(j => j !== journal))
+                }
+                onClick={() =>
+                  setSelectedJournals(prev => toggleStringInList(prev, journal))
+                }
+              />
+            ))}
+            <SidebarDivider />
+            <SidebarTitle label="Collections" namespace={MODULE_NAMESPACE} />
+            {collections.map(collection => (
+              <SidebarItem
+                key={collection}
+                active={selectedCollections.includes(collection)}
+                icon="tabler:folders"
+                label={collection}
+                onCancelButtonClick={() =>
+                  setSelectedCollections(prev => prev.filter(c => c !== collection))
+                }
+                onClick={() =>
+                  setSelectedCollections(prev => toggleStringInList(prev, collection))
+                }
+              />
+            ))}
+          </SidebarWrapper>
+
+          <div className="relative z-10 flex h-full flex-1 flex-col xl:ml-8">
+            {/* Controls bar */}
+            <div className="mb-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold">
+                  Papers{totalItems != null ? ` (${totalItems})` : ''}
+                </h2>
+                <Button
+                  as={Link}
+                  icon="tabler:star"
+                  to={`${MODULE_BASE_PATH}/favorites`}
+                  variant="secondary"
+                >
+                  Favorites
+                </Button>
+              </div>
+
+              <SearchInput
+                debounceMs={250}
+                namespace={MODULE_NAMESPACE}
+                searchTarget="paper"
+                value={query}
+                onChange={setQuery}
+              />
+
+              <div className="flex flex-wrap items-center gap-3">
                 <DateInput
                   value={dateFrom ? dayjs(dateFrom).toDate() : null}
                   variant="plain"
@@ -227,108 +309,16 @@ function PaperListPage() {
                     setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
                   }}
                 />
+                <div className="border-bg-500/10 bg-component-bg-lighter flex items-center gap-3 rounded-xl border px-3 py-2">
+                  <span className="text-xs font-medium">With abstract</span>
+                  <Switch value={hasAbstractOnly} onChange={setHasAbstractOnly} />
+                </div>
+                {hasAnyFilter && (
+                  <Button icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
+                    Reset
+                  </Button>
+                )}
               </div>
-            </div>
-
-            {/* Sources */}
-            <div className="space-y-2">
-              <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Sources</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(filtersMetaQuery.data?.sources ?? []).map(source => (
-                  <TagChip
-                    key={source}
-                    icon="tabler:rss"
-                    label={source}
-                    variant={selectedSources.includes(source) ? 'filled' : 'outlined'}
-                    onClick={() => {
-                      setSelectedSources(current => toggleStringInList(current, source))
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Journals */}
-            <div className="space-y-2">
-              <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Journals</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(filtersMetaQuery.data?.journals ?? []).map(journal => (
-                  <TagChip
-                    key={journal}
-                    icon="tabler:book"
-                    label={journal}
-                    variant={selectedJournals.includes(journal) ? 'filled' : 'outlined'}
-                    onClick={() => {
-                      setSelectedJournals(current => toggleStringInList(current, journal))
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Collections */}
-            <div className="space-y-2">
-              <p className="text-bg-500 text-xs font-semibold tracking-[0.18em] uppercase">Collections</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(filtersMetaQuery.data?.collections ?? []).map(collection => (
-                  <TagChip
-                    key={collection}
-                    icon="tabler:folders"
-                    label={collection}
-                    variant={selectedCollections.includes(collection) ? 'filled' : 'outlined'}
-                    onClick={() => {
-                      setSelectedCollections(current => toggleStringInList(current, collection))
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Quick toggles */}
-            <div className="space-y-2.5">
-              <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-3 py-2.5">
-                <p className="text-xs font-medium">Favorites only</p>
-                <Switch value={favoritesOnly} onChange={setFavoritesOnly} />
-              </div>
-              <div className="border-bg-500/10 bg-component-bg-lighter flex items-center justify-between rounded-xl border px-3 py-2.5">
-                <p className="text-xs font-medium">With abstract</p>
-                <Switch value={hasAbstractOnly} onChange={setHasAbstractOnly} />
-              </div>
-            </div>
-
-            {activeFilterCount > 0 && (
-              <Button icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
-                Reset filters
-              </Button>
-            )}
-          </aside>
-
-          {/* Main Content */}
-          <div className="flex min-w-0 flex-1 flex-col">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <h2 className="text-lg font-semibold">
-                  All Papers{totalItems != null ? ` (${totalItems})` : ''}
-                </h2>
-                <Button
-                  as={Link}
-                  icon="tabler:star"
-                  to={`${MODULE_BASE_PATH}/favorites`}
-                  variant="secondary"
-                >
-                  Favorites
-                </Button>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <SearchInput
-                debounceMs={250}
-                namespace={MODULE_NAMESPACE}
-                searchTarget="paper"
-                value={query}
-                onChange={setQuery}
-              />
             </div>
 
             <WithQuery query={papersQuery}>
