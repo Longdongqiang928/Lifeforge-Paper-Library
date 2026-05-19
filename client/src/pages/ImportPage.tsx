@@ -133,7 +133,8 @@ function ImportPage() {
       />
 
       <div className="space-y-6">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="overflow-x-auto">
+          <div className="grid min-w-[680px] grid-cols-2 gap-6">
           <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-6 shadow-sm">
             <div className="space-y-1">
               <h2 className="text-2xl font-semibold">Choose File</h2>
@@ -236,6 +237,7 @@ function ImportPage() {
               </Button>
             </div>
           </Card>
+          </div>
         </div>
 
         {importNotice && (

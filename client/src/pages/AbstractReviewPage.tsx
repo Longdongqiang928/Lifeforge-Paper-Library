@@ -6,6 +6,7 @@ import {
   EmptyStateScreen,
   ModuleHeader,
   Pagination,
+  Scrollbar,
   SidebarItem,
   SidebarTitle,
   SidebarWrapper,
@@ -201,8 +202,8 @@ function AbstractReviewPage() {
         totalItems={data?.totalItems}
       />
 
-      <div className="flex size-full min-h-0 flex-1 gap-6 xl:gap-7">
-        <div className="h-full w-[272px] shrink-0 overflow-y-auto pr-1"><SidebarWrapper>
+      <div className="flex size-full min-h-0 flex-1">
+        <SidebarWrapper>
           <div className="space-y-3 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
             <div className="flex items-center gap-2">
               <Icon className="text-custom-500 size-4" icon="tabler:calendar-month" />
@@ -245,9 +246,9 @@ function AbstractReviewPage() {
               </Button>
             )}
           </div>
-        </SidebarWrapper></div>
+        </SidebarWrapper>
 
-        <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5">
+        <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col xl:ml-8">
           <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-5 shadow-sm">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -262,8 +263,9 @@ function AbstractReviewPage() {
             </div>
           </Card>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-            <WithQuery query={reviewQuery}>
+          <div className="mt-5 flex min-h-0 flex-1 flex-col">
+            <Scrollbar>
+              <WithQuery query={reviewQuery}>
             {response =>
               (response as AbstractReviewListResponse).items.length === 0 ? (
                 <EmptyStateScreen
@@ -297,7 +299,8 @@ function AbstractReviewPage() {
                 </div>
               )
             }
-            </WithQuery>
+              </WithQuery>
+            </Scrollbar>
           </div>
         </div>
       </div>

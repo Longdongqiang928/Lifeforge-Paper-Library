@@ -8,6 +8,7 @@ import {
   ModuleHeader,
   Pagination,
   SearchInput,
+  Scrollbar,
   SidebarWrapper,
   Switch,
   TagChip,
@@ -234,8 +235,8 @@ function PaperListPage() {
           totalItems={totalItems}
         />
 
-        <div className="flex size-full min-h-0 flex-1 gap-6 xl:gap-7">
-          <div className="h-full w-[272px] shrink-0 overflow-y-auto pr-1"><SidebarWrapper>
+        <div className="flex size-full min-h-0 flex-1">
+          <SidebarWrapper>
             <FilterSection icon="tabler:calendar-month" title="Date Filter">
               <DateRangeCalendar
                 dateFrom={dateFrom}
@@ -291,9 +292,9 @@ function PaperListPage() {
                 />
               </div>
             </div>
-          </SidebarWrapper></div>
+          </SidebarWrapper>
 
-          <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5">
+          <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col xl:ml-8">
             <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
@@ -345,8 +346,9 @@ function PaperListPage() {
               )}
             </Card>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-              <WithQuery query={papersQuery}>
+            <div className="mt-5 flex min-h-0 flex-1 flex-col">
+              <Scrollbar>
+                <WithQuery query={papersQuery}>
               {data =>
                 data.items.length === 0 ? (
                   <EmptyStateScreen
@@ -401,7 +403,8 @@ function PaperListPage() {
                   </div>
                 )
               }
-              </WithQuery>
+                </WithQuery>
+              </Scrollbar>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import {
   Card,
   EmptyStateScreen,
   ModuleHeader,
+  Scrollbar,
   SidebarDivider,
   SidebarItem,
   SidebarTitle,
@@ -85,9 +86,9 @@ function FavoritesPage() {
               message={{ id: 'favorites', namespace: MODULE_NAMESPACE }}
             />
           ) : (
-            <div className="flex size-full min-h-0 flex-1 gap-6 xl:gap-7">
+            <div className="flex size-full min-h-0 flex-1">
               {/* Sidebar */}
-              <div className="h-full w-[272px] shrink-0 overflow-y-auto pr-1"><SidebarWrapper>
+              <SidebarWrapper>
                 <SidebarTitle
                   actionButton={{
                     icon: 'tabler:plus',
@@ -111,10 +112,10 @@ function FavoritesPage() {
                   <p className="text-lg font-bold">{data.totalFavorites}</p>
                   <p className="text-bg-500 text-xs">saved papers</p>
                 </div>
-              </SidebarWrapper></div>
+              </SidebarWrapper>
 
               {/* Content */}
-              <div className="flex h-full min-w-0 flex-1 flex-col">
+              <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col xl:ml-8">
                 {activeFolder && (
                   <div className="mb-6">
                     <div className="flex items-center justify-between">
@@ -146,8 +147,9 @@ function FavoritesPage() {
                   </div>
                 )}
 
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-                  {activeFolder && activeFolder.papers.length === 0 ? (
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <Scrollbar>
+                    {activeFolder && activeFolder.papers.length === 0 ? (
                   <Card className="border-dashed p-8 text-center">
                     <Icon className="text-bg-400 mx-auto mb-3 size-10" icon="tabler:file-off" />
                     <p className="font-medium">Empty folder</p>
@@ -193,6 +195,7 @@ function FavoritesPage() {
                     ))}
                   </div>
                 ) : null}
+                  </Scrollbar>
                 </div>
               </div>
             </div>

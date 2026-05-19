@@ -320,9 +320,10 @@ function SettingsPage() {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-3 overflow-x-auto pb-1">
+                  <div className="overflow-x-auto pb-1">
+                    <div className="grid min-w-[720px] grid-cols-4 gap-3">
                     {scheduleItems.map(item => (
-                      <div key={item.id} className="min-w-44 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+                      <div key={item.id} className="rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
                         <div className="mb-3 flex items-center justify-between gap-3">
                           <p className="text-sm font-semibold">{item.label}</p>
                           <Switch value={item.enabled} onChange={item.setEnabled} />
@@ -330,6 +331,7 @@ function SettingsPage() {
                         <TextInput placeholder="08:00" value={item.time} variant="plain" onChange={item.setTime} />
                       </div>
                     ))}
+                    </div>
                   </div>
 
                   <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_1.6fr]">
