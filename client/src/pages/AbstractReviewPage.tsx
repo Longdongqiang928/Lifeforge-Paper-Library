@@ -6,7 +6,6 @@ import {
   EmptyStateScreen,
   ModuleHeader,
   Pagination,
-  Scrollbar,
   SidebarItem,
   SidebarTitle,
   SidebarWrapper,
@@ -131,8 +130,8 @@ function ReviewCard({
 function AbstractReviewPage() {
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [dateFrom, setDateFrom] = useState(() => new Date().toISOString().slice(0, 10))
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10))
   const [selectedSource, setSelectedSource] = useState('')
 
   useEffect(() => {
@@ -212,7 +211,7 @@ function AbstractReviewPage() {
             <DateRangeCalendar
               dateFrom={dateFrom}
               dateTo={dateTo}
-              defaultLabel="default: full queue"
+              defaultLabel="default: today"
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
             />
@@ -228,7 +227,7 @@ function AbstractReviewPage() {
               number={data?.totalItems}
               onClick={() => setSelectedSource('')}
             />
-            <div className="max-h-[340px] overflow-y-auto pr-1">
+            <div className="space-y-1">
               {sources.map(source => (
                 <SidebarItem
                   key={source}
@@ -263,9 +262,8 @@ function AbstractReviewPage() {
             </div>
           </Card>
 
-          <div className="min-h-0 flex-1">
-            <Scrollbar>
-              <WithQuery query={reviewQuery}>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+            <WithQuery query={reviewQuery}>
             {response =>
               (response as AbstractReviewListResponse).items.length === 0 ? (
                 <EmptyStateScreen
@@ -299,8 +297,7 @@ function AbstractReviewPage() {
                 </div>
               )
             }
-              </WithQuery>
-            </Scrollbar>
+            </WithQuery>
           </div>
         </div>
       </div>

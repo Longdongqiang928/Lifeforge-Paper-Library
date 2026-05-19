@@ -320,9 +320,9 @@ function SettingsPage() {
                     </Button>
                   </div>
 
-                  <div className="grid gap-3 xl:grid-cols-4">
+                  <div className="grid grid-cols-4 gap-3 overflow-x-auto pb-1">
                     {scheduleItems.map(item => (
-                      <div key={item.id} className="rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+                      <div key={item.id} className="min-w-44 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
                         <div className="mb-3 flex items-center justify-between gap-3">
                           <p className="text-sm font-semibold">{item.label}</p>
                           <Switch value={item.enabled} onChange={item.setEnabled} />

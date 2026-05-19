@@ -18,12 +18,19 @@ function DateRangeCalendar({
   onDateFromChange,
   onDateToChange
 }: DateRangeCalendarProps) {
-  const [month, setMonth] = useState(() => dayjs(dateFrom || undefined).isValid() ? dayjs(dateFrom) : dayjs())
+  const [month, setMonth] = useState(() => {
+    const initialDate = dateFrom || dateTo
+    const parsed = initialDate ? dayjs(initialDate) : dayjs()
+
+    return parsed.isValid() ? parsed : dayjs()
+  })
 
   const startOfMonth = month.startOf('month')
   const firstGridDay = startOfMonth.startOf('week')
-  const selectedStart = dateFrom ? dayjs(dateFrom) : null
-  const selectedEnd = dateTo ? dayjs(dateTo) : null
+  const parsedStart = dateFrom ? dayjs(dateFrom) : null
+  const parsedEnd = dateTo ? dayjs(dateTo) : null
+  const selectedStart = parsedStart?.isValid() ? parsedStart : null
+  const selectedEnd = parsedEnd?.isValid() ? parsedEnd : null
   const days = Array.from({ length: 42 }, (_, index) => firstGridDay.add(index, 'day'))
 
   const selectDay = (value: dayjs.Dayjs) => {
@@ -111,7 +118,7 @@ function DateRangeCalendar({
           onChange={value => {
             const next = value ? dayjs(value).format('YYYY-MM-DD') : ''
             onDateFromChange(next)
-            if (next) setMonth(dayjs(next))
+            if (next && dayjs(next).isValid()) setMonth(dayjs(next))
           }}
         />
         <DateInput
@@ -120,7 +127,7 @@ function DateRangeCalendar({
           onChange={value => {
             const next = value ? dayjs(value).format('YYYY-MM-DD') : ''
             onDateToChange(next)
-            if (next) setMonth(dayjs(next))
+            if (next && dayjs(next).isValid()) setMonth(dayjs(next))
           }}
         />
       </div>

@@ -9,7 +9,7 @@ interface FilterPillGridProps {
 
 function FilterPillGrid({ icon, items, selected, onToggle }: FilterPillGridProps) {
   return (
-    <div className="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">
+    <div className="flex flex-wrap gap-1.5">
       {items.map(item => {
         const active = selected.includes(item)
 

@@ -8,7 +8,6 @@ import {
   ModuleHeader,
   Pagination,
   SearchInput,
-  Scrollbar,
   SidebarWrapper,
   Switch,
   TagChip,
@@ -346,9 +345,8 @@ function PaperListPage() {
               )}
             </Card>
 
-            <div className="min-h-0 flex-1">
-              <Scrollbar>
-                <WithQuery query={papersQuery}>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+              <WithQuery query={papersQuery}>
               {data =>
                 data.items.length === 0 ? (
                   <EmptyStateScreen
@@ -403,8 +401,7 @@ function PaperListPage() {
                   </div>
                 )
               }
-                </WithQuery>
-              </Scrollbar>
+              </WithQuery>
             </div>
           </div>
         </div>

@@ -4,7 +4,6 @@ import {
   Card,
   EmptyStateScreen,
   ModuleHeader,
-  Scrollbar,
   SidebarDivider,
   SidebarItem,
   SidebarTitle,
@@ -147,9 +146,8 @@ function FavoritesPage() {
                   </div>
                 )}
 
-                <div className="min-h-0 flex-1">
-                  <Scrollbar>
-                    {activeFolder && activeFolder.papers.length === 0 ? (
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+                  {activeFolder && activeFolder.papers.length === 0 ? (
                   <Card className="border-dashed p-8 text-center">
                     <Icon className="text-bg-400 mx-auto mb-3 size-10" icon="tabler:file-off" />
                     <p className="font-medium">Empty folder</p>
@@ -195,7 +193,6 @@ function FavoritesPage() {
                     ))}
                   </div>
                 ) : null}
-                  </Scrollbar>
                 </div>
               </div>
             </div>
