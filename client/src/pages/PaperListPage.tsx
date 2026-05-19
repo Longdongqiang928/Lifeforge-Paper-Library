@@ -9,7 +9,6 @@ import {
   Pagination,
   SearchInput,
   Scrollbar,
-  SidebarWrapper,
   Switch,
   TagChip,
   WithQuery,
@@ -23,6 +22,7 @@ import { Link, useSearchParams } from 'shared'
 import DateRangeCalendar from '@/components/DateRangeCalendar'
 import FilterPillGrid from '@/components/FilterPillGrid'
 import PaperCard from '@/components/PaperCard'
+import PaperSplitSidebar from '@/components/PaperSplitSidebar'
 import PaperDetailModal from '@/components/PaperDetailModal'
 import SaveFavoriteModal from '@/components/SaveFavoriteModal'
 import forgeAPI from '@/utils/forgeAPI'
@@ -212,7 +212,7 @@ function PaperListPage() {
   return (
     <>
       <div
-        className={`transition-all duration-300 ${
+        className={`flex size-full min-h-0 flex-col transition-all duration-300 ${
           activePaperId ? 'pointer-events-none select-none blur-[4px] saturate-75' : ''
         }`}
       >
@@ -235,8 +235,8 @@ function PaperListPage() {
           totalItems={totalItems}
         />
 
-        <div className="flex size-full min-h-0 flex-1">
-          <SidebarWrapper customHeight="xl:h-[calc(100%-2rem)] xl:!w-[18rem] xl:!min-w-[18rem]">
+        <div className="flex size-full min-h-0 flex-1" style={{ gap: '2rem' }}>
+          <PaperSplitSidebar>
             <FilterSection icon="tabler:calendar-month" title="Date Filter">
               <DateRangeCalendar
                 dateFrom={dateFrom}
@@ -292,9 +292,9 @@ function PaperListPage() {
                 />
               </div>
             </div>
-          </SidebarWrapper>
+          </PaperSplitSidebar>
 
-          <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col xl:ml-8">
+          <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col">
             <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
@@ -346,7 +346,7 @@ function PaperListPage() {
               )}
             </Card>
 
-            <div className="mt-5 flex min-h-0 flex-1 flex-col">
+            <div className="mt-8 flex min-h-0 flex-1 flex-col">
               <Scrollbar>
                 <WithQuery query={papersQuery}>
               {data =>
@@ -360,7 +360,7 @@ function PaperListPage() {
                   />
                 ) : (
                   <div className="space-y-6 px-1 pb-8">
-                    <div className="grid gap-4 xl:grid-cols-2">
+                    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
                       {data.items.map(paper => (
                         <PaperCard
                           key={paper.id}

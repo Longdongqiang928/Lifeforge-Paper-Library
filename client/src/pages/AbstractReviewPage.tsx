@@ -9,7 +9,6 @@ import {
   Scrollbar,
   SidebarItem,
   SidebarTitle,
-  SidebarWrapper,
   TagChip,
   TextAreaInput,
   WithQuery
@@ -19,6 +18,7 @@ import { toast } from 'react-toastify'
 import { Link } from 'shared'
 
 import DateRangeCalendar from '@/components/DateRangeCalendar'
+import PaperSplitSidebar from '@/components/PaperSplitSidebar'
 import forgeAPI from '@/utils/forgeAPI'
 import { MODULE_BASE_PATH, MODULE_NAMESPACE, MODULE_ROUTE_KEY } from '@/utils/module'
 import type { AbstractReviewItem, AbstractReviewListResponse } from '@/utils/types'
@@ -202,8 +202,8 @@ function AbstractReviewPage() {
         totalItems={data?.totalItems}
       />
 
-      <div className="flex size-full min-h-0 flex-1">
-        <SidebarWrapper customHeight="xl:h-[calc(100%-2rem)] xl:!w-[18rem] xl:!min-w-[18rem]">
+      <div className="flex size-full min-h-0 flex-1" style={{ gap: '2rem' }}>
+        <PaperSplitSidebar>
           <div className="space-y-3 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
             <div className="flex items-center gap-2">
               <Icon className="text-custom-500 size-4" icon="tabler:calendar-month" />
@@ -246,9 +246,9 @@ function AbstractReviewPage() {
               </Button>
             )}
           </div>
-        </SidebarWrapper>
+        </PaperSplitSidebar>
 
-        <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col xl:ml-8">
+        <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col">
           <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-5 shadow-sm">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -263,7 +263,7 @@ function AbstractReviewPage() {
             </div>
           </Card>
 
-          <div className="mt-5 flex min-h-0 flex-1 flex-col">
+          <div className="mt-8 flex min-h-0 flex-1 flex-col">
             <Scrollbar>
               <WithQuery query={reviewQuery}>
             {response =>

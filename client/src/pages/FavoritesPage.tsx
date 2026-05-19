@@ -8,7 +8,6 @@ import {
   SidebarDivider,
   SidebarItem,
   SidebarTitle,
-  SidebarWrapper,
   WithQuery,
   useModalStore
 } from 'lifeforge-ui'
@@ -20,6 +19,7 @@ import CreateFolderModal from '@/components/CreateFolderModal'
 import DeleteFolderModal from '@/components/DeleteFolderModal'
 import MoveFavoriteModal from '@/components/MoveFavoriteModal'
 import PaperCard from '@/components/PaperCard'
+import PaperSplitSidebar from '@/components/PaperSplitSidebar'
 import RenameFolderModal from '@/components/RenameFolderModal'
 import forgeAPI from '@/utils/forgeAPI'
 import {
@@ -86,9 +86,9 @@ function FavoritesPage() {
               message={{ id: 'favorites', namespace: MODULE_NAMESPACE }}
             />
           ) : (
-            <div className="flex size-full min-h-0 flex-1">
+            <div className="flex size-full min-h-0 flex-1" style={{ gap: '2rem' }}>
               {/* Sidebar */}
-              <SidebarWrapper customHeight="xl:h-[calc(100%-2rem)] xl:!w-[18rem] xl:!min-w-[18rem]">
+              <PaperSplitSidebar>
                 <SidebarTitle
                   actionButton={{
                     icon: 'tabler:plus',
@@ -112,10 +112,10 @@ function FavoritesPage() {
                   <p className="text-lg font-bold">{data.totalFavorites}</p>
                   <p className="text-bg-500 text-xs">saved papers</p>
                 </div>
-              </SidebarWrapper>
+              </PaperSplitSidebar>
 
               {/* Content */}
-              <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col xl:ml-8">
+              <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col">
                 {activeFolder && (
                   <div className="mb-6">
                     <div className="flex items-center justify-between">
