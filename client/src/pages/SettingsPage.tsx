@@ -321,7 +321,7 @@ function SettingsPage() {
                   </div>
 
                   <div className="overflow-x-auto pb-1">
-                    <div className="grid min-w-[720px] grid-cols-4 gap-3">
+                    <div className="grid min-w-[720px] gap-3" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
                     {scheduleItems.map(item => (
                       <div key={item.id} className="rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
                         <div className="mb-3 flex items-center justify-between gap-3">

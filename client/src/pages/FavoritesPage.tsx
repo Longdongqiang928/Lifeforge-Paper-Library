@@ -88,7 +88,7 @@ function FavoritesPage() {
           ) : (
             <div className="flex size-full min-h-0 flex-1">
               {/* Sidebar */}
-              <SidebarWrapper>
+              <SidebarWrapper customHeight="xl:h-[calc(100%-2rem)] xl:!w-[18rem] xl:!min-w-[18rem]">
                 <SidebarTitle
                   actionButton={{
                     icon: 'tabler:plus',

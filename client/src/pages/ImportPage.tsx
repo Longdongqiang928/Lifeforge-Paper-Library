@@ -134,7 +134,7 @@ function ImportPage() {
 
       <div className="space-y-6">
         <div className="overflow-x-auto">
-          <div className="grid min-w-[680px] grid-cols-2 gap-6">
+          <div className="grid min-w-[680px] gap-6" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
           <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-6 shadow-sm">
             <div className="space-y-1">
               <h2 className="text-2xl font-semibold">Choose File</h2>
