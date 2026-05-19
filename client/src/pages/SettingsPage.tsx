@@ -217,15 +217,15 @@ function SettingsPage() {
 
       <div className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-y-auto pb-6 pr-1">
         <Card className="border border-bg-500/10 bg-component-bg/80 p-0 shadow-sm">
-          <div className="grid min-h-[520px] gap-0 lg:grid-cols-[260px_minmax(0,1fr)]">
-            <div className="border-b border-bg-500/10 bg-component-bg-lighter/35 p-4 lg:border-r lg:border-b-0">
-              <div className="grid gap-2 lg:flex lg:flex-col">
+          <div className="min-h-[520px]">
+            <div className="border-b border-bg-500/10 bg-component-bg-lighter/35 p-4">
+              <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
                 {SETTINGS_TABS.map(tab => (
                   <button
                     key={tab.id}
-                    className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                    className={`flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-center text-sm font-medium transition-colors ${
                       activeTab === tab.id
-                        ? 'bg-custom-500/15 text-custom-500'
+                        ? 'bg-custom-500/15 text-custom-500 shadow-sm ring-1 ring-custom-500/20'
                         : 'text-bg-500 hover:bg-component-bg hover:text-bg'
                     }`}
                     type="button"
@@ -263,61 +263,55 @@ function SettingsPage() {
                     </Button>
                   </div>
 
-                  <div className="space-y-3">
-                    <p className="text-sm font-semibold">Stages</p>
-                    <div className="flex flex-wrap gap-2">
-                      {STAGES.map(stage => {
-                        const selected = selectedStages.includes(stage.id)
-                        return (
-                          <TagChip
-                            key={stage.id}
-                            icon={stage.icon}
-                            label={stage.label}
-                            variant={selected ? 'filled' : 'outlined'}
-                            onClick={() => {
-                              setSelectedStages(current =>
-                                current.includes(stage.id)
-                                  ? current.filter(item => item !== stage.id)
-                                  : [...current, stage.id]
-                              )
-                            }}
-                          />
-                        )
-                      })}
+                  <div className="grid gap-4" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(28rem, 0.9fr)' }}>
+                    <div className="space-y-3 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+                      <p className="text-sm font-semibold">Stages</p>
+                      <div className="flex flex-wrap gap-2">
+                        {STAGES.map(stage => {
+                          const selected = selectedStages.includes(stage.id)
+                          return (
+                            <TagChip
+                              key={stage.id}
+                              icon={stage.icon}
+                              label={stage.label}
+                              variant={selected ? 'filled' : 'outlined'}
+                              onClick={() => {
+                                setSelectedStages(current =>
+                                  current.includes(stage.id)
+                                    ? current.filter(item => item !== stage.id)
+                                    : [...current, stage.id]
+                                )
+                              }}
+                            />
+                          )
+                        })}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
-                    <div>
-                      <label className="mb-2 block text-xs font-medium text-bg-500">Range start</label>
-                      <DateInput
-                        disabled={!hasRangeStage}
-                        value={rangeStart ? dayjs(rangeStart).toDate() : null}
-                        variant="plain"
-                        onChange={value => {
-                          setRangeStart(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                        }}
-                      />
+                    <div className="grid items-end gap-4 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
+                      <div>
+                        <label className="mb-2 block text-xs font-medium text-bg-500">Range start</label>
+                        <DateInput
+                          disabled={!hasRangeStage}
+                          value={rangeStart ? dayjs(rangeStart).toDate() : null}
+                          variant="plain"
+                          onChange={value => {
+                            setRangeStart(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-medium text-bg-500">Range end</label>
+                        <DateInput
+                          disabled={!hasRangeStage}
+                          value={rangeEnd ? dayjs(rangeEnd).toDate() : null}
+                          variant="plain"
+                          onChange={value => {
+                            setRangeEnd(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="mb-2 block text-xs font-medium text-bg-500">Range end</label>
-                      <DateInput
-                        disabled={!hasRangeStage}
-                        value={rangeEnd ? dayjs(rangeEnd).toDate() : null}
-                        variant="plain"
-                        onChange={value => {
-                          setRangeEnd(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                        }}
-                      />
-                    </div>
-                    <Button
-                      icon="tabler:device-floppy"
-                      loading={fetchMutation.isPending || personalMutation.isPending}
-                      variant="secondary"
-                      onClick={saveSchedules}
-                    >
-                      <span>Save schedules</span>
-                    </Button>
                   </div>
 
                   <div className="overflow-x-auto pb-1">
@@ -334,27 +328,31 @@ function SettingsPage() {
                     </div>
                   </div>
 
-                  <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_1.6fr]">
-                    <div className="rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+                  <div className="rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="text-xs font-semibold tracking-[0.12em] uppercase text-bg-500">Active runs</p>
-                      <WithQuery query={activeRunsQuery}>
-                        {(activeRuns: ActivePipelineRun[]) =>
-                          activeRuns.length > 0 ? (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {activeRuns.map(run => (
-                                <TagChip key={run.id} icon="tabler:clock-play" label={`${run.stage} (${run.scope})`} variant="filled" />
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="mt-3 text-sm text-bg-500">No active runs</p>
-                          )
-                        }
-                      </WithQuery>
+                      <Button
+                        icon="tabler:device-floppy"
+                        loading={fetchMutation.isPending || personalMutation.isPending}
+                        variant="secondary"
+                        onClick={saveSchedules}
+                      >
+                        <span>Save schedules</span>
+                      </Button>
                     </div>
-                    <div className="rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
-                      <p className="text-xs font-semibold tracking-[0.12em] uppercase text-bg-500">Execution rule</p>
-                      <p className="mt-3 text-sm text-bg-500">Fetch ignores the date range. Other stages use fetched time window.</p>
-                    </div>
+                    <WithQuery query={activeRunsQuery}>
+                      {(activeRuns: ActivePipelineRun[]) =>
+                        activeRuns.length > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {activeRuns.map(run => (
+                              <TagChip key={run.id} icon="tabler:clock-play" label={`${run.stage} (${run.scope})`} variant="filled" />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-sm text-bg-500">No active runs</p>
+                        )
+                      }
+                    </WithQuery>
                   </div>
                 </div>
               )}
