@@ -41,10 +41,10 @@ function CreateFolderModal({
       <TextInput
         autoFocus
         className="w-full"
+        icon="tabler:folder"
         label="Folder name"
         placeholder="Reading later"
         value={name}
-        variant="plain"
         onChange={setName}
       />
       <div className="flex justify-end gap-2">

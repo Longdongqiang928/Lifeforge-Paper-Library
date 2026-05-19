@@ -203,17 +203,18 @@ function ImportPage() {
 
             <TextAreaInput
               className="min-h-40"
+              icon="tabler:clipboard-text"
+              label="Import content"
               placeholder="Paste raw JSON or JSONL content here..."
               value={content}
-              variant="plain"
               onChange={setContent}
             />
 
             <TextInput
+              icon="tabler:rss"
               label="Source label"
               placeholder="nature, arxiv, pnas..."
               value={source}
-              variant="plain"
               onChange={setSource}
             />
 

@@ -298,28 +298,24 @@ function SettingsPage() {
                     </div>
 
                     <div className="grid items-end gap-4 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
-                      <div>
-                        <label className="mb-2 block text-xs font-medium text-bg-500">Range start</label>
-                        <DateInput
-                          disabled={!hasRangeStage}
-                          value={rangeStart ? dayjs(rangeStart).toDate() : null}
-                          variant="plain"
-                          onChange={value => {
-                            setRangeStart(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-xs font-medium text-bg-500">Range end</label>
-                        <DateInput
-                          disabled={!hasRangeStage}
-                          value={rangeEnd ? dayjs(rangeEnd).toDate() : null}
-                          variant="plain"
-                          onChange={value => {
-                            setRangeEnd(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                          }}
-                        />
-                      </div>
+                      <DateInput
+                        disabled={!hasRangeStage}
+                        icon="tabler:calendar-event"
+                        label="Range start"
+                        value={rangeStart ? dayjs(rangeStart).toDate() : null}
+                        onChange={value => {
+                          setRangeStart(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                        }}
+                      />
+                      <DateInput
+                        disabled={!hasRangeStage}
+                        icon="tabler:calendar-check"
+                        label="Range end"
+                        value={rangeEnd ? dayjs(rangeEnd).toDate() : null}
+                        onChange={value => {
+                          setRangeEnd(value ? dayjs(value).format('YYYY-MM-DD') : '')
+                        }}
+                      />
                     </div>
                   </div>
 
@@ -331,7 +327,13 @@ function SettingsPage() {
                           <p className="text-sm font-semibold">{item.label}</p>
                           <Switch value={item.enabled} onChange={item.setEnabled} />
                         </div>
-                        <TextInput placeholder="08:00" value={item.time} variant="plain" onChange={item.setTime} />
+                        <TextInput
+                          icon="tabler:clock"
+                          label={`${item.label} time`}
+                          placeholder="08:00"
+                          value={item.time}
+                          onChange={item.setTime}
+                        />
                       </div>
                     ))}
                     </div>
@@ -377,35 +379,36 @@ function SettingsPage() {
 
                       <TextAreaInput
                         className="min-h-36"
+                        icon="tabler:rss"
+                        label="RSS sources"
                         placeholder="arxiv:physics+quant-ph+cond-mat,nature:nature+nphoton+nphys,science:science+sciadv"
                         value={rssSources}
-                        variant="plain"
                         onChange={setRssSources}
                       />
 
                       <div className="grid gap-4 lg:grid-cols-2">
                         <TextInput
+                          icon="tabler:key"
                           label="Nature API key"
                           placeholder={fetchSettings.hasNatureApiKey ? 'Already configured' : 'Springer Nature API key'}
                           value={natureApiKey}
-                          variant="plain"
                           onChange={setNatureApiKey}
                         />
                         <TextInput
+                          icon="tabler:key"
                           label="Tavily API key"
                           placeholder={fetchSettings.hasTavilyApiKey ? 'Already configured' : 'Tavily API key'}
                           value={tavilyApiKey}
-                          variant="plain"
                           onChange={setTavilyApiKey}
                         />
                       </div>
 
                       <div className="grid gap-4 lg:grid-cols-2">
                         <TextInput
+                          icon="tabler:calendar-stats"
                           label="Abstract lookback days"
                           placeholder="1"
                           value={abstractLookbackDays}
-                          variant="plain"
                           onChange={setAbstractLookbackDays}
                         />
                       </div>
@@ -445,34 +448,34 @@ function SettingsPage() {
                       </div>
 
                       <div className="grid gap-4 lg:grid-cols-2">
-                        <TextInput label="Zotero user ID" placeholder="1234567" value={zoteroUserId} variant="plain" onChange={setZoteroUserId} />
+                        <TextInput icon="tabler:user" label="Zotero user ID" placeholder="1234567" value={zoteroUserId} onChange={setZoteroUserId} />
                         <TextInput
+                          icon="tabler:key"
                           label="Zotero API key"
                           placeholder={personalSettings.hasZoteroApiKey ? 'Already configured' : 'Zotero web API key'}
                           value={zoteroApiKey}
-                          variant="plain"
                           onChange={setZoteroApiKey}
                         />
                       </div>
 
                       <div className="grid gap-4 lg:grid-cols-2">
-                        <TextInput label="AI base URL" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" value={aiBaseUrl} variant="plain" onChange={setAiBaseUrl} />
-                        <TextInput label="AI API key" placeholder={personalSettings.hasAiApiKey ? 'Already configured' : 'API key'} value={aiApiKey} variant="plain" onChange={setAiApiKey} />
+                        <TextInput icon="tabler:world-www" label="AI base URL" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" value={aiBaseUrl} onChange={setAiBaseUrl} />
+                        <TextInput icon="tabler:key" label="AI API key" placeholder={personalSettings.hasAiApiKey ? 'Already configured' : 'API key'} value={aiApiKey} onChange={setAiApiKey} />
                       </div>
 
                       <div className="grid gap-4 lg:grid-cols-2">
-                        <TextInput label="Chat model" placeholder="qwen3-30b-a3b-instruct-2507" value={aiModel} variant="plain" onChange={setAiModel} />
-                        <TextInput label="Embedding model" placeholder="qwen3-embedding-8b-f16" value={embeddingModel} variant="plain" onChange={setEmbeddingModel} />
+                        <TextInput icon="tabler:message-2-cog" label="Chat model" placeholder="qwen3-30b-a3b-instruct-2507" value={aiModel} onChange={setAiModel} />
+                        <TextInput icon="tabler:vector" label="Embedding model" placeholder="qwen3-embedding-8b-f16" value={embeddingModel} onChange={setEmbeddingModel} />
                       </div>
 
                       <div className="grid gap-4 lg:grid-cols-2">
-                        <TextInput label="Output language" placeholder="Chinese" value={outputLanguage} variant="plain" onChange={setOutputLanguage} />
-                        <TextInput label="Enhance threshold" placeholder="3.6" value={enhanceThreshold} variant="plain" onChange={setEnhanceThreshold} />
+                        <TextInput icon="tabler:language" label="Output language" placeholder="Chinese" value={outputLanguage} onChange={setOutputLanguage} />
+                        <TextInput icon="tabler:chart-dots-3" label="Enhance threshold" placeholder="3.6" value={enhanceThreshold} onChange={setEnhanceThreshold} />
                       </div>
 
                       <div className="grid gap-4 lg:grid-cols-2">
-                        <TextInput label="Recommend lookback days" placeholder="7" value={recommendLookbackDays} variant="plain" onChange={setRecommendLookbackDays} />
-                        <TextInput label="Enhance lookback days" placeholder="3" value={enhanceLookbackDays} variant="plain" onChange={setEnhanceLookbackDays} />
+                        <TextInput icon="tabler:calendar-stats" label="Recommend lookback days" placeholder="7" value={recommendLookbackDays} onChange={setRecommendLookbackDays} />
+                        <TextInput icon="tabler:calendar-stats" label="Enhance lookback days" placeholder="3" value={enhanceLookbackDays} onChange={setEnhanceLookbackDays} />
                       </div>
 
                       <div className="flex justify-end">

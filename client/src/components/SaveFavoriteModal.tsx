@@ -113,9 +113,10 @@ function SaveFavoriteModal({
               <div className="flex flex-col gap-3 sm:flex-row">
                 <TextInput
                   className="w-full"
+                  icon="tabler:folder-plus"
+                  label="New folder"
                   placeholder="Reading later"
                   value={newFolderName}
-                  variant="plain"
                   onChange={setNewFolderName}
                 />
                 <Button

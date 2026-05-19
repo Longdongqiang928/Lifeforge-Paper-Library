@@ -113,8 +113,9 @@ function DateRangeCalendar({
 
       <div className="grid gap-2">
         <DateInput
+          icon="tabler:calendar-event"
+          label="Start date"
           value={dateFrom ? dayjs(dateFrom).toDate() : null}
-          variant="plain"
           onChange={value => {
             const next = value ? dayjs(value).format('YYYY-MM-DD') : ''
             onDateFromChange(next)
@@ -122,8 +123,9 @@ function DateRangeCalendar({
           }}
         />
         <DateInput
+          icon="tabler:calendar-check"
+          label="End date"
           value={dateTo ? dayjs(dateTo).toDate() : null}
-          variant="plain"
           onChange={value => {
             const next = value ? dayjs(value).format('YYYY-MM-DD') : ''
             onDateToChange(next)

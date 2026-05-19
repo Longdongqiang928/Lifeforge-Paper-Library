@@ -100,9 +100,10 @@ function ReviewCard({
               </div>
               <TextAreaInput
                 className="min-h-40"
+                icon="tabler:file-text"
+                label="Abstract"
                 placeholder="Review or edit the extracted abstract here"
                 value={abstract}
-                variant="plain"
                 onChange={value => setAbstract(normalizeAbstract(value))}
               />
             </div>
