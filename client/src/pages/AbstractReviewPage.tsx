@@ -6,6 +6,7 @@ import {
   EmptyStateScreen,
   ModuleHeader,
   Pagination,
+  Scrollbar,
   SidebarItem,
   SidebarTitle,
   SidebarWrapper,
@@ -247,7 +248,7 @@ function AbstractReviewPage() {
           </div>
         </SidebarWrapper></div>
 
-        <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5 overflow-y-auto pb-6 pr-1">
+        <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5">
           <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-5 shadow-sm">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -262,7 +263,9 @@ function AbstractReviewPage() {
             </div>
           </Card>
 
-          <WithQuery query={reviewQuery}>
+          <div className="min-h-0 flex-1">
+            <Scrollbar>
+              <WithQuery query={reviewQuery}>
             {response =>
               (response as AbstractReviewListResponse).items.length === 0 ? (
                 <EmptyStateScreen
@@ -273,7 +276,7 @@ function AbstractReviewPage() {
                   }}
                 />
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 px-1 pb-8">
                   {(response as AbstractReviewListResponse).items.map(item => (
                     <ReviewCard
                       key={item.id}
@@ -296,7 +299,9 @@ function AbstractReviewPage() {
                 </div>
               )
             }
-          </WithQuery>
+              </WithQuery>
+            </Scrollbar>
+          </div>
         </div>
       </div>
     </>

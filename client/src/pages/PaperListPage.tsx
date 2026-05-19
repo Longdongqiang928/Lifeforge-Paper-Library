@@ -8,6 +8,7 @@ import {
   ModuleHeader,
   Pagination,
   SearchInput,
+  Scrollbar,
   SidebarWrapper,
   Switch,
   TagChip,
@@ -293,7 +294,7 @@ function PaperListPage() {
             </div>
           </SidebarWrapper></div>
 
-          <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5 overflow-y-auto pb-6 pr-1">
+          <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5">
             <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
@@ -345,7 +346,9 @@ function PaperListPage() {
               )}
             </Card>
 
-            <WithQuery query={papersQuery}>
+            <div className="min-h-0 flex-1">
+              <Scrollbar>
+                <WithQuery query={papersQuery}>
               {data =>
                 data.items.length === 0 ? (
                   <EmptyStateScreen
@@ -356,7 +359,7 @@ function PaperListPage() {
                     }}
                   />
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-6 px-1 pb-8">
                     <div className="grid gap-4 xl:grid-cols-2">
                       {data.items.map(paper => (
                         <PaperCard
@@ -400,7 +403,9 @@ function PaperListPage() {
                   </div>
                 )
               }
-            </WithQuery>
+                </WithQuery>
+              </Scrollbar>
+            </div>
           </div>
         </div>
       </div>

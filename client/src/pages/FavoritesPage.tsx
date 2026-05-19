@@ -4,6 +4,7 @@ import {
   Card,
   EmptyStateScreen,
   ModuleHeader,
+  Scrollbar,
   SidebarDivider,
   SidebarItem,
   SidebarTitle,
@@ -114,7 +115,7 @@ function FavoritesPage() {
               </SidebarWrapper></div>
 
               {/* Content */}
-              <div className="flex h-full min-w-0 flex-1 flex-col overflow-y-auto pb-6 pr-1">
+              <div className="flex h-full min-w-0 flex-1 flex-col">
                 {activeFolder && (
                   <div className="mb-6">
                     <div className="flex items-center justify-between">
@@ -146,7 +147,9 @@ function FavoritesPage() {
                   </div>
                 )}
 
-                {activeFolder && activeFolder.papers.length === 0 ? (
+                <div className="min-h-0 flex-1">
+                  <Scrollbar>
+                    {activeFolder && activeFolder.papers.length === 0 ? (
                   <Card className="border-dashed p-8 text-center">
                     <Icon className="text-bg-400 mx-auto mb-3 size-10" icon="tabler:file-off" />
                     <p className="font-medium">Empty folder</p>
@@ -155,7 +158,7 @@ function FavoritesPage() {
                     </p>
                   </Card>
                 ) : activeFolder ? (
-                  <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="grid gap-4 px-1 pb-8 xl:grid-cols-2">
                     {activeFolder.papers.map(paper => (
                       <PaperCard
                         key={paper.id}
@@ -192,6 +195,8 @@ function FavoritesPage() {
                     ))}
                   </div>
                 ) : null}
+                  </Scrollbar>
+                </div>
               </div>
             </div>
           )
