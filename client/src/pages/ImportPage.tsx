@@ -133,126 +133,124 @@ function ImportPage() {
       />
 
       <div className="space-y-6">
-        <Card className="space-y-6 border border-bg-500/10 bg-component-bg/80 p-6 shadow-sm">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold">Import sources</h2>
-            <p className="text-bg-500 text-sm">Bring structured paper batches into the shared library without leaving the module.</p>
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-            <div className="space-y-4">
-              <div>
-                <h3 className="mb-3 text-sm font-semibold">Choose file</h3>
-                <input
-                  ref={fileInputRef}
-                  accept=".json,.jsonl,application/json"
-                  className="hidden"
-                  type="file"
-                  onChange={event => {
-                    setSelectedFile(event.currentTarget.files?.[0] ?? null)
-                  }}
-                />
-                <div
-                  className="flex min-h-56 cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-bg-500/20 bg-component-bg-lighter/40 p-8 text-center transition-colors hover:border-custom-500/40 hover:bg-custom-500/5"
-                  onClick={() => {
-                    fileInputRef.current?.click()
-                  }}
-                  onDragOver={event => {
-                    event.preventDefault()
-                  }}
-                  onDrop={event => {
-                    event.preventDefault()
-                    const file = event.dataTransfer.files?.[0]
-                    if (file) setSelectedFile(file)
-                  }}
-                >
-                  <div className="flex size-14 items-center justify-center rounded-xl border border-custom-500/20 bg-custom-500/10">
-                    <Icon className="text-custom-500 size-7" icon="tabler:upload" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Drag-and-drop</p>
-                    <p className="text-bg-500 mt-1 text-sm">JSON or JSONL files</p>
-                  </div>
-                </div>
-              </div>
-
-              {selectedFile && (
-                <div className="flex items-center justify-between gap-3 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{selectedFile.name}</p>
-                    <p className="text-bg-500 text-xs">{(selectedFile.size / 1024).toFixed(1)} KB</p>
-                  </div>
-                  <Button
-                    icon="tabler:trash"
-                    variant="secondary"
-                    onClick={() => {
-                      setSelectedFile(null)
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = ''
-                      }
-                    }}
-                  >
-                    <span>Clear</span>
-                  </Button>
-                </div>
-              )}
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-6 shadow-sm">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-semibold">Choose File</h2>
+              <p className="text-bg-500 text-sm">JSON or JSONL batch files.</p>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <h3 className="mb-3 text-sm font-semibold">Paste text</h3>
-                <TextAreaInput
-                  className="min-h-56"
-                  placeholder="Paste raw JSON or JSONL content here..."
-                  value={content}
-                  variant="plain"
-                  onChange={setContent}
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-end">
-                <TextInput
-                  label="Source label"
-                  placeholder="nature, arxiv, pnas..."
-                  value={source}
-                  variant="plain"
-                  onChange={setSource}
-                />
-                <Button
-                  disabled={isImporting || (!selectedFile && !content.trim())}
-                  icon="tabler:file-import"
-                  loading={jsonImportMutation.isPending}
-                  onClick={() => runImport('json')}
-                >
-                  <span>Import JSON</span>
-                </Button>
-                <Button
-                  disabled={isImporting || (!selectedFile && !content.trim())}
-                  icon="tabler:file-code"
-                  loading={jsonlImportMutation.isPending}
-                  variant="secondary"
-                  onClick={() => runImport('jsonl')}
-                >
-                  <span>Import JSONL</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {importNotice && (
+            <input
+              ref={fileInputRef}
+              accept=".json,.jsonl,application/json"
+              className="hidden"
+              type="file"
+              onChange={event => {
+                setSelectedFile(event.currentTarget.files?.[0] ?? null)
+              }}
+            />
             <div
-              className={`rounded-2xl border px-5 py-3 text-sm ${
-                importNotice.tone === 'success'
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
-                  : importNotice.tone === 'error'
-                    ? 'border-red-500/30 bg-red-500/10 text-red-600'
-                    : 'border-custom-500/30 bg-custom-500/10 text-custom-600'
-              }`}
+              className="flex min-h-64 cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-bg-500/20 bg-component-bg-lighter/40 p-8 text-center transition-colors hover:border-custom-500/40 hover:bg-custom-500/5"
+              onClick={() => {
+                fileInputRef.current?.click()
+              }}
+              onDragOver={event => {
+                event.preventDefault()
+              }}
+              onDrop={event => {
+                event.preventDefault()
+                const file = event.dataTransfer.files?.[0]
+                if (file) setSelectedFile(file)
+              }}
             >
-              {importNotice.message}
+              <div className="flex size-14 items-center justify-center rounded-xl border border-custom-500/20 bg-custom-500/10">
+                <Icon className="text-custom-500 size-7" icon="tabler:upload" />
+              </div>
+              <div>
+                <p className="font-medium">Drag-and-drop</p>
+                <p className="text-bg-500 mt-1 text-sm">or click to choose a file</p>
+              </div>
             </div>
-          )}
-        </Card>
+
+            {selectedFile && (
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{selectedFile.name}</p>
+                  <p className="text-bg-500 text-xs">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                </div>
+                <Button
+                  icon="tabler:trash"
+                  variant="secondary"
+                  onClick={() => {
+                    setSelectedFile(null)
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = ''
+                    }
+                  }}
+                >
+                  <span>Clear</span>
+                </Button>
+              </div>
+            )}
+          </Card>
+
+          <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-6 shadow-sm">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-semibold">Paste Text</h2>
+              <p className="text-bg-500 text-sm">Paste raw JSON or JSONL content.</p>
+            </div>
+
+            <TextAreaInput
+              className="min-h-40"
+              placeholder="Paste raw JSON or JSONL content here..."
+              value={content}
+              variant="plain"
+              onChange={setContent}
+            />
+
+            <TextInput
+              label="Source label"
+              placeholder="nature, arxiv, pnas..."
+              value={source}
+              variant="plain"
+              onChange={setSource}
+            />
+
+            <div className="flex flex-wrap justify-end gap-3">
+              <Button
+                disabled={isImporting || (!selectedFile && !content.trim())}
+                icon="tabler:file-import"
+                loading={jsonImportMutation.isPending}
+                onClick={() => runImport('json')}
+              >
+                <span>Import JSON</span>
+              </Button>
+              <Button
+                disabled={isImporting || (!selectedFile && !content.trim())}
+                icon="tabler:file-code"
+                loading={jsonlImportMutation.isPending}
+                variant="secondary"
+                onClick={() => runImport('jsonl')}
+              >
+                <span>Import JSONL</span>
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {importNotice && (
+          <div
+            className={`rounded-2xl border px-5 py-3 text-sm ${
+              importNotice.tone === 'success'
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
+                : importNotice.tone === 'error'
+                  ? 'border-red-500/30 bg-red-500/10 text-red-600'
+                  : 'border-custom-500/30 bg-custom-500/10 text-custom-600'
+            }`}
+          >
+            {importNotice.message}
+          </div>
+        )}
 
         <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4">

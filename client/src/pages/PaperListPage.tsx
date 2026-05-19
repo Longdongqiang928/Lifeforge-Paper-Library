@@ -4,13 +4,10 @@ import dayjs from 'dayjs'
 import {
   Button,
   Card,
-  DateInput,
   EmptyStateScreen,
   ModuleHeader,
   Pagination,
   SearchInput,
-  SidebarItem,
-  SidebarTitle,
   SidebarWrapper,
   Switch,
   TagChip,
@@ -22,6 +19,8 @@ import type { ReactNode } from 'react'
 import { toast } from 'react-toastify'
 import { Link, useSearchParams } from 'shared'
 
+import DateRangeCalendar from '@/components/DateRangeCalendar'
+import FilterPillGrid from '@/components/FilterPillGrid'
 import PaperCard from '@/components/PaperCard'
 import PaperDetailModal from '@/components/PaperDetailModal'
 import SaveFavoriteModal from '@/components/SaveFavoriteModal'
@@ -63,7 +62,6 @@ function PaperListPage() {
   const [page, setPage] = useState(1)
   const [dateFrom, setDateFrom] = useState(DEFAULT_FETCH_DATE)
   const [dateTo, setDateTo] = useState(DEFAULT_FETCH_DATE)
-  const [selectedSources, setSelectedSources] = useState<string[]>([])
   const [selectedJournals, setSelectedJournals] = useState<string[]>([])
   const [selectedCollections, setSelectedCollections] = useState<string[]>([])
   const [favoritesOnly, setFavoritesOnly] = useState(false)
@@ -80,7 +78,6 @@ function PaperListPage() {
     query,
     dateFrom,
     dateTo,
-    selectedSources.join(','),
     selectedJournals.join(','),
     selectedCollections.join(','),
     favoritesOnly,
@@ -93,7 +90,6 @@ function PaperListPage() {
     query: query || undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
-    sources: selectedSources.join(',') || undefined,
     journals: selectedJournals.join(',') || undefined,
     collections: selectedCollections.join(',') || undefined,
     favoritesOnly: String(favoritesOnly) as 'true' | 'false',
@@ -140,7 +136,6 @@ function PaperListPage() {
       : undefined
 
   const hasAnyFilter =
-    selectedSources.length > 0 ||
     selectedJournals.length > 0 ||
     selectedCollections.length > 0 ||
     favoritesOnly ||
@@ -153,7 +148,6 @@ function PaperListPage() {
     setQuery('')
     setDateFrom(DEFAULT_FETCH_DATE)
     setDateTo(DEFAULT_FETCH_DATE)
-    setSelectedSources([])
     setSelectedJournals([])
     setSelectedCollections([])
     setFavoritesOnly(false)
@@ -211,7 +205,6 @@ function PaperListPage() {
     openPaperDetail(direction === 'next' ? visiblePaperIds[0]! : visiblePaperIds[visiblePaperIds.length - 1]!)
   }, [activePaperId, page, visiblePaperIds])
 
-  const sources = filtersMetaQuery.data?.sources ?? []
   const journals = filtersMetaQuery.data?.journals ?? []
   const collections = filtersMetaQuery.data?.collections ?? []
 
@@ -224,7 +217,7 @@ function PaperListPage() {
       >
         <ModuleHeader
           actionButton={
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-nowrap items-center gap-2">
               <Button as={Link} icon="tabler:file-search" to={`${MODULE_BASE_PATH}/abstract-review`} variant="secondary">
                 <span>Review</span>
               </Button>
@@ -241,28 +234,16 @@ function PaperListPage() {
           totalItems={totalItems}
         />
 
-        <div className="flex min-h-0 w-full flex-1 gap-6 xl:gap-7">
-          <div className="w-[272px] shrink-0"><SidebarWrapper>
+        <div className="flex size-full min-h-0 flex-1 gap-6 xl:gap-7">
+          <div className="h-full w-[272px] shrink-0 overflow-y-auto pr-1"><SidebarWrapper>
             <FilterSection icon="tabler:calendar-month" title="Date Filter">
-              <div className="space-y-3">
-                <DateInput
-                  value={dateFrom ? dayjs(dateFrom).toDate() : null}
-                  variant="plain"
-                  onChange={value => {
-                    setDateFrom(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                  }}
-                />
-                <DateInput
-                  value={dateTo ? dayjs(dateTo).toDate() : null}
-                  variant="plain"
-                  onChange={value => {
-                    setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                  }}
-                />
-                <div className="text-bg-500 rounded-lg bg-component-bg px-3 py-2 text-xs">
-                  default: today
-                </div>
-              </div>
+              <DateRangeCalendar
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                defaultLabel="default: today"
+                onDateFromChange={setDateFrom}
+                onDateToChange={setDateTo}
+              />
             </FilterSection>
 
             <FilterSection icon="tabler:adjustments-horizontal" title="Filters">
@@ -285,64 +266,34 @@ function PaperListPage() {
 
             <div className="space-y-4">
               <div className="space-y-2 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
-                <SidebarTitle label="Sources" namespace={MODULE_NAMESPACE} />
-                <div className="max-h-44 overflow-y-auto pr-1">
-                  {sources.map(source => (
-                    <SidebarItem
-                      key={source}
-                      active={selectedSources.includes(source)}
-                      icon="tabler:rss"
-                      label={source}
-                      onCancelButtonClick={() =>
-                        setSelectedSources(prev => prev.filter(s => s !== source))
-                      }
-                      onClick={() => setSelectedSources(prev => toggleStringInList(prev, source))}
-                    />
-                  ))}
+                <div className="flex items-center gap-2">
+                  <Icon className="text-custom-500 size-4" icon="tabler:book" />
+                  <h3 className="text-sm font-semibold">Journals</h3>
                 </div>
+                <FilterPillGrid
+                  icon="tabler:book"
+                  items={journals}
+                  selected={selectedJournals}
+                  onToggle={journal => setSelectedJournals(prev => toggleStringInList(prev, journal))}
+                />
               </div>
 
               <div className="space-y-2 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
-                <SidebarTitle label="Journals" namespace={MODULE_NAMESPACE} />
-                <div className="max-h-44 overflow-y-auto pr-1">
-                  {journals.map(journal => (
-                    <SidebarItem
-                      key={journal}
-                      active={selectedJournals.includes(journal)}
-                      icon="tabler:book"
-                      label={journal}
-                      onCancelButtonClick={() =>
-                        setSelectedJournals(prev => prev.filter(j => j !== journal))
-                      }
-                      onClick={() => setSelectedJournals(prev => toggleStringInList(prev, journal))}
-                    />
-                  ))}
+                <div className="flex items-center gap-2">
+                  <Icon className="text-custom-500 size-4" icon="tabler:folders" />
+                  <h3 className="text-sm font-semibold">Collections</h3>
                 </div>
-              </div>
-
-              <div className="space-y-2 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
-                <SidebarTitle label="Collections" namespace={MODULE_NAMESPACE} />
-                <div className="max-h-44 overflow-y-auto pr-1">
-                  {collections.map(collection => (
-                    <SidebarItem
-                      key={collection}
-                      active={selectedCollections.includes(collection)}
-                      icon="tabler:folders"
-                      label={collection}
-                      onCancelButtonClick={() =>
-                        setSelectedCollections(prev => prev.filter(c => c !== collection))
-                      }
-                      onClick={() =>
-                        setSelectedCollections(prev => toggleStringInList(prev, collection))
-                      }
-                    />
-                  ))}
-                </div>
+                <FilterPillGrid
+                  icon="tabler:folders"
+                  items={collections}
+                  selected={selectedCollections}
+                  onToggle={collection => setSelectedCollections(prev => toggleStringInList(prev, collection))}
+                />
               </div>
             </div>
           </SidebarWrapper></div>
 
-          <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5">
+          <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5 overflow-y-auto pb-6 pr-1">
             <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
@@ -370,17 +321,8 @@ function PaperListPage() {
                 onChange={setQuery}
               />
 
-              {(selectedSources.length > 0 || selectedJournals.length > 0 || selectedCollections.length > 0) && (
+              {(selectedJournals.length > 0 || selectedCollections.length > 0) && (
                 <div className="flex flex-wrap gap-2 border-t border-bg-500/10 pt-4">
-                  {selectedSources.map(source => (
-                    <TagChip
-                      key={`source-${source}`}
-                      icon="tabler:rss"
-                      label={source}
-                      variant="filled"
-                      onClick={() => setSelectedSources(prev => prev.filter(item => item !== source))}
-                    />
-                  ))}
                   {selectedJournals.map(journal => (
                     <TagChip
                       key={`journal-${journal}`}

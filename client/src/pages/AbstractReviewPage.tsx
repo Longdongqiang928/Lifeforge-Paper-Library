@@ -1,10 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon } from '@iconify/react'
-import dayjs from 'dayjs'
 import {
   Button,
   Card,
-  DateInput,
   EmptyStateScreen,
   ModuleHeader,
   Pagination,
@@ -19,6 +17,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import { Link } from 'shared'
 
+import DateRangeCalendar from '@/components/DateRangeCalendar'
 import forgeAPI from '@/utils/forgeAPI'
 import { MODULE_BASE_PATH, MODULE_NAMESPACE, MODULE_ROUTE_KEY } from '@/utils/module'
 import type { AbstractReviewItem, AbstractReviewListResponse } from '@/utils/types'
@@ -202,30 +201,20 @@ function AbstractReviewPage() {
         totalItems={data?.totalItems}
       />
 
-      <div className="flex min-h-0 w-full flex-1 gap-6 xl:gap-7">
-        <div className="w-[272px] shrink-0"><SidebarWrapper>
+      <div className="flex size-full min-h-0 flex-1 gap-6 xl:gap-7">
+        <div className="h-full w-[272px] shrink-0 overflow-y-auto pr-1"><SidebarWrapper>
           <div className="space-y-3 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
             <div className="flex items-center gap-2">
               <Icon className="text-custom-500 size-4" icon="tabler:calendar-month" />
               <h3 className="text-sm font-semibold">Date Filter</h3>
             </div>
-            <DateInput
-              value={dateFrom ? dayjs(dateFrom).toDate() : null}
-              variant="plain"
-              onChange={value => {
-                setDateFrom(value ? dayjs(value).format('YYYY-MM-DD') : '')
-              }}
+            <DateRangeCalendar
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+              defaultLabel="default: full queue"
+              onDateFromChange={setDateFrom}
+              onDateToChange={setDateTo}
             />
-            <DateInput
-              value={dateTo ? dayjs(dateTo).toDate() : null}
-              variant="plain"
-              onChange={value => {
-                setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
-              }}
-            />
-            <div className="text-bg-500 rounded-lg bg-component-bg px-3 py-2 text-xs">
-              default: full queue
-            </div>
           </div>
 
           <div className="space-y-2 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
@@ -258,7 +247,7 @@ function AbstractReviewPage() {
           </div>
         </SidebarWrapper></div>
 
-        <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5">
+        <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5 overflow-y-auto pb-6 pr-1">
           <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-5 shadow-sm">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -267,21 +256,9 @@ function AbstractReviewPage() {
               </div>
               <p className="text-bg-500 text-sm">Review extracted abstracts and patch missing metadata in place.</p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <DateInput
-                value={dateFrom ? dayjs(dateFrom).toDate() : null}
-                variant="plain"
-                onChange={value => {
-                  setDateFrom(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                }}
-              />
-              <DateInput
-                value={dateTo ? dayjs(dateTo).toDate() : null}
-                variant="plain"
-                onChange={value => {
-                  setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
-                }}
-              />
+            <div className="flex flex-wrap gap-2 border-t border-bg-500/10 pt-4">
+              {dateFrom && <TagChip icon="tabler:calendar-event" label={`From ${dateFrom}`} variant="outlined" />}
+              {dateTo && <TagChip icon="tabler:calendar-check" label={`To ${dateTo}`} variant="outlined" />}
             </div>
           </Card>
 

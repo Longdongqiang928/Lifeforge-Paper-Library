@@ -85,9 +85,9 @@ function FavoritesPage() {
               message={{ id: 'favorites', namespace: MODULE_NAMESPACE }}
             />
           ) : (
-            <div className="flex min-h-0 w-full flex-1">
+            <div className="flex size-full min-h-0 flex-1 gap-6 xl:gap-7">
               {/* Sidebar */}
-              <SidebarWrapper>
+              <div className="h-full w-[272px] shrink-0 overflow-y-auto pr-1"><SidebarWrapper>
                 <SidebarTitle
                   actionButton={{
                     icon: 'tabler:plus',
@@ -111,10 +111,10 @@ function FavoritesPage() {
                   <p className="text-lg font-bold">{data.totalFavorites}</p>
                   <p className="text-bg-500 text-xs">saved papers</p>
                 </div>
-              </SidebarWrapper>
+              </SidebarWrapper></div>
 
               {/* Content */}
-              <div className="flex h-full min-w-0 flex-1 flex-col xl:ml-8">
+              <div className="flex h-full min-w-0 flex-1 flex-col overflow-y-auto pb-6 pr-1">
                 {activeFolder && (
                   <div className="mb-6">
                     <div className="flex items-center justify-between">
