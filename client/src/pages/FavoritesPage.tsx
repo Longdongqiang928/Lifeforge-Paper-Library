@@ -14,6 +14,7 @@ import {
 import { Icon } from '@iconify/react'
 import { useState } from 'react'
 import { toast } from 'react-toastify'
+import { Link } from 'shared'
 
 import CreateFolderModal from '@/components/CreateFolderModal'
 import DeleteFolderModal from '@/components/DeleteFolderModal'
@@ -60,13 +61,18 @@ function FavoritesPage() {
     <>
       <ModuleHeader
         actionButton={
-          <Button
-            className="hidden md:flex"
-            icon="tabler:folder-plus"
-            onClick={() => open(CreateFolderModal, {})}
-          >
-            New folder
-          </Button>
+          <div className="flex flex-nowrap items-center gap-2">
+            <Button
+              className="hidden md:flex"
+              icon="tabler:folder-plus"
+              onClick={() => open(CreateFolderModal, {})}
+            >
+              New folder
+            </Button>
+            <Button as={Link} icon="tabler:arrow-left" to={MODULE_BASE_PATH} variant="secondary">
+              <span>Back</span>
+            </Button>
+          </div>
         }
         icon="tabler:star"
         title="Favorites"

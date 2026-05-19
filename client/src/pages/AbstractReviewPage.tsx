@@ -31,8 +31,6 @@ function ReviewCard({
   onSave: (input: { id: string; abstract: string }) => Promise<void>
 }) {
   const [abstract, setAbstract] = useState(item.abstract)
-  const [isEditing, setIsEditing] = useState(false)
-
   const normalizeAbstract = (value: string) => value.replace(/[\r\n]+/g, '')
 
   useEffect(() => {
@@ -81,17 +79,10 @@ function ReviewCard({
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <button
-                  className="text-bg-500 hover:text-bg flex items-center gap-1 text-xs font-medium transition-colors"
-                  onClick={() => setIsEditing(!isEditing)}
-                >
-                  <Icon
-                    className={`size-3.5 transition-transform ${isEditing ? 'rotate-90' : ''}`}
-                    icon="tabler:chevron-right"
-                  />
-                  Abstract
-                  <span className="text-bg-400 font-normal">({abstract.length}/6000)</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">Abstract</p>
+                  <span className="text-bg-400 text-xs font-normal">({abstract.length}/6000)</span>
+                </div>
                 <div className="flex items-center gap-1.5">
                   {isDirty && (
                     <Button icon="tabler:device-floppy" onClick={() => onSave({ id: item.id, abstract })}>
@@ -107,19 +98,13 @@ function ReviewCard({
                   </Button>
                 </div>
               </div>
-              {isEditing ? (
-                <TextAreaInput
-                  className="min-h-40"
-                  placeholder="Review or edit the extracted abstract here"
-                  value={abstract}
-                  variant="plain"
-                  onChange={value => setAbstract(normalizeAbstract(value))}
-                />
-              ) : (
-                <p className="text-bg-500 line-clamp-3 text-sm leading-relaxed">
-                  {abstract || 'No abstract available.'}
-                </p>
-              )}
+              <TextAreaInput
+                className="min-h-40"
+                placeholder="Review or edit the extracted abstract here"
+                value={abstract}
+                variant="plain"
+                onChange={value => setAbstract(normalizeAbstract(value))}
+              />
             </div>
           </div>
         </div>
