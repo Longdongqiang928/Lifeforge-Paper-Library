@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Icon } from '@iconify/react'
 import {
   Button,
   Card,
@@ -8,15 +9,12 @@ import {
   TextInput,
   WithQuery
 } from 'lifeforge-ui'
-import { Icon } from '@iconify/react'
 import { useRef, useState } from 'react'
 import { toast } from 'react-toastify'
+import { Link } from 'shared'
 
 import forgeAPI from '@/utils/forgeAPI'
-import {
-  MODULE_NAMESPACE,
-  MODULE_ROUTE_KEY
-} from '@/utils/module'
+import { MODULE_BASE_PATH, MODULE_NAMESPACE, MODULE_ROUTE_KEY } from '@/utils/module'
 import type { ImportBatch } from '@/utils/types'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -64,9 +62,7 @@ function ImportPage() {
         commonSuccess('JSON import completed')
       },
       onError: error => {
-        const message =
-          error instanceof Error ? error.message : 'JSON import failed'
-
+        const message = error instanceof Error ? error.message : 'JSON import failed'
         toast.error(message)
         setImportNotice({
           tone: 'error',
@@ -82,9 +78,7 @@ function ImportPage() {
         commonSuccess('JSONL import completed')
       },
       onError: error => {
-        const message =
-          error instanceof Error ? error.message : 'JSONL import failed'
-
+        const message = error instanceof Error ? error.message : 'JSONL import failed'
         toast.error(message)
         setImportNotice({
           tone: 'error',
@@ -128,81 +122,95 @@ function ImportPage() {
 
   return (
     <>
-      <ModuleHeader icon="tabler:file-import" title="Import" />
+      <ModuleHeader
+        actionButton={
+          <Button as={Link} icon="tabler:arrow-left" to={MODULE_BASE_PATH} variant="secondary">
+            <span>Back</span>
+          </Button>
+        }
+        icon="tabler:file-import"
+        title="Import"
+      />
 
-      <div className="space-y-8">
-        {/* Import Tools - Two Column Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Drop Zone */}
-          <Card className="from-component-bg-lighter/50 to-component-bg flex flex-col gap-4 bg-gradient-to-br p-6">
-            <h3 className="text-lg font-semibold">Choose File</h3>
-            <input
-              ref={fileInputRef}
-              accept=".json,.jsonl,application/json"
-              className="hidden"
-              type="file"
-              onChange={event => {
-                setSelectedFile(event.currentTarget.files?.[0] ?? null)
-              }}
-            />
-            <div
-              className="border-bg-500/20 flex flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-10 text-center transition-colors hover:border-custom-500/40 hover:bg-custom-500/5"
-              onClick={() => {
-                fileInputRef.current?.click()
-              }}
-              onDragOver={event => {
-                event.preventDefault()
-              }}
-              onDrop={event => {
-                event.preventDefault()
-                const file = event.dataTransfer.files?.[0]
-                if (file) {
-                  setSelectedFile(file)
-                }
-              }}
-            >
-              <div className="bg-custom-500/20 border-custom-500/30 flex size-14 items-center justify-center rounded-xl border">
-                <Icon className="text-custom-500 size-7" icon="tabler:cloud-upload" />
-              </div>
+      <div className="space-y-6">
+        <Card className="space-y-6 border border-bg-500/10 bg-component-bg/80 p-6 shadow-sm">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold">Import sources</h2>
+            <p className="text-bg-500 text-sm">Bring structured paper batches into the shared library without leaving the module.</p>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+            <div className="space-y-4">
               <div>
-                <p className="font-medium">Drag-and-drop</p>
-                <p className="text-bg-500 mt-1 text-sm">JSON or JSONL files</p>
-              </div>
-            </div>
-            {selectedFile && (
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{selectedFile.name}</p>
-                  <p className="text-bg-500 text-xs">{(selectedFile.size / 1024).toFixed(1)} KB</p>
-                </div>
-                <Button
-                  icon="tabler:trash"
-                  variant="secondary"
+                <h3 className="mb-3 text-sm font-semibold">Choose file</h3>
+                <input
+                  ref={fileInputRef}
+                  accept=".json,.jsonl,application/json"
+                  className="hidden"
+                  type="file"
+                  onChange={event => {
+                    setSelectedFile(event.currentTarget.files?.[0] ?? null)
+                  }}
+                />
+                <div
+                  className="flex min-h-56 cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-bg-500/20 bg-component-bg-lighter/40 p-8 text-center transition-colors hover:border-custom-500/40 hover:bg-custom-500/5"
                   onClick={() => {
-                    setSelectedFile(null)
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = ''
-                    }
+                    fileInputRef.current?.click()
+                  }}
+                  onDragOver={event => {
+                    event.preventDefault()
+                  }}
+                  onDrop={event => {
+                    event.preventDefault()
+                    const file = event.dataTransfer.files?.[0]
+                    if (file) setSelectedFile(file)
                   }}
                 >
-                  Clear
-                </Button>
+                  <div className="flex size-14 items-center justify-center rounded-xl border border-custom-500/20 bg-custom-500/10">
+                    <Icon className="text-custom-500 size-7" icon="tabler:upload" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Drag-and-drop</p>
+                    <p className="text-bg-500 mt-1 text-sm">JSON or JSONL files</p>
+                  </div>
+                </div>
               </div>
-            )}
-          </Card>
 
-          {/* Paste Text */}
-          <Card className="flex flex-col gap-4 p-6">
-            <h3 className="text-lg font-semibold">Paste Text</h3>
-            <TextAreaInput
-              className="min-h-36 flex-1"
-              placeholder="Paste raw JSON or JSONL content here..."
-              value={content}
-              variant="plain"
-              onChange={setContent}
-            />
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
+              {selectedFile && (
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{selectedFile.name}</p>
+                    <p className="text-bg-500 text-xs">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <Button
+                    icon="tabler:trash"
+                    variant="secondary"
+                    onClick={() => {
+                      setSelectedFile(null)
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = ''
+                      }
+                    }}
+                  >
+                    <span>Clear</span>
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="mb-3 text-sm font-semibold">Paste text</h3>
+                <TextAreaInput
+                  className="min-h-56"
+                  placeholder="Paste raw JSON or JSONL content here..."
+                  value={content}
+                  variant="plain"
+                  onChange={setContent}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-end">
                 <TextInput
                   label="Source label"
                   placeholder="nature, arxiv, pnas..."
@@ -210,97 +218,81 @@ function ImportPage() {
                   variant="plain"
                   onChange={setSource}
                 />
+                <Button
+                  disabled={isImporting || (!selectedFile && !content.trim())}
+                  icon="tabler:file-import"
+                  loading={jsonImportMutation.isPending}
+                  onClick={() => runImport('json')}
+                >
+                  <span>Import JSON</span>
+                </Button>
+                <Button
+                  disabled={isImporting || (!selectedFile && !content.trim())}
+                  icon="tabler:file-code"
+                  loading={jsonlImportMutation.isPending}
+                  variant="secondary"
+                  onClick={() => runImport('jsonl')}
+                >
+                  <span>Import JSONL</span>
+                </Button>
               </div>
-              <Button
-                disabled={isImporting || (!selectedFile && !content.trim())}
-                icon="tabler:file-import"
-                loading={jsonImportMutation.isPending}
-                onClick={() => runImport('json')}
-              >
-                Import JSON
-              </Button>
-              <Button
-                disabled={isImporting || (!selectedFile && !content.trim())}
-                icon="tabler:file-code"
-                loading={jsonlImportMutation.isPending}
-                variant="secondary"
-                onClick={() => runImport('jsonl')}
-              >
-                JSONL
-              </Button>
             </div>
-          </Card>
-        </div>
-
-        {/* Import Notice */}
-        {importNotice && (
-          <div
-            className={`border rounded-xl px-5 py-3 text-sm ${
-              importNotice.tone === 'success'
-                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
-                : importNotice.tone === 'error'
-                  ? 'border-red-500/30 bg-red-500/10 text-red-600'
-                  : 'border-custom-500/30 bg-custom-500/10 text-custom-600'
-            }`}
-          >
-            {importNotice.message}
           </div>
-        )}
 
-        {/* Recent Imports */}
-        <section>
-          <div className="mb-4 flex items-center justify-between gap-4">
+          {importNotice && (
+            <div
+              className={`rounded-2xl border px-5 py-3 text-sm ${
+                importNotice.tone === 'success'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
+                  : importNotice.tone === 'error'
+                    ? 'border-red-500/30 bg-red-500/10 text-red-600'
+                    : 'border-custom-500/30 bg-custom-500/10 text-custom-600'
+              }`}
+            >
+              {importNotice.message}
+            </div>
+          )}
+        </Card>
+
+        <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold">Recent Imports</h2>
-              <p className="text-bg-500 mt-1 text-sm">Import history and batch status</p>
+              <h2 className="text-2xl font-semibold">Recent imports</h2>
+              <p className="text-bg-500 text-sm">History, status, and batch outcomes.</p>
             </div>
             <Button
               disabled={isImporting}
               icon="tabler:refresh"
               variant="secondary"
-              onClick={() => { void batchesQuery.refetch() }}
+              onClick={() => {
+                void batchesQuery.refetch()
+              }}
             >
-              Refresh
+              <span>Refresh</span>
             </Button>
           </div>
 
           <WithQuery query={batchesQuery}>
             {(batches: ImportBatch[]) =>
               batches.length === 0 ? (
-                <EmptyStateScreen
-                  icon="tabler:history-off"
-                  message={{
-                    id: 'batches',
-                    namespace: MODULE_NAMESPACE
-                  }}
-                />
+                <EmptyStateScreen icon="tabler:history-off" message={{ id: 'batches', namespace: MODULE_NAMESPACE }} />
               ) : (
-                <Card className="overflow-hidden p-0">
+                <div className="overflow-hidden rounded-2xl border border-bg-500/10">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-bg-500/10">
-                          <th className="text-bg-500 px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase">
-                            Filename
-                          </th>
-                          <th className="text-bg-500 px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase">
-                            Date
-                          </th>
-                          <th className="text-bg-500 px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase">
-                            Source
-                          </th>
-                          <th className="text-bg-500 px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase">
-                            Status
-                          </th>
-                          <th className="text-bg-500 px-6 py-3 text-right text-xs font-semibold tracking-[0.12em] uppercase">
-                            Results
-                          </th>
+                        <tr className="border-b border-bg-500/10 bg-component-bg-lighter/50">
+                          <th className="px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase text-bg-500">Filename</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase text-bg-500">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase text-bg-500">Source</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold tracking-[0.12em] uppercase text-bg-500">Status</th>
+                          <th className="px-6 py-3 text-right text-xs font-semibold tracking-[0.12em] uppercase text-bg-500">Results</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-bg-500/5">
                         {batches.map((batch: ImportBatch) => (
-                          <tr key={batch.id} className="hover:bg-component-bg-lighter/50 transition-colors">
-                            <td className="px-6 py-3.5">
+                          <tr key={batch.id} className="transition-colors hover:bg-component-bg-lighter/40">
+                            <td className="px-6 py-4">
                               <div className="flex items-center gap-2.5">
                                 <Icon className="text-bg-400 size-4 shrink-0" icon="tabler:file-text" />
                                 <span className="truncate text-sm font-medium">
@@ -308,13 +300,13 @@ function ImportPage() {
                                 </span>
                               </div>
                             </td>
-                            <td className="text-bg-500 px-6 py-3.5 text-sm whitespace-nowrap">
+                            <td className="px-6 py-4 text-sm whitespace-nowrap text-bg-500">
                               {new Date(batch.created).toLocaleDateString()}
                             </td>
-                            <td className="px-6 py-3.5 whitespace-nowrap">
-                              <span className="text-sm">{batch.source || batch.type.toUpperCase()}</span>
+                            <td className="px-6 py-4 text-sm whitespace-nowrap">
+                              {batch.source || batch.type.toUpperCase()}
                             </td>
-                            <td className="px-6 py-3.5 whitespace-nowrap">
+                            <td className="px-6 py-4 whitespace-nowrap">
                               <span
                                 className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
                                   STATUS_COLORS[batch.status] || 'bg-custom-500/20 text-custom-500'
@@ -323,13 +315,13 @@ function ImportPage() {
                                 {batch.status}
                               </span>
                             </td>
-                            <td className="px-6 py-3.5 text-right">
-                              <div className="inline-flex items-center gap-3 text-xs">
-                                <span className="text-emerald-500 font-medium">{batch.inserted} inserted</span>
+                            <td className="px-6 py-4 text-right">
+                              <div className="inline-flex items-center gap-2 text-xs">
+                                <span className="font-medium text-emerald-500">{batch.inserted} in</span>
                                 <span className="text-bg-400">|</span>
-                                <span className="text-amber-500 font-medium">{batch.skipped} skipped</span>
+                                <span className="font-medium">{batch.skipped} skip</span>
                                 <span className="text-bg-400">|</span>
-                                <span className="text-red-500 font-medium">{batch.failed} failed</span>
+                                <span className="font-medium text-red-500">{batch.failed} fail</span>
                               </div>
                             </td>
                           </tr>
@@ -337,11 +329,11 @@ function ImportPage() {
                       </tbody>
                     </table>
                   </div>
-                </Card>
+                </div>
               )
             }
           </WithQuery>
-        </section>
+        </Card>
       </div>
     </>
   )

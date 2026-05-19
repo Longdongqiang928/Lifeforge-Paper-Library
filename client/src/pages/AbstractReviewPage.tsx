@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Icon } from '@iconify/react'
 import dayjs from 'dayjs'
 import {
   Button,
+  Card,
   DateInput,
   EmptyStateScreen,
   ModuleHeader,
   Pagination,
-  SidebarDivider,
   SidebarItem,
   SidebarTitle,
   SidebarWrapper,
@@ -14,7 +15,6 @@ import {
   TextAreaInput,
   WithQuery
 } from 'lifeforge-ui'
-import { Icon } from '@iconify/react'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import { Link } from 'shared'
@@ -42,94 +42,89 @@ function ReviewCard({
   const isDirty = abstract !== item.abstract
 
   return (
-    <div className="group flex gap-4 overflow-hidden rounded-xl border bg-component-bg shadow-sm transition-shadow hover:shadow-md">
-      {/* Left color strip */}
-      <div className="bg-emerald-500 w-1 shrink-0 rounded-l-[11px]" />
-
-      <div className="flex min-w-0 flex-1 items-start gap-4 py-4 pr-5">
-        <div className="bg-emerald-500/20 border-emerald-500/30 flex size-10 shrink-0 items-center justify-center rounded-lg border">
-          <Icon className="text-emerald-500 size-5" icon="tabler:file-text" />
-        </div>
-
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 space-y-1">
-              <h3 className="truncate text-base font-semibold">{item.title}</h3>
-              {item.url ? (
-                <a
-                  className="text-custom-500 hover:text-custom-500/80 inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:underline"
-                  href={item.url}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  <Icon className="size-3.5" icon="tabler:external-link" />
-                  <span className="truncate">{item.url}</span>
-                </a>
-              ) : (
-                <p className="text-bg-500 text-sm">No source URL is stored for this paper.</p>
-              )}
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
-              {item.source && (
-                <TagChip icon="tabler:rss" label={item.source} variant="outlined" />
-              )}
-              {item.fetchedAt && (
-                <span className="text-bg-500 text-xs whitespace-nowrap">
-                  {new Date(item.fetchedAt).toLocaleDateString()}
-                </span>
-              )}
-            </div>
+    <Card className="group overflow-hidden border border-bg-500/10 bg-component-bg/90 p-0 shadow-sm">
+      <div className="flex gap-4">
+        <div className="w-1 shrink-0 rounded-l-[11px] bg-custom-500" />
+        <div className="flex min-w-0 flex-1 items-start gap-4 py-4 pr-5">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-custom-500/20 bg-custom-500/10">
+            <Icon className="text-custom-500 size-5" icon="tabler:file-text" />
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <button
-                className="text-bg-500 hover:text-bg flex items-center gap-1 text-xs font-medium transition-colors"
-                onClick={() => setIsEditing(!isEditing)}
-              >
-                <Icon
-                  className={`size-3.5 transition-transform ${isEditing ? 'rotate-90' : ''}`}
-                  icon="tabler:chevron-right"
-                />
-                Abstract
-                <span className="text-bg-400 font-normal">({abstract.length}/6000)</span>
-              </button>
-              <div className="flex items-center gap-1.5">
-                {isDirty && (
-                  <Button
-                    icon="tabler:device-floppy"
-                    onClick={() => onSave({ id: item.id, abstract })}
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 space-y-1.5">
+                <h3 className="truncate text-base font-semibold">{item.title}</h3>
+                {item.url ? (
+                  <a
+                    className="text-custom-500 hover:text-custom-500/80 inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:underline"
+                    href={item.url}
+                    rel="noreferrer"
+                    target="_blank"
                   >
-                    Save
-                  </Button>
+                    <Icon className="size-3.5" icon="tabler:external-link" />
+                    <span className="truncate">{item.url}</span>
+                  </a>
+                ) : (
+                  <p className="text-bg-500 text-sm">No source URL is stored for this paper.</p>
                 )}
-                <Button
-                  icon="tabler:eraser"
-                  variant="secondary"
-                  onClick={() => onSave({ id: item.id, abstract: '' })}
-                >
-                  Clear
-                </Button>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                {item.source && <TagChip icon="tabler:rss" label={item.source} variant="outlined" />}
+                {item.fetchedAt && (
+                  <span className="text-bg-500 text-xs whitespace-nowrap">
+                    {new Date(item.fetchedAt).toLocaleDateString()}
+                  </span>
+                )}
               </div>
             </div>
-            {isEditing ? (
-              <TextAreaInput
-                className="min-h-40"
-                placeholder="Review or edit the extracted abstract here"
-                value={abstract}
-                variant="plain"
-                onChange={value => setAbstract(normalizeAbstract(value))}
-              />
-            ) : (
-              <p className="text-bg-500 line-clamp-3 text-sm leading-relaxed">
-                {abstract || 'No abstract available.'}
-              </p>
-            )}
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  className="text-bg-500 hover:text-bg flex items-center gap-1 text-xs font-medium transition-colors"
+                  onClick={() => setIsEditing(!isEditing)}
+                >
+                  <Icon
+                    className={`size-3.5 transition-transform ${isEditing ? 'rotate-90' : ''}`}
+                    icon="tabler:chevron-right"
+                  />
+                  Abstract
+                  <span className="text-bg-400 font-normal">({abstract.length}/6000)</span>
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {isDirty && (
+                    <Button icon="tabler:device-floppy" onClick={() => onSave({ id: item.id, abstract })}>
+                      <span>Save</span>
+                    </Button>
+                  )}
+                  <Button
+                    icon="tabler:eraser"
+                    variant="secondary"
+                    onClick={() => onSave({ id: item.id, abstract: '' })}
+                  >
+                    <span>Clear</span>
+                  </Button>
+                </div>
+              </div>
+              {isEditing ? (
+                <TextAreaInput
+                  className="min-h-40"
+                  placeholder="Review or edit the extracted abstract here"
+                  value={abstract}
+                  variant="plain"
+                  onChange={value => setAbstract(normalizeAbstract(value))}
+                />
+              ) : (
+                <p className="text-bg-500 line-clamp-3 text-sm leading-relaxed">
+                  {abstract || 'No abstract available.'}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -199,7 +194,7 @@ function AbstractReviewPage() {
       <ModuleHeader
         actionButton={
           <Button as={Link} icon="tabler:arrow-left" to={MODULE_BASE_PATH} variant="secondary">
-            Back
+            <span>Back</span>
           </Button>
         }
         icon="tabler:file-search"
@@ -207,36 +202,71 @@ function AbstractReviewPage() {
         totalItems={data?.totalItems}
       />
 
-      <div className="flex size-full min-h-0 flex-1">
-        <SidebarWrapper>
-          <SidebarItem
-            active={!selectedSource}
-            icon="tabler:list"
-            label="All sources"
-            namespace={MODULE_NAMESPACE}
-            number={data?.totalItems}
-            onClick={() => setSelectedSource('')}
-          />
-          <SidebarDivider />
-          <SidebarTitle label="Sources" namespace={MODULE_NAMESPACE} />
-          {sources.map(source => (
-            <SidebarItem
-              key={source}
-              active={selectedSource === source}
-              icon="tabler:rss"
-              label={source}
-              onCancelButtonClick={() => setSelectedSource('')}
-              onClick={() => setSelectedSource(source)}
+      <div className="flex min-h-0 w-full flex-1 gap-6 xl:gap-7">
+        <div className="w-[272px] shrink-0"><SidebarWrapper>
+          <div className="space-y-3 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+            <div className="flex items-center gap-2">
+              <Icon className="text-custom-500 size-4" icon="tabler:calendar-month" />
+              <h3 className="text-sm font-semibold">Date Filter</h3>
+            </div>
+            <DateInput
+              value={dateFrom ? dayjs(dateFrom).toDate() : null}
+              variant="plain"
+              onChange={value => {
+                setDateFrom(value ? dayjs(value).format('YYYY-MM-DD') : '')
+              }}
             />
-          ))}
-        </SidebarWrapper>
+            <DateInput
+              value={dateTo ? dayjs(dateTo).toDate() : null}
+              variant="plain"
+              onChange={value => {
+                setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
+              }}
+            />
+            <div className="text-bg-500 rounded-lg bg-component-bg px-3 py-2 text-xs">
+              default: full queue
+            </div>
+          </div>
 
-        <div className="relative z-10 flex h-full flex-1 flex-col xl:ml-8">
-          {/* Controls bar */}
-          <div className="mb-4 space-y-3">
-            <h2 className="text-lg font-semibold">
-              All Papers{data?.totalItems != null ? ` (${data.totalItems})` : ''}
-            </h2>
+          <div className="space-y-2 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+            <SidebarTitle label="Sources" namespace={MODULE_NAMESPACE} />
+            <SidebarItem
+              active={!selectedSource}
+              icon="tabler:list"
+              label="All sources"
+              namespace={false}
+              number={data?.totalItems}
+              onClick={() => setSelectedSource('')}
+            />
+            <div className="max-h-[340px] overflow-y-auto pr-1">
+              {sources.map(source => (
+                <SidebarItem
+                  key={source}
+                  active={selectedSource === source}
+                  icon="tabler:rss"
+                  label={source}
+                  onCancelButtonClick={() => setSelectedSource('')}
+                  onClick={() => setSelectedSource(source)}
+                />
+              ))}
+            </div>
+            {hasFilters && (
+              <Button className="mt-2" icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
+                <span>Reset</span>
+              </Button>
+            )}
+          </div>
+        </SidebarWrapper></div>
+
+        <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5">
+          <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-5 shadow-sm">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-2xl font-semibold">All Papers{data?.totalItems != null ? ` (${data.totalItems})` : ''}</h2>
+                {selectedSource && <TagChip icon="tabler:rss" label={selectedSource} variant="filled" />}
+              </div>
+              <p className="text-bg-500 text-sm">Review extracted abstracts and patch missing metadata in place.</p>
+            </div>
             <div className="flex flex-wrap items-center gap-3">
               <DateInput
                 value={dateFrom ? dayjs(dateFrom).toDate() : null}
@@ -252,52 +282,43 @@ function AbstractReviewPage() {
                   setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
                 }}
               />
-              {hasFilters && (
-                <Button icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
-                  Reset
-                </Button>
-              )}
             </div>
-          </div>
+          </Card>
 
           <WithQuery query={reviewQuery}>
-            {response => (
-              <div className="space-y-5">
-                {(response as AbstractReviewListResponse).items.length === 0 ? (
-                  <EmptyStateScreen
-                    icon="tabler:file-search"
-                    message={{
-                      id: 'abstractReview',
-                      namespace: MODULE_NAMESPACE
-                    }}
-                  />
-                ) : (
-                  <>
-                    <div className="space-y-3">
-                      {(response as AbstractReviewListResponse).items.map(item => (
-                        <ReviewCard
-                          key={item.id}
-                          item={item}
-                          onSave={async input => {
-                            await updateMutation.mutateAsync(input)
-                          }}
-                        />
-                      ))}
-                    </div>
+            {response =>
+              (response as AbstractReviewListResponse).items.length === 0 ? (
+                <EmptyStateScreen
+                  icon="tabler:file-search"
+                  message={{
+                    id: 'abstractReview',
+                    namespace: MODULE_NAMESPACE
+                  }}
+                />
+              ) : (
+                <div className="space-y-4">
+                  {(response as AbstractReviewListResponse).items.map(item => (
+                    <ReviewCard
+                      key={item.id}
+                      item={item}
+                      onSave={async input => {
+                        await updateMutation.mutateAsync(input)
+                      }}
+                    />
+                  ))}
 
-                    <div className="flex justify-end">
-                      <Pagination
-                        page={(response as AbstractReviewListResponse).page}
-                        totalPages={(response as AbstractReviewListResponse).totalPages}
-                        onPageChange={value => {
-                          setPage(typeof value === 'function' ? value(page) : value)
-                        }}
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+                  {(response as AbstractReviewListResponse).totalPages > 1 && (
+                    <Pagination
+                      page={(response as AbstractReviewListResponse).page}
+                      totalPages={(response as AbstractReviewListResponse).totalPages}
+                      onPageChange={value => {
+                        setPage(typeof value === 'function' ? value(page) : value)
+                      }}
+                    />
+                  )}
+                </div>
+              )
+            }
           </WithQuery>
         </div>
       </div>

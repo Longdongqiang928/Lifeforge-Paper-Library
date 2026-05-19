@@ -1,21 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Icon } from '@iconify/react'
 import dayjs from 'dayjs'
 import {
   Button,
+  Card,
   DateInput,
   EmptyStateScreen,
   ModuleHeader,
   Pagination,
   SearchInput,
-  SidebarDivider,
   SidebarItem,
   SidebarTitle,
   SidebarWrapper,
   Switch,
+  TagChip,
   WithQuery,
   useModalStore
 } from 'lifeforge-ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { toast } from 'react-toastify'
 import { Link, useSearchParams } from 'shared'
 
@@ -33,6 +36,26 @@ import type { PaperListResponse } from '@/utils/types'
 
 const DEFAULT_FETCH_DATE = dayjs().format('YYYY-MM-DD')
 const DEFAULT_SORT = 'score_desc' as const
+
+function FilterSection({
+  title,
+  icon,
+  children
+}: {
+  title: string
+  icon: string
+  children: ReactNode
+}) {
+  return (
+    <div className="space-y-3 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+      <div className="flex items-center gap-2">
+        <Icon className="text-custom-500 size-4" icon={icon} />
+        <h3 className="text-sm font-semibold">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
 
 function PaperListPage() {
   const { open } = useModalStore()
@@ -116,7 +139,15 @@ function PaperListPage() {
       ? (page - 1) * listQueryInput.perPage + activePaperIndex + 1
       : undefined
 
-  const hasAnyFilter = selectedSources.length > 0 || selectedJournals.length > 0 || selectedCollections.length > 0
+  const hasAnyFilter =
+    selectedSources.length > 0 ||
+    selectedJournals.length > 0 ||
+    selectedCollections.length > 0 ||
+    favoritesOnly ||
+    !hasAbstractOnly ||
+    query.length > 0 ||
+    dateFrom !== DEFAULT_FETCH_DATE ||
+    dateTo !== DEFAULT_FETCH_DATE
 
   const resetFilters = () => {
     setQuery('')
@@ -193,108 +224,27 @@ function PaperListPage() {
       >
         <ModuleHeader
           actionButton={
-            <Button as={Link} icon="tabler:player-play" to={`${MODULE_BASE_PATH}/settings`}>
-              Pipeline
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button as={Link} icon="tabler:file-search" to={`${MODULE_BASE_PATH}/abstract-review`} variant="secondary">
+                <span>Review</span>
+              </Button>
+              <Button as={Link} icon="tabler:file-import" to={`${MODULE_BASE_PATH}/import`} variant="secondary">
+                <span>Import</span>
+              </Button>
+              <Button as={Link} icon="tabler:settings" to={`${MODULE_BASE_PATH}/settings`}>
+                <span>Settings</span>
+              </Button>
+            </div>
           }
           icon="tabler:books"
-          title="Papers"
+          title="Paper Library"
           totalItems={totalItems}
         />
 
-        <div className="flex size-full min-h-0 flex-1">
-          <SidebarWrapper>
-            <SidebarItem
-              active={!hasAnyFilter}
-              icon="tabler:list"
-              label="All Papers"
-              namespace={MODULE_NAMESPACE}
-              number={totalItems}
-              onClick={resetFilters}
-            />
-            <SidebarItem
-              active={favoritesOnly}
-              icon="tabler:star-filled"
-              label="Favorites only"
-              namespace={MODULE_NAMESPACE}
-              onClick={() => setFavoritesOnly(!favoritesOnly)}
-            />
-            <SidebarDivider />
-            <SidebarTitle label="Sources" namespace={MODULE_NAMESPACE} />
-            {sources.map(source => (
-              <SidebarItem
-                key={source}
-                active={selectedSources.includes(source)}
-                icon="tabler:rss"
-                label={source}
-                onCancelButtonClick={() =>
-                  setSelectedSources(prev => prev.filter(s => s !== source))
-                }
-                onClick={() =>
-                  setSelectedSources(prev => toggleStringInList(prev, source))
-                }
-              />
-            ))}
-            <SidebarDivider />
-            <SidebarTitle label="Journals" namespace={MODULE_NAMESPACE} />
-            {journals.map(journal => (
-              <SidebarItem
-                key={journal}
-                active={selectedJournals.includes(journal)}
-                icon="tabler:book"
-                label={journal}
-                onCancelButtonClick={() =>
-                  setSelectedJournals(prev => prev.filter(j => j !== journal))
-                }
-                onClick={() =>
-                  setSelectedJournals(prev => toggleStringInList(prev, journal))
-                }
-              />
-            ))}
-            <SidebarDivider />
-            <SidebarTitle label="Collections" namespace={MODULE_NAMESPACE} />
-            {collections.map(collection => (
-              <SidebarItem
-                key={collection}
-                active={selectedCollections.includes(collection)}
-                icon="tabler:folders"
-                label={collection}
-                onCancelButtonClick={() =>
-                  setSelectedCollections(prev => prev.filter(c => c !== collection))
-                }
-                onClick={() =>
-                  setSelectedCollections(prev => toggleStringInList(prev, collection))
-                }
-              />
-            ))}
-          </SidebarWrapper>
-
-          <div className="relative z-10 flex h-full flex-1 flex-col xl:ml-8">
-            {/* Controls bar */}
-            <div className="mb-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold">
-                  Papers{totalItems != null ? ` (${totalItems})` : ''}
-                </h2>
-                <Button
-                  as={Link}
-                  icon="tabler:star"
-                  to={`${MODULE_BASE_PATH}/favorites`}
-                  variant="secondary"
-                >
-                  Favorites
-                </Button>
-              </div>
-
-              <SearchInput
-                debounceMs={250}
-                namespace={MODULE_NAMESPACE}
-                searchTarget="paper"
-                value={query}
-                onChange={setQuery}
-              />
-
-              <div className="flex flex-wrap items-center gap-3">
+        <div className="flex min-h-0 w-full flex-1 gap-6 xl:gap-7">
+          <div className="w-[272px] shrink-0"><SidebarWrapper>
+            <FilterSection icon="tabler:calendar-month" title="Date Filter">
+              <div className="space-y-3">
                 <DateInput
                   value={dateFrom ? dayjs(dateFrom).toDate() : null}
                   variant="plain"
@@ -309,17 +259,149 @@ function PaperListPage() {
                     setDateTo(value ? dayjs(value).format('YYYY-MM-DD') : '')
                   }}
                 />
-                <div className="border-bg-500/10 bg-component-bg-lighter flex items-center gap-3 rounded-xl border px-3 py-2">
-                  <span className="text-xs font-medium">With abstract</span>
+                <div className="text-bg-500 rounded-lg bg-component-bg px-3 py-2 text-xs">
+                  default: today
+                </div>
+              </div>
+            </FilterSection>
+
+            <FilterSection icon="tabler:adjustments-horizontal" title="Filters">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between rounded-xl bg-component-bg px-3 py-2.5">
+                  <span className="text-sm font-medium">With abstract</span>
                   <Switch value={hasAbstractOnly} onChange={setHasAbstractOnly} />
+                </div>
+                <div className="flex items-center justify-between rounded-xl bg-component-bg px-3 py-2.5">
+                  <span className="text-sm font-medium">Favorites only</span>
+                  <Switch value={favoritesOnly} onChange={setFavoritesOnly} />
                 </div>
                 {hasAnyFilter && (
                   <Button icon="tabler:refresh" variant="secondary" onClick={resetFilters}>
-                    Reset
+                    <span>Reset</span>
                   </Button>
                 )}
               </div>
+            </FilterSection>
+
+            <div className="space-y-4">
+              <div className="space-y-2 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+                <SidebarTitle label="Sources" namespace={MODULE_NAMESPACE} />
+                <div className="max-h-44 overflow-y-auto pr-1">
+                  {sources.map(source => (
+                    <SidebarItem
+                      key={source}
+                      active={selectedSources.includes(source)}
+                      icon="tabler:rss"
+                      label={source}
+                      onCancelButtonClick={() =>
+                        setSelectedSources(prev => prev.filter(s => s !== source))
+                      }
+                      onClick={() => setSelectedSources(prev => toggleStringInList(prev, source))}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+                <SidebarTitle label="Journals" namespace={MODULE_NAMESPACE} />
+                <div className="max-h-44 overflow-y-auto pr-1">
+                  {journals.map(journal => (
+                    <SidebarItem
+                      key={journal}
+                      active={selectedJournals.includes(journal)}
+                      icon="tabler:book"
+                      label={journal}
+                      onCancelButtonClick={() =>
+                        setSelectedJournals(prev => prev.filter(j => j !== journal))
+                      }
+                      onClick={() => setSelectedJournals(prev => toggleStringInList(prev, journal))}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/50 p-4">
+                <SidebarTitle label="Collections" namespace={MODULE_NAMESPACE} />
+                <div className="max-h-44 overflow-y-auto pr-1">
+                  {collections.map(collection => (
+                    <SidebarItem
+                      key={collection}
+                      active={selectedCollections.includes(collection)}
+                      icon="tabler:folders"
+                      label={collection}
+                      onCancelButtonClick={() =>
+                        setSelectedCollections(prev => prev.filter(c => c !== collection))
+                      }
+                      onClick={() =>
+                        setSelectedCollections(prev => toggleStringInList(prev, collection))
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
+          </SidebarWrapper></div>
+
+          <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col gap-5">
+            <Card className="space-y-4 border border-bg-500/10 bg-component-bg/80 p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-2xl font-semibold">All Papers{totalItems != null ? ` (${totalItems})` : ''}</h2>
+                    <TagChip icon="tabler:calendar" label="Today" variant="outlined" />
+                    <TagChip icon="tabler:chart-dots-3" label="Score sorted" variant="outlined" />
+                  </div>
+                </div>
+                <Button
+                  as={Link}
+                  icon="tabler:star"
+                  to={`${MODULE_BASE_PATH}/favorites`}
+                  variant="secondary"
+                >
+                  <span>Favorites</span>
+                </Button>
+              </div>
+
+              <SearchInput
+                debounceMs={250}
+                namespace={MODULE_NAMESPACE}
+                searchTarget="paper"
+                value={query}
+                onChange={setQuery}
+              />
+
+              {(selectedSources.length > 0 || selectedJournals.length > 0 || selectedCollections.length > 0) && (
+                <div className="flex flex-wrap gap-2 border-t border-bg-500/10 pt-4">
+                  {selectedSources.map(source => (
+                    <TagChip
+                      key={`source-${source}`}
+                      icon="tabler:rss"
+                      label={source}
+                      variant="filled"
+                      onClick={() => setSelectedSources(prev => prev.filter(item => item !== source))}
+                    />
+                  ))}
+                  {selectedJournals.map(journal => (
+                    <TagChip
+                      key={`journal-${journal}`}
+                      icon="tabler:book"
+                      label={journal}
+                      variant="filled"
+                      onClick={() => setSelectedJournals(prev => prev.filter(item => item !== journal))}
+                    />
+                  ))}
+                  {selectedCollections.map(collection => (
+                    <TagChip
+                      key={`collection-${collection}`}
+                      icon="tabler:folders"
+                      label={collection}
+                      variant="filled"
+                      onClick={() => setSelectedCollections(prev => prev.filter(item => item !== collection))}
+                    />
+                  ))}
+                </div>
+              )}
+            </Card>
 
             <WithQuery query={papersQuery}>
               {data =>
