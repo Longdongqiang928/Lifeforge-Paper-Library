@@ -42,8 +42,23 @@
       "description": "Star papers from the list page to keep them here."
     },
     "batches": {
-      "title": "No imports yet",
-      "description": "Your recent import history will appear here."
+      "title": "No import history",
+      "description": "Finished import batches will appear here."
+    },
+    "abstractReview": {
+      "title": "No abstracts to review",
+      "description": "Change the source or date filter to inspect another batch."
     }
+  },
+  "abstractReviewPage": {
+    "title": "Abstract Review",
+    "description": "Review extracted abstracts and fix missing metadata."
+  },
+  "sidebar": {
+    "sources": "Sources",
+    "folders": "Folders"
+  },
+  "items": {
+    "paper": "paper"
   }
 }

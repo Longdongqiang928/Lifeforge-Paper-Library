@@ -75,7 +75,8 @@ function FavoritesPage() {
           </div>
         }
         icon="tabler:star"
-        title="Favorites"
+        namespace={MODULE_NAMESPACE}
+        title="favoritesPage"
         totalItems={favoritesQuery.data?.totalFavorites}
       />
 

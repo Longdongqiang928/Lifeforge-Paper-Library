@@ -30,7 +30,7 @@
   },
   "abstractReviewPage": {
     "title": "摘要检查",
-    "description": "检查论文摘要提取结果、手动修正摘要，并在新标签页中打开原始链接。"
+    "description": "检查摘要抽取结果，并修正缺失的元数据。"
   },
   "paperDetailPage": {
     "title": "论文详情",
@@ -46,12 +46,19 @@
       "description": "在论文列表页点亮星标后，会显示在这里。"
     },
     "batches": {
-      "title": "还没有导入记录",
-      "description": "最近的导入历史会显示在这里。"
+      "title": "还没有导入历史",
+      "description": "完成后的导入批次会显示在这里。"
     },
     "abstractReview": {
-      "title": "当前筛选下没有待检查论文",
-      "description": "请调整来源或抓取日期筛选条件，再检查另一批论文。"
+      "title": "没有需要检查的摘要",
+      "description": "请调整来源或日期筛选条件，再检查另一批论文。"
     }
+  },
+  "sidebar": {
+    "sources": "来源",
+    "folders": "文件夹"
+  },
+  "items": {
+    "paper": "论文"
   }
 }

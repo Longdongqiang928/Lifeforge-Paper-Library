@@ -129,7 +129,8 @@ function ImportPage() {
           </Button>
         }
         icon="tabler:file-import"
-        title="Import"
+        namespace={MODULE_NAMESPACE}
+        title="importPage"
       />
 
       <div className="space-y-6">

@@ -184,7 +184,8 @@ function AbstractReviewPage() {
           </Button>
         }
         icon="tabler:file-search"
-        title="Review"
+        namespace={MODULE_NAMESPACE}
+        title="abstractReviewPage"
         totalItems={data?.totalItems}
       />
 

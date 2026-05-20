@@ -17,7 +17,7 @@ import { toast } from 'react-toastify'
 import { Link } from 'shared'
 
 import forgeAPI from '@/utils/forgeAPI'
-import { MODULE_BASE_PATH, MODULE_ROUTE_KEY } from '@/utils/module'
+import { MODULE_BASE_PATH, MODULE_NAMESPACE, MODULE_ROUTE_KEY } from '@/utils/module'
 import type { ActivePipelineRun, PipelineRun } from '@/utils/types'
 
 const STAGES = [
@@ -216,7 +216,8 @@ function SettingsPage() {
           </Button>
         }
         icon="tabler:settings"
-        title="Settings"
+        namespace={MODULE_NAMESPACE}
+        title="settingsPage"
       />
 
       <div className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-y-auto pb-6 pr-1">

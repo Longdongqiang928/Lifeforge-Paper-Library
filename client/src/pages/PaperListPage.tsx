@@ -231,7 +231,8 @@ function PaperListPage() {
             </div>
           }
           icon="tabler:books"
-          title="Paper Library"
+          namespace={MODULE_NAMESPACE}
+          title="papersPage"
           totalItems={totalItems}
         />
 

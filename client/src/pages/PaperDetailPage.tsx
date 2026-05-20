@@ -8,6 +8,7 @@ import PaperDetailContent from '@/components/PaperDetailContent'
 import forgeAPI from '@/utils/forgeAPI'
 import {
   MODULE_BASE_PATH,
+  MODULE_NAMESPACE,
   MODULE_ROUTE_KEY
 } from '@/utils/module'
 
@@ -69,7 +70,8 @@ function PaperDetailPage() {
               </Button>
             }
             icon="tabler:file-description"
-            title="Paper Detail"
+            namespace={MODULE_NAMESPACE}
+            title="paperDetailPage"
           />
 
           <div className="from-custom-500/5 via-component-bg-lighter/30 to-component-bg mb-6 rounded-xl border bg-gradient-to-br p-5 shadow-sm">
