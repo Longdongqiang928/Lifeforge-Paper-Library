@@ -5,14 +5,6 @@ import { Link } from 'shared'
 import { formatAuthors, formatPaperDate } from '@/utils/papers'
 import type { PaperListItem } from '@/utils/types'
 
-const SOURCE_COLORS: Record<string, string> = {
-  arxiv: 'bg-red-500',
-  nature: 'bg-emerald-500',
-  science: 'bg-blue-500',
-  optica: 'bg-violet-500',
-  aps: 'bg-amber-500'
-}
-
 interface PaperCardProps {
   paper: PaperListItem
   detailTo?: string
@@ -37,7 +29,6 @@ function PaperCard({
         ? `Recommend ${paper.recommendStatus}`
         : null
 
-  const stripColor = SOURCE_COLORS[paper.source || ''] || 'bg-custom-500'
   const isInteractive = !!onOpenDetail
 
   const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -60,9 +51,6 @@ function PaperCard({
       onClick={onOpenDetail}
       onKeyDown={handleCardKeyDown}
     >
-      {/* Colored top accent bar */}
-      <div className={`absolute top-0 left-0 h-1 w-full ${stripColor}`} />
-
       {/* Header row: source tags + favorite */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">

@@ -154,7 +154,7 @@ function PaperDetailModal({
     <ModalWrapper
       isOpen={true}
       className="border-bg-500/15 bg-component-bg/95 overflow-hidden border shadow-2xl backdrop-blur-md"
-      maxWidth="64rem"
+      maxWidth="76rem"
       zIndex={10020}
     >
       <div className="relative flex w-full items-center justify-center">
