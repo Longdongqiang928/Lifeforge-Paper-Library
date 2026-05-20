@@ -303,7 +303,8 @@ Personal configurations：
 
 规范：
 
-- `ModuleHeader` 必须传入 `namespace={MODULE_NAMESPACE}`。
+- 第三方模块的 `MODULE_NAMESPACE` 必须使用 `$` 形式，例如 `apps.longdongqiang$paperLibrary`；不要写成 `apps.longdongqiang__paperLibrary`，否则服务端 locale 归一化后无法匹配模块目录。
+- `ModuleHeader` 必须传入 `namespace={MODULE_NAMESPACE}`，或像官方根页面一样直接使用默认 `<ModuleHeader />`。
 - `ModuleHeader.title` 使用页面 key，例如 `papersPage`、`importPage`、`settingsPage`，不要直接传 `Import`、`Settings` 这类显示文本。
 - 每个页面 key 在所有 locale 文件中同时提供 `title` 和 `description`。
 - `EmptyStateScreen` 使用 `{ id, namespace: MODULE_NAMESPACE }` 时，必须在所有 locale 文件中提供 `empty.{id}.title` 和 `empty.{id}.description`。

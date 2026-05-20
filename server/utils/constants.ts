@@ -1,6 +1,6 @@
 export const MODULE_ID = 'longdongqiang--paper-library'
 export const MODULE_ROUTE_KEY = 'longdongqiang$paperLibrary'
-export const MODULE_NAMESPACE = 'apps.longdongqiang__paperLibrary'
+export const MODULE_NAMESPACE = 'apps.longdongqiang$paperLibrary'
 export const MODULE_BASE_PATH = '/longdongqiang--paper-library'
 
 export const DEFAULT_FOLDER_NAME = 'Default'
