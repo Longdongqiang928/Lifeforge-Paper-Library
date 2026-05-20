@@ -157,7 +157,7 @@ function PaperDetailModal({
       maxWidth="76rem"
       zIndex={10020}
     >
-      <div className="relative flex w-full items-center justify-center">
+      <div className="relative flex w-[76rem] max-w-full items-center justify-center">
         <div className="pointer-events-none absolute top-1/2 left-0 z-50 hidden -translate-x-[60%] -translate-y-1/2 items-center lg:flex">
           <Button
             className="pointer-events-auto shadow-xl"

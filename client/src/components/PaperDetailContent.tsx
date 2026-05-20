@@ -36,7 +36,7 @@ function PaperDetailContent({
               )}
             </div>
 
-            <div className="max-w-4xl space-y-3">
+            <div className="space-y-3">
               <h1 className={compact ? 'text-3xl leading-10 font-semibold tracking-tight' : 'text-4xl leading-[1.15] font-semibold tracking-tight'}>
                 {paper.translatedTitle || paper.title}
               </h1>
