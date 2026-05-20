@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, ModalHeader, ModalWrapper, TagChip, WithQuery } from 'lifeforge-ui'
+import { Button, ModalHeader, ModalWrapper, Scrollbar, TagChip, WithQuery } from 'lifeforge-ui'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
@@ -245,26 +245,30 @@ function PaperDetailModal({
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-            <div
-              className={`transition-all duration-300 ease-out ${getMotionClass(motionState)}`}
-            >
-              <WithQuery query={paperQuery}>
-                {paper => (
-                  <PaperDetailContent
-                    compact
-                    favoriteLoading={toggleFavoriteMutation.isPending}
-                    paper={paper}
-                    onToggleFavorite={() => {
-                      toggleFavoriteMutation.mutate({
-                        paperId: paper.id,
-                        folderId: paper.favoriteFolderId
-                      })
-                    }}
-                  />
-                )}
-              </WithQuery>
-            </div>
+          <div className="min-h-0 flex-1">
+            <Scrollbar>
+              <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+                <div
+                  className={`transition-all duration-300 ease-out ${getMotionClass(motionState)}`}
+                >
+                  <WithQuery query={paperQuery}>
+                    {paper => (
+                      <PaperDetailContent
+                        compact
+                        favoriteLoading={toggleFavoriteMutation.isPending}
+                        paper={paper}
+                        onToggleFavorite={() => {
+                          toggleFavoriteMutation.mutate({
+                            paperId: paper.id,
+                            folderId: paper.favoriteFolderId
+                          })
+                        }}
+                      />
+                    )}
+                  </WithQuery>
+                </div>
+              </div>
+            </Scrollbar>
           </div>
         </div>
       </div>
