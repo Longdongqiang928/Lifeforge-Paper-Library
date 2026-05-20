@@ -304,12 +304,20 @@ Personal configurations：
 规范：
 
 - 第三方模块的 `MODULE_NAMESPACE` 必须使用 `$` 形式，例如 `apps.longdongqiang$paperLibrary`；不要写成 `apps.longdongqiang__paperLibrary`，否则服务端 locale 归一化后无法匹配模块目录。
-- `ModuleHeader` 必须传入 `namespace={MODULE_NAMESPACE}`，或像官方根页面一样直接使用默认 `<ModuleHeader />`。
-- `ModuleHeader.title` 使用页面 key，例如 `papersPage`、`importPage`、`settingsPage`，不要直接传 `Import`、`Settings` 这类显示文本。
+- 官方模块的写法是短命名空间，例如 `apps.todoList`、`apps.ideaBox`；Paper Library 作为第三方模块必须保留作者前缀，使用 `apps.longdongqiang$paperLibrary`。
+- `ModuleHeader` 可以像官方根页面一样直接使用默认 `<ModuleHeader />`；如果页面需要自定义标题，则必须传入 `namespace={MODULE_NAMESPACE}`。
+- `ModuleHeader.title` 使用 locale key，例如 `papersPage`、`importPage`、`settingsPage`，不要直接传 `Import`、`Settings` 这类显示文本。
 - 每个页面 key 在所有 locale 文件中同时提供 `title` 和 `description`。
 - `EmptyStateScreen` 使用 `{ id, namespace: MODULE_NAMESPACE }` 时，必须在所有 locale 文件中提供 `empty.{id}.title` 和 `empty.{id}.description`。
 - 当前必须覆盖的空状态包括 `papers`、`favorites`、`batches`、`abstractReview`。
+- `SearchInput`、`SidebarTitle`、`SidebarItem` 如果传入 `namespace={MODULE_NAMESPACE}`，也要同步提供 `items.*` 或 `sidebar.*` 文案。
 - 新增 locale key 时要同步更新 `en.json`、`zh-CN.json`、`ms.json`，避免非中文环境显示原始 key。
+
+排查方式：
+
+- 如果日志出现 `apps.papersPage:Description for papersPage`、`empty.*.title` 或 `empty.*.description`，先检查 `MODULE_NAMESPACE` 是否仍是 `$` 形式。
+- 在容器内可以用 `/locales/getLocale?lang=en&namespace=apps&subnamespace=longdongqiang%24paperLibrary` 验证模块 locale 是否能返回内容。
+- 修改 `client/src/utils/module.ts` 的 namespace 后必须重建 `dist-docker`；修改 `server/utils/constants.ts` 后必须 `bun run build:server` 并重启 server。
 
 推荐：
 
