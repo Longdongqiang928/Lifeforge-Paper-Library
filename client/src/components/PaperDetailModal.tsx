@@ -154,10 +154,11 @@ function PaperDetailModal({
     <ModalWrapper
       isOpen={true}
       className="border-bg-500/15 bg-component-bg/95 overflow-hidden border shadow-2xl backdrop-blur-md"
-      maxWidth="76rem"
+      minWidth="min(68rem, calc(100vw - 8rem))"
+      maxWidth="min(68rem, calc(100vw - 8rem))"
       zIndex={10020}
     >
-      <div className="relative flex w-[76rem] max-w-full items-center justify-center">
+      <div className="relative flex w-full items-center justify-center">
         <div className="pointer-events-none absolute top-1/2 left-0 z-50 hidden -translate-x-[60%] -translate-y-1/2 items-center lg:flex">
           <Button
             className="pointer-events-auto shadow-xl"
