@@ -31,6 +31,9 @@ import {
 type PocketBase = any
 type RecordLike = Record<string, unknown>
 
+const SPRINGER_NATURE_API_KEY_ID = 'springer-nature'
+const TAVILY_API_KEY_ID = 'tavily'
+
 export interface FetchSettingsView {
   rssSources: string
   fetchEnabled: boolean
@@ -437,6 +440,19 @@ function decryptSecret(value?: string) {
   }
 }
 
+async function getGlobalAPIKey(pb: PocketBase, keyId: string) {
+  const record = await pb
+    .collection('api_keys__entries')
+    .getFirstListItem(`keyId = "${keyId}"`)
+    .catch(() => null)
+
+  return decryptSecret(pickString(record?.key))
+}
+
+async function hasGlobalAPIKey(pb: PocketBase, keyId: string) {
+  return !!(await getGlobalAPIKey(pb, keyId))
+}
+
 function compactUpdate(data: Record<string, unknown>) {
   return Object.fromEntries(
     Object.entries(data).filter(([, value]) => value !== undefined)
@@ -799,12 +815,16 @@ async function getOrCreateUserSettingsRecord(pb: PocketBase, userId: string) {
 
 async function getFetchSettingsInternal(pb: PocketBase): Promise<DecryptedFetchSettings> {
   const record = await getOrCreateFetchSettingsRecord(pb)
+  const [natureApiKey, tavilyApiKey] = await Promise.all([
+    getGlobalAPIKey(pb, SPRINGER_NATURE_API_KEY_ID),
+    getGlobalAPIKey(pb, TAVILY_API_KEY_ID)
+  ])
 
   return {
     id: record.id,
     rssSources: pickString(record.rss_sources) ?? DEFAULT_FETCH_SETTINGS.rssSources,
-    natureApiKey: decryptSecret(pickString(record.nature_api_key)),
-    tavilyApiKey: decryptSecret(pickString(record.tavily_api_key)),
+    natureApiKey,
+    tavilyApiKey,
     fetchEnabled: !!record.fetch_enabled,
     fetchTime: pickString(record.fetch_time) ?? DEFAULT_FETCH_SETTINGS.fetchTime,
     abstractEnabled:
@@ -866,6 +886,10 @@ async function getUserSettingsInternal(
 
 export async function getFetchSettingsView(pb: PocketBase): Promise<FetchSettingsView> {
   const record = await getOrCreateFetchSettingsRecord(pb)
+  const [hasNatureApiKey, hasTavilyApiKey] = await Promise.all([
+    hasGlobalAPIKey(pb, SPRINGER_NATURE_API_KEY_ID),
+    hasGlobalAPIKey(pb, TAVILY_API_KEY_ID)
+  ])
 
   return {
     rssSources: pickString(record.rss_sources) ?? DEFAULT_FETCH_SETTINGS.rssSources,
@@ -880,8 +904,8 @@ export async function getFetchSettingsView(pb: PocketBase): Promise<FetchSetting
     abstractLookbackDays:
       asNumber(record.abstract_lookback_days) ??
       DEFAULT_FETCH_SETTINGS.abstractLookbackDays,
-    hasNatureApiKey: !!pickString(record.nature_api_key),
-    hasTavilyApiKey: !!pickString(record.tavily_api_key),
+    hasNatureApiKey,
+    hasTavilyApiKey,
     updatedAt: pickString(record.updated)
   }
 }
@@ -896,8 +920,6 @@ export async function updateFetchSettingsView(
     abstractEnabled: boolean
     abstractTime: string
     abstractLookbackDays: number
-    natureApiKey?: string
-    tavilyApiKey?: string
   }
 ) {
   const record = await getOrCreateFetchSettingsRecord(pb)
@@ -912,14 +934,6 @@ export async function updateFetchSettingsView(
       abstract_enabled: input.abstractEnabled,
       abstract_time: input.abstractTime,
       abstract_lookback_days: input.abstractLookbackDays,
-      nature_api_key:
-        input.natureApiKey !== undefined
-          ? encryptSecret(input.natureApiKey.trim())
-          : record.nature_api_key,
-      tavily_api_key:
-        input.tavilyApiKey !== undefined
-          ? encryptSecret(input.tavilyApiKey.trim())
-          : record.tavily_api_key,
       last_updated_by: userId
     })
   )

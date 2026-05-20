@@ -30,9 +30,7 @@ const fetchUpdate = forge
       fetchTime: z.string().min(4),
       abstractEnabled: z.boolean(),
       abstractTime: z.string().min(4),
-      abstractLookbackDays: z.coerce.number().min(1).max(365),
-      natureApiKey: z.string().optional(),
-      tavilyApiKey: z.string().optional()
+      abstractLookbackDays: z.coerce.number().min(1).max(365)
     })
   })
   .callback(async ({ pb, body }) => {

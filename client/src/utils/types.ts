@@ -248,8 +248,6 @@ export interface UpdateFetchSettingsInput {
   abstractEnabled: boolean
   abstractTime: string
   abstractLookbackDays: number
-  natureApiKey?: string
-  tavilyApiKey?: string
 }
 
 export interface UpdatePersonalSettingsInput {

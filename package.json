@@ -27,7 +27,17 @@
   },
   "lifeforge": {
     "icon": "tabler:books",
-    "category": "Research"
+    "category": "Research",
+    "APIKeyAccess": {
+      "springer-nature": {
+        "usage": "Fetch abstracts from the Springer Nature metadata API.",
+        "required": false
+      },
+      "tavily": {
+        "usage": "Fallback abstract extraction from paper URLs.",
+        "required": false
+      }
+    }
   },
   "peerDependencies": {
     "@lifeforge/server-utils": "workspace:*",

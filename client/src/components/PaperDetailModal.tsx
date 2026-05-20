@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, ModalHeader, ModalWrapper, TagChip, WithQuery } from 'lifeforge-ui'
+import { Button, ModalHeader, ModalWrapper, TagChip, WithQuery } from 'lifeforge-ui'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
@@ -192,78 +192,76 @@ function PaperDetailModal({
             maxHeight: '58rem'
           }}
         >
+          <div className="border-bg-500/10 bg-component-bg/95 relative z-30 shrink-0 border-b px-4 py-4 shadow-sm backdrop-blur-md sm:px-6 lg:px-8">
+            <ModalHeader
+              icon="tabler:file-description"
+              title={<span>Paper details</span>}
+              onClose={onClose}
+            />
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-bg-500/10 bg-component-bg-lighter/55 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <TagChip
+                  icon="tabler:layout-sidebar-right-collapse"
+                  label="Reading panel"
+                  variant="filled"
+                />
+                {typeof currentPosition === 'number' && typeof totalItems === 'number' && (
+                  <TagChip
+                    icon="tabler:list-numbers"
+                    label={`${currentPosition} / ${totalItems}`}
+                    variant="outlined"
+                  />
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2 lg:hidden">
+                <Button
+                  disabled={!hasPrev}
+                  icon="tabler:chevron-left"
+                  variant="secondary"
+                  onClick={() => {
+                    if (!hasPrev) return
+                    pendingDirectionRef.current = 'previous'
+                    onPrevious()
+                  }}
+                >
+                  Previous
+                </Button>
+                <Button
+                  disabled={!hasNext}
+                  icon="tabler:chevron-right"
+                  iconPosition="end"
+                  variant="secondary"
+                  onClick={() => {
+                    if (!hasNext) return
+                    pendingDirectionRef.current = 'next'
+                    onNext()
+                  }}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </div>
+
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
             <div
               className={`transition-all duration-300 ease-out ${getMotionClass(motionState)}`}
             >
               <WithQuery query={paperQuery}>
                 {paper => (
-                  <div className="space-y-4">
-                    <div className="space-y-4">
-                      <ModalHeader
-                        icon="tabler:file-description"
-                        title={<span>Paper details</span>}
-                        onClose={onClose}
-                      />
-
-                      <Card className="space-y-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <TagChip
-                            icon="tabler:layout-sidebar-right-collapse"
-                            label="Reading panel"
-                            variant="filled"
-                          />
-                          {typeof currentPosition === 'number' && typeof totalItems === 'number' && (
-                            <TagChip
-                              icon="tabler:list-numbers"
-                              label={`${currentPosition} / ${totalItems}`}
-                              variant="outlined"
-                            />
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 lg:hidden">
-                          <Button
-                            disabled={!hasPrev}
-                            icon="tabler:chevron-left"
-                            variant="secondary"
-                            onClick={() => {
-                              if (!hasPrev) return
-                              pendingDirectionRef.current = 'previous'
-                              onPrevious()
-                            }}
-                          >
-                            Previous
-                          </Button>
-                          <Button
-                            disabled={!hasNext}
-                            icon="tabler:chevron-right"
-                            iconPosition="end"
-                            variant="secondary"
-                            onClick={() => {
-                              if (!hasNext) return
-                              pendingDirectionRef.current = 'next'
-                              onNext()
-                            }}
-                          >
-                            Next
-                          </Button>
-                        </div>
-                      </Card>
-                    </div>
-
-                    <PaperDetailContent
-                      compact
-                      favoriteLoading={toggleFavoriteMutation.isPending}
-                      paper={paper}
-                      onToggleFavorite={() => {
-                        toggleFavoriteMutation.mutate({
-                          paperId: paper.id,
-                          folderId: paper.favoriteFolderId
-                        })
-                      }}
-                    />
-                  </div>
+                  <PaperDetailContent
+                    compact
+                    favoriteLoading={toggleFavoriteMutation.isPending}
+                    paper={paper}
+                    onToggleFavorite={() => {
+                      toggleFavoriteMutation.mutate({
+                        paperId: paper.id,
+                        folderId: paper.favoriteFolderId
+                      })
+                    }}
+                  />
                 )}
               </WithQuery>
             </div>

@@ -65,9 +65,6 @@ function SettingsPage() {
   const [abstractEnabled, setAbstractEnabled] = useState(false)
   const [abstractTime, setAbstractTime] = useState('10:00')
   const [abstractLookbackDays, setAbstractLookbackDays] = useState('1')
-  const [natureApiKey, setNatureApiKey] = useState('')
-  const [tavilyApiKey, setTavilyApiKey] = useState('')
-
   const [zoteroUserId, setZoteroUserId] = useState('')
   const [zoteroApiKey, setZoteroApiKey] = useState('')
   const [aiBaseUrl, setAiBaseUrl] = useState('')
@@ -124,8 +121,6 @@ function SettingsPage() {
     forgeAPI.pipeline.settings.fetch.update.mutationOptions({
       onSuccess: () => {
         toast.success('Fetch settings saved')
-        setNatureApiKey('')
-        setTavilyApiKey('')
         queryClient.invalidateQueries({ queryKey: [MODULE_ROUTE_KEY, 'pipeline', 'settings', 'fetch'] })
       },
       onError: error => {
@@ -387,20 +382,34 @@ function SettingsPage() {
                       />
 
                       <div className="grid gap-4 lg:grid-cols-2">
-                        <TextInput
-                          icon="tabler:key"
-                          label="Nature API key"
-                          placeholder={fetchSettings.hasNatureApiKey ? 'Already configured' : 'Springer Nature API key'}
-                          value={natureApiKey}
-                          onChange={setNatureApiKey}
-                        />
-                        <TextInput
-                          icon="tabler:key"
-                          label="Tavily API key"
-                          placeholder={fetchSettings.hasTavilyApiKey ? 'Already configured' : 'Tavily API key'}
-                          value={tavilyApiKey}
-                          onChange={setTavilyApiKey}
-                        />
+                        <Card className="flex items-center justify-between gap-4 border border-bg-500/10 bg-component-bg-lighter/50">
+                          <div className="min-w-0 space-y-1">
+                            <p className="text-sm font-semibold">Springer Nature API key</p>
+                            <code className="text-bg-500 text-xs">springer-nature</code>
+                          </div>
+                          <TagChip
+                            icon={fetchSettings.hasNatureApiKey ? 'tabler:key' : 'tabler:key-off'}
+                            label={fetchSettings.hasNatureApiKey ? 'Configured' : 'Missing'}
+                            variant={fetchSettings.hasNatureApiKey ? 'filled' : 'outlined'}
+                          />
+                        </Card>
+                        <Card className="flex items-center justify-between gap-4 border border-bg-500/10 bg-component-bg-lighter/50">
+                          <div className="min-w-0 space-y-1">
+                            <p className="text-sm font-semibold">Tavily API key</p>
+                            <code className="text-bg-500 text-xs">tavily</code>
+                          </div>
+                          <TagChip
+                            icon={fetchSettings.hasTavilyApiKey ? 'tabler:key' : 'tabler:key-off'}
+                            label={fetchSettings.hasTavilyApiKey ? 'Configured' : 'Missing'}
+                            variant={fetchSettings.hasTavilyApiKey ? 'filled' : 'outlined'}
+                          />
+                        </Card>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <Button as={Link} icon="tabler:arrow-right" to="/api-keys" variant="secondary">
+                          <span>Manage API keys</span>
+                        </Button>
                       </div>
 
                       <div className="grid gap-4 lg:grid-cols-2">
@@ -424,9 +433,7 @@ function SettingsPage() {
                               fetchTime,
                               abstractEnabled,
                               abstractTime,
-                              abstractLookbackDays: Number(abstractLookbackDays) || 1,
-                              natureApiKey: natureApiKey.trim() ? natureApiKey : undefined,
-                              tavilyApiKey: tavilyApiKey.trim() ? tavilyApiKey : undefined
+                              abstractLookbackDays: Number(abstractLookbackDays) || 1
                             })
                           }}
                         >
