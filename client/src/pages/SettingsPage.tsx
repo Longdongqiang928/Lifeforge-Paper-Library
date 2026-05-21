@@ -42,18 +42,87 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        scheme[status] || 'bg-custom-500/20 text-custom-500'
-      }`}
+      className={'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ' + (scheme[status] || 'bg-custom-500/20 text-custom-500')}
     >
       {status}
     </span>
   )
 }
 
+interface RunDetails {
+  failedItems?: Array<{
+    paperId?: string
+    title?: string
+    reason?: string
+  }>
+  skippedAlreadyCompletedUnchanged?: number
+  skippedNoAbstract?: number
+  skippedNoStateOrNoAbstract?: number
+}
+
+function getRunDetails(run: PipelineRun): RunDetails {
+  return typeof run.details === 'object' && run.details !== null ? run.details as RunDetails : {}
+}
+
+function getResultCounts(run: PipelineRun) {
+  const details = getRunDetails(run)
+
+  return {
+    inserted: run.insertedCount,
+    updated: run.updatedCount,
+    skippedUnchanged: details.skippedAlreadyCompletedUnchanged ?? 0,
+    skippedNoAbstract: (details.skippedNoAbstract ?? 0) + (details.skippedNoStateOrNoAbstract ?? 0),
+    failed: run.failedCount
+  }
+}
+
+function ResultPill({ label, value, tone = 'neutral' }: { label: string; value: number; tone?: 'neutral' | 'success' | 'danger' }) {
+  const toneClass = {
+    neutral: 'bg-bg-500/10 text-bg-500',
+    success: 'bg-emerald-500/10 text-emerald-500',
+    danger: 'bg-red-500/10 text-red-500'
+  }[tone]
+
+  return (
+    <span className={'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ' + toneClass}>
+      <span>{value}</span>
+      <span>{label}</span>
+    </span>
+  )
+}
+
+function RunFailureDetails({ run }: { run: PipelineRun }) {
+  const details = getRunDetails(run)
+  const failedItems = details.failedItems ?? []
+
+  if (failedItems.length === 0 && !run.errorSummary) {
+    return <p className="text-bg-500 text-sm">No failure log was recorded for this run.</p>
+  }
+
+  return (
+    <div className="space-y-3">
+      {run.errorSummary && (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-500">
+          {run.errorSummary}
+        </div>
+      )}
+      {failedItems.map((item, index) => (
+        <div key={(item.paperId || 'failure') + '-' + index} className="rounded-lg border border-red-500/20 bg-component-bg p-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-bg-500">
+            {item.paperId && <span className="font-mono">{item.paperId}</span>}
+            {item.title && <span className="font-semibold text-bg">{item.title}</span>}
+          </div>
+          {item.reason && <pre className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-red-500">{item.reason}</pre>}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function SettingsPage() {
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<(typeof SETTINGS_TABS)[number]['id']>('pipeline')
+  const [expandedRunIds, setExpandedRunIds] = useState<string[]>([])
 
   const [selectedStages, setSelectedStages] = useState<string[]>(['fetch'])
   const [rangeStart, setRangeStart] = useState('')
@@ -175,6 +244,9 @@ function SettingsPage() {
     .filter(Boolean)
     .join(', ')
   const recentRuns = (runsQuery.data ?? []).slice(0, 15)
+  const toggleRunDetails = (runId: string) => {
+    setExpandedRunIds(prev => prev.includes(runId) ? prev.filter(id => id !== runId) : [...prev, runId])
+  }
   const scheduleItems = [
     { id: 'fetch', label: 'Fetch', time: fetchTime, enabled: fetchEnabled, setTime: setFetchTime, setEnabled: setFetchEnabled },
     { id: 'abstract', label: 'Abstract', time: abstractTime, enabled: abstractEnabled, setTime: setAbstractTime, setEnabled: setAbstractEnabled },
@@ -556,27 +628,44 @@ function SettingsPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-bg-500/5">
-                        {recentRuns.map(run => (
-                          <tr key={run.id} className="transition-colors hover:bg-component-bg-lighter/40">
-                            <td className="px-4 py-3 text-sm whitespace-nowrap">{dayjs(run.created).format('YY/MM-DD h:mm A')}</td>
-                            <td className="px-4 py-3">
-                              <span className="inline-flex items-center gap-1.5 text-sm font-medium capitalize">
-                                {run.stage}
-                                <span className="text-xs font-normal text-bg-400">({run.scope})</span>
-                              </span>
-                            </td>
-                            <td className="px-4 py-3"><StatusBadge status={run.status} /></td>
-                            <td className="px-4 py-3 text-right">
-                              <div className="inline-flex items-center gap-2 text-xs">
-                                <span className="font-medium text-emerald-500">{run.insertedCount} in</span>
-                                <span className="text-bg-400">|</span>
-                                <span className="font-medium">{run.skippedCount} skip</span>
-                                <span className="text-bg-400">|</span>
-                                <span className="font-medium text-red-500">{run.failedCount} fail</span>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                        {recentRuns.map(run => {
+                          const counts = getResultCounts(run)
+                          const isExpanded = expandedRunIds.includes(run.id)
+
+                          return (
+                            <>
+                              <tr key={run.id} className="transition-colors hover:bg-component-bg-lighter/40">
+                                <td className="px-4 py-3 text-sm whitespace-nowrap">{dayjs(run.created).format('YY/MM-DD h:mm A')}</td>
+                                <td className="px-4 py-3">
+                                  <span className="inline-flex items-center gap-1.5 text-sm font-medium capitalize">
+                                    {run.stage}
+                                    <span className="text-xs font-normal text-bg-400">({run.scope})</span>
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3"><StatusBadge status={run.status} /></td>
+                                <td className="px-4 py-3 text-right">
+                                  <div className="inline-flex flex-wrap items-center justify-end gap-1.5 text-xs">
+                                    <ResultPill label="new" tone="success" value={counts.inserted} />
+                                    <ResultPill label="updated" tone="success" value={counts.updated} />
+                                    <ResultPill label="skip unchanged" value={counts.skippedUnchanged} />
+                                    <ResultPill label="skip no abstract" value={counts.skippedNoAbstract} />
+                                    <ResultPill label="fail" tone="danger" value={counts.failed} />
+                                    {run.failedCount > 0 && (
+                                      <Button className="ml-1 p-1.5!" icon={isExpanded ? 'tabler:chevron-up' : 'tabler:chevron-down'} onClick={() => toggleRunDetails(run.id)} variant="plain" />
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                              {run.failedCount > 0 && isExpanded && (
+                                <tr key={run.id + '-details'} className="bg-red-500/5">
+                                  <td className="px-4 py-4" colSpan={4}>
+                                    <RunFailureDetails run={run} />
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
