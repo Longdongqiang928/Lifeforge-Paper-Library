@@ -152,6 +152,13 @@ interface RunStats {
   details?: unknown
 }
 
+interface ZoteroCacheRefreshResult {
+  entries: Array<RecordLike>
+  refreshed: boolean
+  usedStaleCache: boolean
+  staleReason?: string
+}
+
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message
@@ -1885,7 +1892,7 @@ function buildCollectionPathMap(collections: Array<RecordLike>) {
 async function refreshZoteroCache(
   pb: PocketBase,
   settings: DecryptedUserSettings
-) {
+): Promise<ZoteroCacheRefreshResult> {
   const existing = await pb.collection(COLLECTION_NAMES.zoteroCacheEntries).getFullList({
     filter: pb.filter('user = {:user}', {
       user: settings.userId
@@ -1900,17 +1907,43 @@ async function refreshZoteroCache(
     newest?.isValid() &&
     dayjs().diff(newest, 'hour') < ZOTERO_CACHE_TTL_HOURS
   ) {
-    return existing as Array<RecordLike>
+    return {
+      entries: existing as Array<RecordLike>,
+      refreshed: false,
+      usedStaleCache: false
+    }
   }
 
   if (!settings.zoteroUserId || !settings.zoteroApiKey) {
     throw new Error('Zotero settings are incomplete')
   }
 
-  const [collections, items] = await Promise.all([
-    fetchAllZoteroCollections(settings.zoteroUserId, settings.zoteroApiKey),
-    fetchAllZoteroItems(settings.zoteroUserId, settings.zoteroApiKey)
-  ])
+  let collections: Array<RecordLike>
+  let items: Array<RecordLike>
+
+  try {
+    ;[collections, items] = await Promise.all([
+      fetchAllZoteroCollections(settings.zoteroUserId, settings.zoteroApiKey),
+      fetchAllZoteroItems(settings.zoteroUserId, settings.zoteroApiKey)
+    ])
+  } catch (error) {
+    if (existing.length > 0) {
+      const reason = getErrorMessage(error)
+
+      console.warn(
+        `[paper-library] Zotero cache refresh failed; continuing with stale cache for user ${settings.userId}: ${reason}`
+      )
+
+      return {
+        entries: existing as Array<RecordLike>,
+        refreshed: false,
+        usedStaleCache: true,
+        staleReason: reason
+      }
+    }
+
+    throw error
+  }
 
   const resolvePath = buildCollectionPathMap(collections)
   const filteredItems = items.filter(item => {
@@ -1950,7 +1983,11 @@ async function refreshZoteroCache(
     cachedRecords.push(created as unknown as RecordLike)
   }
 
-  return cachedRecords
+  return {
+    entries: cachedRecords,
+    refreshed: true,
+    usedStaleCache: false
+  }
 }
 
 function computeCosineSimilarity(left: number[], right: number[]) {
@@ -2182,7 +2219,8 @@ async function runRecommendStage(
     return true
   })
 
-  const cacheEntries = await refreshZoteroCache(pb, settings)
+  const cacheRefresh = await refreshZoteroCache(pb, settings)
+  const cacheEntries = cacheRefresh.entries
   throwIfRunCancelled(runId, 'recommend')
   const collectionBuckets = new Map<string, Array<RecordLike>>()
 
@@ -2329,6 +2367,9 @@ async function runRecommendStage(
     failedCount: 0,
     details: {
       corpusSize: cacheEntries.length,
+      zoteroCacheRefreshed: cacheRefresh.refreshed,
+      zoteroCacheUsedStale: cacheRefresh.usedStaleCache,
+      zoteroCacheFallbackReason: cacheRefresh.staleReason ?? '',
       skippedNoAbstract,
       skippedAlreadyCompletedUnchanged,
       skippedItems: skippedItems.slice(0, 50)
